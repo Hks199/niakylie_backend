@@ -16,9 +16,14 @@ import { CategoriesController } from './categories.controller.js';
     MulterModule.register({
       storage: diskStorage({
         destination: (req: any, file: any, cb: any) => {
-          const uploadPath = './public/uploads/categories';
+          const uploadPath = './uploads/categories';
           if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true });
+          }
+          // Also maintain public/uploads/categories fallback
+          const publicUploadPath = './public/uploads/categories';
+          if (!fs.existsSync(publicUploadPath)) {
+            fs.mkdirSync(publicUploadPath, { recursive: true });
           }
           cb(null, uploadPath);
         },
@@ -34,3 +39,4 @@ import { CategoriesController } from './categories.controller.js';
   exports: [CategoriesService, CategoriesRepository],
 })
 export class CategoriesModule {}
+

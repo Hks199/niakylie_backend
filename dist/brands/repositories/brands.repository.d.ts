@@ -7,6 +7,7 @@ export declare class BrandsRepository {
     create(brandData: Partial<Brand>): Promise<BrandDocument>;
     findById(id: string): Promise<BrandDocument | null>;
     findBySlug(slug: string): Promise<BrandDocument | null>;
+    findByIdOrSlug(idOrSlug: string): Promise<BrandDocument | null>;
     findAll(queryDto: QueryBrandDto): Promise<{
         data: BrandDocument[];
         total: number;

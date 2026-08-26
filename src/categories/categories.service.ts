@@ -7,7 +7,6 @@ import { UpdateCategoryDto } from './dto/update-category.dto.js';
 import { QueryCategoryDto } from './dto/query-category.dto.js';
 import { CategoryDocument } from './schemas/category.schema.js';
 
-// Simple slugify helper to avoid external dependencies
 const generateSlug = (text: string): string => {
   return text
     .toLowerCase()
@@ -40,7 +39,7 @@ export class CategoriesService {
     let ancestors: any[] = [];
     let parentObjectId: Types.ObjectId | null = null;
 
-    if (parentId) {
+    if (parentId && parentId !== 'null' && parentId.trim() !== '') {
       const parent = await this.categoriesRepository.findById(parentId);
       if (!parent) {
         throw new NotFoundException(`Parent category with ID ${parentId} not found`);
@@ -104,7 +103,7 @@ export class CategoriesService {
 
     if (parentId !== undefined && String(parentId) !== String(category.parentId)) {
       parentChanged = true;
-      if (parentId === null) {
+      if (parentId === null || parentId === 'null' || parentId.trim() === '') {
         updateData.parentId = null;
         updateData.ancestors = [];
       } else {
@@ -112,7 +111,6 @@ export class CategoriesService {
           throw new BadRequestException('A category cannot be its own parent');
         }
 
-        // Cycle check: verify target parent is not a descendant of category
         const targetParent = await this.categoriesRepository.findById(parentId);
         if (!targetParent) {
           throw new NotFoundException(`Parent category with ID ${parentId} not found`);
@@ -181,13 +179,7 @@ export class CategoriesService {
   }
 
   async findByIdOrSlug(idOrSlug: string): Promise<CategoryDocument> {
-    let category: CategoryDocument | null = null;
-    if (Types.ObjectId.isValid(idOrSlug)) {
-      category = await this.categoriesRepository.findById(idOrSlug);
-    }
-    if (!category) {
-      category = await this.categoriesRepository.findBySlug(idOrSlug);
-    }
+    const category = await this.categoriesRepository.findByIdOrSlug(idOrSlug);
     if (!category) {
       throw new NotFoundException(`Category with identifier '${idOrSlug}' not found`);
     }
@@ -195,19 +187,42 @@ export class CategoriesService {
   }
 
   async findAll(queryDto: QueryCategoryDto) {
+    const page = queryDto.page || 1;
+    const limit = queryDto.limit || 10;
+
     if (this.cacheService) {
       const cacheKey = `categories:list:${JSON.stringify(queryDto)}`;
       const cached = await this.cacheService.get<any>(cacheKey);
       if (cached) return cached;
 
-      const result = await this.categoriesRepository.findAll(queryDto);
+      const { data, total } = await this.categoriesRepository.findAll(queryDto);
+      const totalPages = Math.ceil(total / limit) || 1;
+      const result = {
+        data,
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages,
+        },
+      };
       await this.cacheService.set(cacheKey, result, 600000); // 10 mins TTL
       return result;
     }
-    return this.categoriesRepository.findAll(queryDto);
+
+    const { data, total } = await this.categoriesRepository.findAll(queryDto);
+    const totalPages = Math.ceil(total / limit) || 1;
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
+      },
+    };
   }
 
-  // Recursive helper to cascade ancestor updates
   private async updateDescendantsAncestors(
     parentId: string,
     parentAncestors: any[],
@@ -231,3 +246,4 @@ export class CategoriesService {
     }
   }
 }
+

@@ -15,7 +15,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+  ApiParam,
+} from '@nestjs/swagger';
 
 import { CategoriesService } from './categories.service.js';
 import { CreateCategoryDto } from './dto/create-category.dto.js';
@@ -23,6 +31,19 @@ import { UpdateCategoryDto } from './dto/update-category.dto.js';
 import { QueryCategoryDto } from './dto/query-category.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { Roles, RolesGuard, Role } from '../shared/index.js';
+
+const validateCategoryFile = (file?: Express.Multer.File) => {
+  if (!file) return;
+  const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  if (!allowedMimeTypes.includes(file.mimetype)) {
+    throw new BadRequestException(
+      `Invalid file format for ${file.fieldname}. Only JPG, JPEG, PNG, and WEBP allowed.`,
+    );
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    throw new BadRequestException(`File size exceeds limit for ${file.fieldname}. Max 5MB allowed.`);
+  }
+};
 
 @ApiTags('Categories')
 @Controller('categories')
@@ -40,17 +61,17 @@ export class CategoriesController {
     ]),
   )
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Create a new category (Admin only)' })
+  @ApiOperation({ summary: 'Create a new category with optional thumbnail & banner files (Admin only)' })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        name: { type: 'string' },
-        parentId: { type: 'string', nullable: true },
-        description: { type: 'string' },
-        seoTitle: { type: 'string' },
-        seoDescription: { type: 'string' },
-        seoKeywords: { type: 'array', items: { type: 'string' } },
+        name: { type: 'string', example: 'Ethnic Wear' },
+        parentId: { type: 'string', nullable: true, example: '60d5ecb8b392d40015f8a001' },
+        description: { type: 'string', example: 'Traditional women wear collection' },
+        seoTitle: { type: 'string', example: 'Buy Ethnic Wear Online' },
+        seoDescription: { type: 'string', example: 'Shop sarees, kurtas and lehengas' },
+        seoKeywords: { type: 'array', items: { type: 'string' }, example: ['ethnic', 'sarees'] },
         image: { type: 'string', format: 'binary' },
         banner: { type: 'string', format: 'binary' },
       },
@@ -58,6 +79,9 @@ export class CategoriesController {
     },
   })
   @ApiResponse({ status: 201, description: 'Category created successfully' })
+  @ApiResponse({ status: 400, description: 'Bad Request - Validation error or duplicate category' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
   async create(
     @Body() createDto: CreateCategoryDto,
     @UploadedFiles()
@@ -69,20 +93,8 @@ export class CategoriesController {
     const imageFile = files?.image?.[0];
     const bannerFile = files?.banner?.[0];
 
-    const validateFile = (file: Express.Multer.File) => {
-      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!allowedMimeTypes.includes(file.mimetype)) {
-        throw new BadRequestException(
-          `Invalid file format for ${file.fieldname}. Only JPG, JPEG, PNG, and WEBP allowed.`,
-        );
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        throw new BadRequestException(`File size exceeds limit for ${file.fieldname}. Max 5MB allowed.`);
-      }
-    };
-
-    if (imageFile) validateFile(imageFile);
-    if (bannerFile) validateFile(bannerFile);
+    validateCategoryFile(imageFile);
+    validateCategoryFile(bannerFile);
 
     const imagePath = imageFile ? `/uploads/categories/${imageFile.filename}` : undefined;
     const bannerPath = bannerFile ? `/uploads/categories/${bannerFile.filename}` : undefined;
@@ -91,14 +103,15 @@ export class CategoriesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List categories with pagination, search and sorting' })
-  @ApiResponse({ status: 200, description: 'Paginated category details returned' })
+  @ApiOperation({ summary: 'List categories with pagination, parent filtering, regex search and sorting' })
+  @ApiResponse({ status: 200, description: 'Paginated list of active categories returned with metadata' })
   async findAll(@Query() queryDto: QueryCategoryDto) {
     return this.categoriesService.findAll(queryDto);
   }
 
   @Get(':idOrSlug')
-  @ApiOperation({ summary: 'Get category details by ID or Slug' })
+  @ApiOperation({ summary: 'Get active category details by Mongo ObjectId or Slug' })
+  @ApiParam({ name: 'idOrSlug', description: '24-character Mongo ObjectId or string slug' })
   @ApiResponse({ status: 200, description: 'Category details returned' })
   @ApiResponse({ status: 404, description: 'Category not found' })
   async findOne(@Param('idOrSlug') idOrSlug: string) {
@@ -116,7 +129,8 @@ export class CategoriesController {
     ]),
   )
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Update category details (Admin only)' })
+  @ApiOperation({ summary: 'Update category details and re-calculate ancestor tree if parentId changes (Admin only)' })
+  @ApiParam({ name: 'id', description: 'Category Mongo ObjectId' })
   @ApiBody({
     schema: {
       type: 'object',
@@ -134,6 +148,10 @@ export class CategoriesController {
     },
   })
   @ApiResponse({ status: 200, description: 'Category updated successfully' })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
+  @ApiResponse({ status: 404, description: 'Category not found' })
   async update(
     @Param('id') id: string,
     @Body() updateDto: UpdateCategoryDto,
@@ -146,20 +164,8 @@ export class CategoriesController {
     const imageFile = files?.image?.[0];
     const bannerFile = files?.banner?.[0];
 
-    const validateFile = (file: Express.Multer.File) => {
-      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!allowedMimeTypes.includes(file.mimetype)) {
-        throw new BadRequestException(
-          `Invalid file format for ${file.fieldname}. Only JPG, JPEG, PNG, and WEBP allowed.`,
-        );
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        throw new BadRequestException(`File size exceeds limit for ${file.fieldname}. Max 5MB allowed.`);
-      }
-    };
-
-    if (imageFile) validateFile(imageFile);
-    if (bannerFile) validateFile(bannerFile);
+    validateCategoryFile(imageFile);
+    validateCategoryFile(bannerFile);
 
     const imagePath = imageFile ? `/uploads/categories/${imageFile.filename}` : undefined;
     const bannerPath = bannerFile ? `/uploads/categories/${bannerFile.filename}` : undefined;
@@ -172,9 +178,14 @@ export class CategoriesController {
   @Roles(Role.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Soft delete category and descendants (Admin only)' })
-  @ApiResponse({ status: 204, description: 'Category soft-deleted successfully' })
+  @ApiOperation({ summary: 'Soft delete category and recursively soft delete all child sub-categories (Admin only)' })
+  @ApiParam({ name: 'id', description: 'Category Mongo ObjectId' })
+  @ApiResponse({ status: 204, description: 'Category and all descendants soft-deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
+  @ApiResponse({ status: 404, description: 'Category not found' })
   async remove(@Param('id') id: string) {
     await this.categoriesService.delete(id);
   }
 }
+

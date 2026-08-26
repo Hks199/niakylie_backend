@@ -17,8 +17,9 @@ class QueryCategoryDto {
     page = 1;
     limit = 10;
     search;
-    sortBy = 'createdAt';
-    sortOrder = 'asc';
+    sort = '-createdAt';
+    sortBy;
+    sortOrder;
     parentId;
     status;
 }
@@ -37,19 +38,20 @@ __decorate([
 ], QueryCategoryDto.prototype, "page", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: 'Limit size of paginated array list',
+        description: 'Limit size of paginated array list (Max: 100)',
         example: 10,
         default: 10,
     }),
     (0, class_validator_1.IsInt)(),
     (0, class_validator_1.Min)(1),
+    (0, class_validator_1.Max)(100),
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Transform)(({ value }) => parseInt(value, 10)),
     __metadata("design:type", Number)
 ], QueryCategoryDto.prototype, "limit", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: 'Keyword search (matches against name or description)',
+        description: 'Keyword search (matches regex against name, slug, or description)',
         example: 'Ethnic',
     }),
     (0, class_validator_1.IsString)(),
@@ -58,7 +60,17 @@ __decorate([
 ], QueryCategoryDto.prototype, "search", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: 'Field name to sort results by',
+        description: 'Sort expression (e.g., "-createdAt" for descending or "name" for ascending)',
+        example: '-createdAt',
+        default: '-createdAt',
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], QueryCategoryDto.prototype, "sort", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Field name to sort results by (optional alternative to sort)',
         example: 'name',
         default: 'createdAt',
     }),
@@ -68,7 +80,7 @@ __decorate([
 ], QueryCategoryDto.prototype, "sortBy", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: 'Sorting direction (asc or desc)',
+        description: 'Sorting direction (asc or desc) if sortBy is used',
         example: 'asc',
         default: 'asc',
     }),
@@ -93,9 +105,9 @@ __decorate([
     (0, class_validator_1.IsBoolean)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Transform)(({ value }) => {
-        if (value === 'true')
+        if (value === 'true' || value === true)
             return true;
-        if (value === 'false')
+        if (value === 'false' || value === false)
             return false;
         return value;
     }),

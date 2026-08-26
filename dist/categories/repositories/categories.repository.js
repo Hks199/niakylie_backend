@@ -34,16 +34,25 @@ let CategoriesRepository = class CategoriesRepository {
     async findBySlug(slug) {
         return this.categoryModel.findOne({ slug, isDeleted: false }).exec();
     }
+    async findByIdOrSlug(idOrSlug) {
+        if (mongoose_2.Types.ObjectId.isValid(idOrSlug)) {
+            const byId = await this.categoryModel.findOne({ _id: new mongoose_2.Types.ObjectId(idOrSlug), isDeleted: false }).exec();
+            if (byId)
+                return byId;
+        }
+        return this.categoryModel.findOne({ slug: idOrSlug, isDeleted: false }).exec();
+    }
     async findAll(queryDto) {
-        const { page = 1, limit = 10, search, sortBy = 'createdAt', sortOrder = 'asc', parentId, status } = queryDto;
+        const { page = 1, limit = 10, search, sort, sortBy, sortOrder, parentId, status } = queryDto;
         const filter = { isDeleted: false };
         if (search) {
             filter.$or = [
                 { name: { $regex: search, $options: 'i' } },
+                { slug: { $regex: search, $options: 'i' } },
                 { description: { $regex: search, $options: 'i' } },
             ];
         }
-        if (parentId !== undefined) {
+        if (parentId !== undefined && parentId !== '') {
             if (parentId === 'null') {
                 filter.parentId = null;
             }
@@ -54,11 +63,21 @@ let CategoriesRepository = class CategoriesRepository {
         if (status !== undefined) {
             filter.status = status;
         }
-        const sort = {};
-        sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+        const sortOption = {};
+        if (sort) {
+            const isDesc = sort.startsWith('-');
+            const field = isDesc ? sort.substring(1) : sort;
+            sortOption[field] = isDesc ? -1 : 1;
+        }
+        else if (sortBy) {
+            sortOption[sortBy] = sortOrder === 'asc' ? 1 : -1;
+        }
+        else {
+            sortOption.createdAt = -1;
+        }
         const skip = (page - 1) * limit;
         const [data, total] = await Promise.all([
-            this.categoryModel.find(filter).sort(sort).skip(skip).limit(limit).exec(),
+            this.categoryModel.find(filter).sort(sortOption).skip(skip).limit(limit).exec(),
             this.categoryModel.countDocuments(filter).exec(),
         ]);
         return { data, total };
@@ -74,7 +93,7 @@ let CategoriesRepository = class CategoriesRepository {
         if (!mongoose_2.Types.ObjectId.isValid(id))
             return null;
         return this.categoryModel
-            .findOneAndUpdate({ _id: new mongoose_2.Types.ObjectId(id), isDeleted: false }, { $set: { isDeleted: true, deletedAt: new Date() } }, { new: true })
+            .findOneAndUpdate({ _id: new mongoose_2.Types.ObjectId(id), isDeleted: false }, { $set: { isDeleted: true, status: false, deletedAt: new Date() } }, { new: true })
             .exec();
     }
     async findDirectChildren(parentId) {
@@ -95,7 +114,7 @@ let CategoriesRepository = class CategoriesRepository {
         if (!mongoose_2.Types.ObjectId.isValid(categoryId))
             return;
         await this.categoryModel
-            .updateMany({ 'ancestors._id': new mongoose_2.Types.ObjectId(categoryId), isDeleted: false }, { $set: { isDeleted: true, deletedAt: new Date() } })
+            .updateMany({ 'ancestors._id': new mongoose_2.Types.ObjectId(categoryId), isDeleted: false }, { $set: { isDeleted: true, status: false, deletedAt: new Date() } })
             .exec();
     }
 };

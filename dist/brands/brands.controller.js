@@ -22,21 +22,24 @@ const update_brand_dto_js_1 = require("./dto/update-brand.dto.js");
 const query_brand_dto_js_1 = require("./dto/query-brand.dto.js");
 const jwt_auth_guard_js_1 = require("../auth/guards/jwt-auth.guard.js");
 const index_js_1 = require("../shared/index.js");
+const validateLogoFile = (file) => {
+    if (!file)
+        return;
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+        throw new common_1.BadRequestException('Invalid file format for logo. Only JPG, JPEG, PNG, and WEBP allowed.');
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        throw new common_1.BadRequestException('Logo file size exceeds limit. Max 5MB allowed.');
+    }
+};
 let BrandsController = class BrandsController {
     brandsService;
     constructor(brandsService) {
         this.brandsService = brandsService;
     }
     async create(createDto, logoFile) {
-        if (logoFile) {
-            const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-            if (!allowedMimeTypes.includes(logoFile.mimetype)) {
-                throw new common_1.BadRequestException('Invalid file format for logo. Only JPG, JPEG, PNG, and WEBP allowed.');
-            }
-            if (logoFile.size > 5 * 1024 * 1024) {
-                throw new common_1.BadRequestException('Logo file size exceeds limit. Max 5MB allowed.');
-            }
-        }
+        validateLogoFile(logoFile);
         const logoPath = logoFile ? `/uploads/brands/${logoFile.filename}` : undefined;
         return this.brandsService.create(createDto, logoPath);
     }
@@ -47,15 +50,7 @@ let BrandsController = class BrandsController {
         return this.brandsService.findByIdOrSlug(idOrSlug);
     }
     async update(id, updateDto, logoFile) {
-        if (logoFile) {
-            const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-            if (!allowedMimeTypes.includes(logoFile.mimetype)) {
-                throw new common_1.BadRequestException('Invalid file format for logo. Only JPG, JPEG, PNG, and WEBP allowed.');
-            }
-            if (logoFile.size > 5 * 1024 * 1024) {
-                throw new common_1.BadRequestException('Logo file size exceeds limit. Max 5MB allowed.');
-            }
-        }
+        validateLogoFile(logoFile);
         const logoPath = logoFile ? `/uploads/brands/${logoFile.filename}` : undefined;
         return this.brandsService.update(id, updateDto, logoPath);
     }
@@ -76,17 +71,20 @@ __decorate([
         schema: {
             type: 'object',
             properties: {
-                name: { type: 'string' },
-                description: { type: 'string' },
-                seoTitle: { type: 'string' },
-                seoDescription: { type: 'string' },
-                seoKeywords: { type: 'array', items: { type: 'string' } },
+                name: { type: 'string', example: 'Nike' },
+                description: { type: 'string', example: 'Athletic apparel and footwear brand' },
+                seoTitle: { type: 'string', example: 'Shop Nike Shoes & Apparel' },
+                seoDescription: { type: 'string', example: 'Buy authentic Nike products.' },
+                seoKeywords: { type: 'array', items: { type: 'string' }, example: ['nike', 'shoes'] },
                 logo: { type: 'string', format: 'binary' },
             },
             required: ['name'],
         },
     }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Brand created successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Bad Request - Validation error or duplicate brand' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin access required' }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),
@@ -95,8 +93,8 @@ __decorate([
 ], BrandsController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    (0, swagger_1.ApiOperation)({ summary: 'List brands with pagination, search and sorting' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Paginated brand details returned' }),
+    (0, swagger_1.ApiOperation)({ summary: 'List active brands with pagination, regex search (name & slug) and sorting' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Paginated list of active brands returned' }),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [query_brand_dto_js_1.QueryBrandDto]),
@@ -104,7 +102,8 @@ __decorate([
 ], BrandsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':idOrSlug'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get brand details by ID or Slug' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Get active brand details by Mongo ObjectId or Slug' }),
+    (0, swagger_1.ApiParam)({ name: 'idOrSlug', description: '24-character Mongo ObjectId or string slug' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Brand details returned' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Brand not found' }),
     __param(0, (0, common_1.Param)('idOrSlug')),
@@ -120,6 +119,7 @@ __decorate([
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('logo')),
     (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiOperation)({ summary: 'Update brand details (Admin only)' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Brand Mongo ObjectId' }),
     (0, swagger_1.ApiBody)({
         schema: {
             type: 'object',
@@ -135,6 +135,10 @@ __decorate([
         },
     }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Brand updated successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Bad Request' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin access required' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Brand not found' }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.UploadedFile)()),
@@ -148,8 +152,12 @@ __decorate([
     (0, index_js_1.Roles)(index_js_1.Role.ADMIN),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
-    (0, swagger_1.ApiOperation)({ summary: 'Soft delete brand (Admin only)' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Soft delete brand by setting isDeleted: true and status: false (Admin only)' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Brand Mongo ObjectId' }),
     (0, swagger_1.ApiResponse)({ status: 204, description: 'Brand soft-deleted successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin access required' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Brand not found' }),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

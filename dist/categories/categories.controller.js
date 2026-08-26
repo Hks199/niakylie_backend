@@ -22,6 +22,17 @@ const update_category_dto_js_1 = require("./dto/update-category.dto.js");
 const query_category_dto_js_1 = require("./dto/query-category.dto.js");
 const jwt_auth_guard_js_1 = require("../auth/guards/jwt-auth.guard.js");
 const index_js_1 = require("../shared/index.js");
+const validateCategoryFile = (file) => {
+    if (!file)
+        return;
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+        throw new common_1.BadRequestException(`Invalid file format for ${file.fieldname}. Only JPG, JPEG, PNG, and WEBP allowed.`);
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        throw new common_1.BadRequestException(`File size exceeds limit for ${file.fieldname}. Max 5MB allowed.`);
+    }
+};
 let CategoriesController = class CategoriesController {
     categoriesService;
     constructor(categoriesService) {
@@ -30,19 +41,8 @@ let CategoriesController = class CategoriesController {
     async create(createDto, files) {
         const imageFile = files?.image?.[0];
         const bannerFile = files?.banner?.[0];
-        const validateFile = (file) => {
-            const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-            if (!allowedMimeTypes.includes(file.mimetype)) {
-                throw new common_1.BadRequestException(`Invalid file format for ${file.fieldname}. Only JPG, JPEG, PNG, and WEBP allowed.`);
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                throw new common_1.BadRequestException(`File size exceeds limit for ${file.fieldname}. Max 5MB allowed.`);
-            }
-        };
-        if (imageFile)
-            validateFile(imageFile);
-        if (bannerFile)
-            validateFile(bannerFile);
+        validateCategoryFile(imageFile);
+        validateCategoryFile(bannerFile);
         const imagePath = imageFile ? `/uploads/categories/${imageFile.filename}` : undefined;
         const bannerPath = bannerFile ? `/uploads/categories/${bannerFile.filename}` : undefined;
         return this.categoriesService.create(createDto, imagePath, bannerPath);
@@ -56,19 +56,8 @@ let CategoriesController = class CategoriesController {
     async update(id, updateDto, files) {
         const imageFile = files?.image?.[0];
         const bannerFile = files?.banner?.[0];
-        const validateFile = (file) => {
-            const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-            if (!allowedMimeTypes.includes(file.mimetype)) {
-                throw new common_1.BadRequestException(`Invalid file format for ${file.fieldname}. Only JPG, JPEG, PNG, and WEBP allowed.`);
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                throw new common_1.BadRequestException(`File size exceeds limit for ${file.fieldname}. Max 5MB allowed.`);
-            }
-        };
-        if (imageFile)
-            validateFile(imageFile);
-        if (bannerFile)
-            validateFile(bannerFile);
+        validateCategoryFile(imageFile);
+        validateCategoryFile(bannerFile);
         const imagePath = imageFile ? `/uploads/categories/${imageFile.filename}` : undefined;
         const bannerPath = bannerFile ? `/uploads/categories/${bannerFile.filename}` : undefined;
         return this.categoriesService.update(id, updateDto, imagePath, bannerPath);
@@ -88,17 +77,17 @@ __decorate([
         { name: 'banner', maxCount: 1 },
     ])),
     (0, swagger_1.ApiConsumes)('multipart/form-data'),
-    (0, swagger_1.ApiOperation)({ summary: 'Create a new category (Admin only)' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Create a new category with optional thumbnail & banner files (Admin only)' }),
     (0, swagger_1.ApiBody)({
         schema: {
             type: 'object',
             properties: {
-                name: { type: 'string' },
-                parentId: { type: 'string', nullable: true },
-                description: { type: 'string' },
-                seoTitle: { type: 'string' },
-                seoDescription: { type: 'string' },
-                seoKeywords: { type: 'array', items: { type: 'string' } },
+                name: { type: 'string', example: 'Ethnic Wear' },
+                parentId: { type: 'string', nullable: true, example: '60d5ecb8b392d40015f8a001' },
+                description: { type: 'string', example: 'Traditional women wear collection' },
+                seoTitle: { type: 'string', example: 'Buy Ethnic Wear Online' },
+                seoDescription: { type: 'string', example: 'Shop sarees, kurtas and lehengas' },
+                seoKeywords: { type: 'array', items: { type: 'string' }, example: ['ethnic', 'sarees'] },
                 image: { type: 'string', format: 'binary' },
                 banner: { type: 'string', format: 'binary' },
             },
@@ -106,6 +95,9 @@ __decorate([
         },
     }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Category created successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Bad Request - Validation error or duplicate category' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin access required' }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.UploadedFiles)()),
     __metadata("design:type", Function),
@@ -114,8 +106,8 @@ __decorate([
 ], CategoriesController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    (0, swagger_1.ApiOperation)({ summary: 'List categories with pagination, search and sorting' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Paginated category details returned' }),
+    (0, swagger_1.ApiOperation)({ summary: 'List categories with pagination, parent filtering, regex search and sorting' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Paginated list of active categories returned with metadata' }),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [query_category_dto_js_1.QueryCategoryDto]),
@@ -123,7 +115,8 @@ __decorate([
 ], CategoriesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':idOrSlug'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get category details by ID or Slug' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Get active category details by Mongo ObjectId or Slug' }),
+    (0, swagger_1.ApiParam)({ name: 'idOrSlug', description: '24-character Mongo ObjectId or string slug' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Category details returned' }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Category not found' }),
     __param(0, (0, common_1.Param)('idOrSlug')),
@@ -141,7 +134,8 @@ __decorate([
         { name: 'banner', maxCount: 1 },
     ])),
     (0, swagger_1.ApiConsumes)('multipart/form-data'),
-    (0, swagger_1.ApiOperation)({ summary: 'Update category details (Admin only)' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Update category details and re-calculate ancestor tree if parentId changes (Admin only)' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Category Mongo ObjectId' }),
     (0, swagger_1.ApiBody)({
         schema: {
             type: 'object',
@@ -159,6 +153,10 @@ __decorate([
         },
     }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Category updated successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Bad Request' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin access required' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Category not found' }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.UploadedFiles)()),
@@ -172,8 +170,12 @@ __decorate([
     (0, index_js_1.Roles)(index_js_1.Role.ADMIN),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
-    (0, swagger_1.ApiOperation)({ summary: 'Soft delete category and descendants (Admin only)' }),
-    (0, swagger_1.ApiResponse)({ status: 204, description: 'Category soft-deleted successfully' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Soft delete category and recursively soft delete all child sub-categories (Admin only)' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Category Mongo ObjectId' }),
+    (0, swagger_1.ApiResponse)({ status: 204, description: 'Category and all descendants soft-deleted successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin access required' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Category not found' }),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),

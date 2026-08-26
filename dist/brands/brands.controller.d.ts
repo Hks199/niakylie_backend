@@ -9,6 +9,9 @@ export declare class BrandsController {
     findAll(queryDto: QueryBrandDto): Promise<{
         data: import("./schemas/brand.schema.js").BrandDocument[];
         total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
     }>;
     findOne(idOrSlug: string): Promise<import("./schemas/brand.schema.js").BrandDocument>;
     update(id: string, updateDto: UpdateBrandDto, logoFile?: Express.Multer.File): Promise<import("./schemas/brand.schema.js").BrandDocument>;

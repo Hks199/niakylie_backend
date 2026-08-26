@@ -1,12 +1,12 @@
 # #################################################################
-# NiaKylie Backend - .gitignore
+# NiaKylie Backend - Production .gitignore
 # #################################################################
 
 # ── Dependencies ──
 node_modules/
 .pnpm-store/
 
-# ── Production Build Artifacts ──
+# ── Production Build Output ──
 dist/
 build/
 
@@ -17,11 +17,12 @@ build/
 *.env
 !.env.example
 
-# ── Uploaded Static Files & Local Storage ──
+# ── Uploaded Media & Local Storage ──
 public/uploads/
 uploads/
 /uploads
 *.tmp
+scratch_*
 
 # ── Logs & Debugging ──
 logs/
@@ -45,7 +46,7 @@ coverage/
 *.sublime-project
 *.sublime-workspace
 
-# ── Operating System Junk ──
+# ── Operating System Files ──
 .DS_Store
 .DS_Store?
 ._*
@@ -54,7 +55,7 @@ coverage/
 ehthumbs.db
 Thumbs.db
 
-# ── Docker & Local Database Cache ──
+# ── Docker & Database Cache ──
 .docker/
 mongo-data/
 redis-data/

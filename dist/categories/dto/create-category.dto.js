@@ -12,9 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateCategoryDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 class CreateCategoryDto {
     name;
-    parentId;
+    parentId = null;
     description;
     seoTitle;
     seoDescription;
@@ -32,7 +33,7 @@ __decorate([
 ], CreateCategoryDto.prototype, "name", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: 'Parent category ID for nested structures (null for root)',
+        description: 'Parent category Mongo ID for nested structures (null for root)',
         example: '60d5ecb8b392d40015f8a001',
         default: null,
     }),
@@ -71,6 +72,20 @@ __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: 'SEO Meta keywords list',
         example: ['ethnic wear', 'sarees', 'kurtas', 'lehengas'],
+        type: [String],
+    }),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                if (Array.isArray(parsed))
+                    return parsed;
+            }
+            catch {
+                return value.split(',').map((item) => item.trim()).filter(Boolean);
+            }
+        }
+        return value;
     }),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsString)({ each: true }),

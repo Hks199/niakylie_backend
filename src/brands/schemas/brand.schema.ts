@@ -5,39 +5,40 @@ export type BrandDocument = Brand & Document;
 
 @Schema({ timestamps: true })
 export class Brand {
-  @Prop({ required: true, trim: true })
+  @Prop({ required: true, trim: true, unique: true })
   name!: string;
 
   @Prop({ required: true, unique: true, trim: true, index: true })
   slug!: string;
 
-  @Prop()
+  @Prop({ required: false, trim: true })
   logo?: string;
 
-  @Prop({ trim: true })
+  @Prop({ required: false, trim: true })
   description?: string;
 
-  @Prop({ default: true })
-  status!: boolean;
-
-  @Prop({ trim: true })
+  @Prop({ required: false, trim: true })
   seoTitle?: string;
 
-  @Prop({ trim: true })
+  @Prop({ required: false, trim: true })
   seoDescription?: string;
 
   @Prop({ type: [String], default: [] })
-  seoKeywords!: string[];
+  seoKeywords?: string[];
+
+  @Prop({ default: true })
+  status!: boolean;
 
   @Prop({ default: false, index: true })
   isDeleted!: boolean;
 
   @Prop({ type: Date, default: null })
-  deletedAt!: Date | null;
+  deletedAt?: Date | null;
 }
 
 export const BrandSchema = SchemaFactory.createForClass(Brand);
 
 // Indexes
 BrandSchema.index({ slug: 1 });
-BrandSchema.index({ name: 'text', description: 'text' });
+BrandSchema.index({ name: 'text', slug: 'text', description: 'text' });
+

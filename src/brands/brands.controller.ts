@@ -15,7 +15,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+  ApiParam,
+} from '@nestjs/swagger';
 
 import { BrandsService } from './brands.service.js';
 import { CreateBrandDto } from './dto/create-brand.dto.js';
@@ -23,6 +31,19 @@ import { UpdateBrandDto } from './dto/update-brand.dto.js';
 import { QueryBrandDto } from './dto/query-brand.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { Roles, RolesGuard, Role } from '../shared/index.js';
+
+const validateLogoFile = (file?: Express.Multer.File) => {
+  if (!file) return;
+  const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  if (!allowedMimeTypes.includes(file.mimetype)) {
+    throw new BadRequestException(
+      'Invalid file format for logo. Only JPG, JPEG, PNG, and WEBP allowed.',
+    );
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    throw new BadRequestException('Logo file size exceeds limit. Max 5MB allowed.');
+  }
+};
 
 @ApiTags('Brands')
 @Controller('brands')
@@ -40,44 +61,39 @@ export class BrandsController {
     schema: {
       type: 'object',
       properties: {
-        name: { type: 'string' },
-        description: { type: 'string' },
-        seoTitle: { type: 'string' },
-        seoDescription: { type: 'string' },
-        seoKeywords: { type: 'array', items: { type: 'string' } },
+        name: { type: 'string', example: 'Nike' },
+        description: { type: 'string', example: 'Athletic apparel and footwear brand' },
+        seoTitle: { type: 'string', example: 'Shop Nike Shoes & Apparel' },
+        seoDescription: { type: 'string', example: 'Buy authentic Nike products.' },
+        seoKeywords: { type: 'array', items: { type: 'string' }, example: ['nike', 'shoes'] },
         logo: { type: 'string', format: 'binary' },
       },
       required: ['name'],
     },
   })
   @ApiResponse({ status: 201, description: 'Brand created successfully' })
+  @ApiResponse({ status: 400, description: 'Bad Request - Validation error or duplicate brand' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
   async create(
     @Body() createDto: CreateBrandDto,
     @UploadedFile() logoFile?: Express.Multer.File,
   ) {
-    if (logoFile) {
-      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!allowedMimeTypes.includes(logoFile.mimetype)) {
-        throw new BadRequestException('Invalid file format for logo. Only JPG, JPEG, PNG, and WEBP allowed.');
-      }
-      if (logoFile.size > 5 * 1024 * 1024) {
-        throw new BadRequestException('Logo file size exceeds limit. Max 5MB allowed.');
-      }
-    }
-
+    validateLogoFile(logoFile);
     const logoPath = logoFile ? `/uploads/brands/${logoFile.filename}` : undefined;
     return this.brandsService.create(createDto, logoPath);
   }
 
   @Get()
-  @ApiOperation({ summary: 'List brands with pagination, search and sorting' })
-  @ApiResponse({ status: 200, description: 'Paginated brand details returned' })
+  @ApiOperation({ summary: 'List active brands with pagination, regex search (name & slug) and sorting' })
+  @ApiResponse({ status: 200, description: 'Paginated list of active brands returned' })
   async findAll(@Query() queryDto: QueryBrandDto) {
     return this.brandsService.findAll(queryDto);
   }
 
   @Get(':idOrSlug')
-  @ApiOperation({ summary: 'Get brand details by ID or Slug' })
+  @ApiOperation({ summary: 'Get active brand details by Mongo ObjectId or Slug' })
+  @ApiParam({ name: 'idOrSlug', description: '24-character Mongo ObjectId or string slug' })
   @ApiResponse({ status: 200, description: 'Brand details returned' })
   @ApiResponse({ status: 404, description: 'Brand not found' })
   async findOne(@Param('idOrSlug') idOrSlug: string) {
@@ -91,6 +107,7 @@ export class BrandsController {
   @UseInterceptors(FileInterceptor('logo'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update brand details (Admin only)' })
+  @ApiParam({ name: 'id', description: 'Brand Mongo ObjectId' })
   @ApiBody({
     schema: {
       type: 'object',
@@ -106,21 +123,16 @@ export class BrandsController {
     },
   })
   @ApiResponse({ status: 200, description: 'Brand updated successfully' })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
+  @ApiResponse({ status: 404, description: 'Brand not found' })
   async update(
     @Param('id') id: string,
     @Body() updateDto: UpdateBrandDto,
     @UploadedFile() logoFile?: Express.Multer.File,
   ) {
-    if (logoFile) {
-      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-      if (!allowedMimeTypes.includes(logoFile.mimetype)) {
-        throw new BadRequestException('Invalid file format for logo. Only JPG, JPEG, PNG, and WEBP allowed.');
-      }
-      if (logoFile.size > 5 * 1024 * 1024) {
-        throw new BadRequestException('Logo file size exceeds limit. Max 5MB allowed.');
-      }
-    }
-
+    validateLogoFile(logoFile);
     const logoPath = logoFile ? `/uploads/brands/${logoFile.filename}` : undefined;
     return this.brandsService.update(id, updateDto, logoPath);
   }
@@ -130,9 +142,14 @@ export class BrandsController {
   @Roles(Role.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Soft delete brand (Admin only)' })
+  @ApiOperation({ summary: 'Soft delete brand by setting isDeleted: true and status: false (Admin only)' })
+  @ApiParam({ name: 'id', description: 'Brand Mongo ObjectId' })
   @ApiResponse({ status: 204, description: 'Brand soft-deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
+  @ApiResponse({ status: 404, description: 'Brand not found' })
   async remove(@Param('id') id: string) {
     await this.brandsService.delete(id);
   }
 }
+

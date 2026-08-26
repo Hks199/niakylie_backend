@@ -34,17 +34,22 @@ let BrandsRepository = class BrandsRepository {
     async findBySlug(slug) {
         return this.brandModel.findOne({ slug, isDeleted: false }).exec();
     }
+    async findByIdOrSlug(idOrSlug) {
+        if (mongoose_2.Types.ObjectId.isValid(idOrSlug)) {
+            const brand = await this.brandModel
+                .findOne({ _id: new mongoose_2.Types.ObjectId(idOrSlug), isDeleted: false })
+                .exec();
+            if (brand)
+                return brand;
+        }
+        return this.brandModel.findOne({ slug: idOrSlug, isDeleted: false }).exec();
+    }
     async findAll(queryDto) {
-        const { page = 1, limit = 10, search, sortBy = 'createdAt', sortOrder = 'asc', status } = queryDto;
+        const { page = 1, limit = 10, search, sortBy = 'createdAt', sortOrder = 'desc' } = queryDto;
         const filter = { isDeleted: false };
         if (search) {
-            filter.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } },
-            ];
-        }
-        if (status !== undefined) {
-            filter.status = status;
+            const searchRegex = { $regex: search, $options: 'i' };
+            filter.$or = [{ name: searchRegex }, { slug: searchRegex }];
         }
         const sort = {};
         sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
@@ -66,7 +71,7 @@ let BrandsRepository = class BrandsRepository {
         if (!mongoose_2.Types.ObjectId.isValid(id))
             return null;
         return this.brandModel
-            .findOneAndUpdate({ _id: new mongoose_2.Types.ObjectId(id), isDeleted: false }, { $set: { isDeleted: true, deletedAt: new Date() } }, { new: true })
+            .findOneAndUpdate({ _id: new mongoose_2.Types.ObjectId(id), isDeleted: false }, { $set: { isDeleted: true, status: false, deletedAt: new Date() } }, { new: true })
             .exec();
     }
 };

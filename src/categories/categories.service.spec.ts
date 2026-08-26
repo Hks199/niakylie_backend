@@ -14,6 +14,7 @@ describe('CategoriesService', () => {
       create: jest.fn(),
       findById: jest.fn(),
       findBySlug: jest.fn(),
+      findByIdOrSlug: jest.fn(),
       findAll: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),
@@ -63,6 +64,37 @@ describe('CategoriesService', () => {
     });
   });
 
+  describe('findAll', () => {
+    it('should return paginated result with meta information', async () => {
+      repository.findAll.mockResolvedValue({ data: [{ name: 'Ethnic' }] as any, total: 15 });
+
+      const result = await service.findAll({ page: 1, limit: 10 });
+      expect(result).toEqual({
+        data: [{ name: 'Ethnic' }],
+        meta: {
+          total: 15,
+          page: 1,
+          limit: 10,
+          totalPages: 2,
+        },
+      });
+    });
+  });
+
+  describe('findByIdOrSlug', () => {
+    it('should throw NotFoundException if category not found', async () => {
+      repository.findByIdOrSlug.mockResolvedValue(null);
+      await expect(service.findByIdOrSlug('unknown')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should return category if found', async () => {
+      const mockCategory = { name: 'Ethnic', slug: 'ethnic' } as any;
+      repository.findByIdOrSlug.mockResolvedValue(mockCategory);
+      const result = await service.findByIdOrSlug('ethnic');
+      expect(result).toBe(mockCategory);
+    });
+  });
+
   describe('update', () => {
     it('should throw BadRequestException on cycle detection (parent is descendant of target)', async () => {
       const categoryId = 'target123';
@@ -98,3 +130,4 @@ describe('CategoriesService', () => {
     });
   });
 });
+

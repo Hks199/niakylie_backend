@@ -18,8 +18,7 @@ class QueryBrandDto {
     limit = 10;
     search;
     sortBy = 'createdAt';
-    sortOrder = 'asc';
-    status;
+    sortOrder = 'desc';
 }
 exports.QueryBrandDto = QueryBrandDto;
 __decorate([
@@ -31,25 +30,26 @@ __decorate([
     (0, class_validator_1.IsInt)(),
     (0, class_validator_1.Min)(1),
     (0, class_validator_1.IsOptional)(),
-    (0, class_transformer_1.Transform)(({ value }) => parseInt(value, 10)),
+    (0, class_transformer_1.Transform)(({ value }) => (value !== undefined ? parseInt(value, 10) : 1)),
     __metadata("design:type", Number)
 ], QueryBrandDto.prototype, "page", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: 'Limit size of paginated array list',
+        description: 'Limit size of paginated array list (max 100)',
         example: 10,
         default: 10,
     }),
     (0, class_validator_1.IsInt)(),
     (0, class_validator_1.Min)(1),
+    (0, class_validator_1.Max)(100),
     (0, class_validator_1.IsOptional)(),
-    (0, class_transformer_1.Transform)(({ value }) => parseInt(value, 10)),
+    (0, class_transformer_1.Transform)(({ value }) => (value !== undefined ? parseInt(value, 10) : 10)),
     __metadata("design:type", Number)
 ], QueryBrandDto.prototype, "limit", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
-        description: 'Keyword search (matches against brand name or description)',
-        example: 'Zara',
+        description: 'Keyword search (matches regex against brand name or slug)',
+        example: 'nike',
     }),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
@@ -58,7 +58,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: 'Field name to sort results by',
-        example: 'name',
+        example: 'createdAt',
         default: 'createdAt',
     }),
     (0, class_validator_1.IsString)(),
@@ -68,27 +68,12 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: 'Sorting direction (asc or desc)',
-        example: 'asc',
-        default: 'asc',
+        example: 'desc',
+        enum: ['asc', 'desc'],
+        default: 'desc',
     }),
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsIn)(['asc', 'desc']),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], QueryBrandDto.prototype, "sortOrder", void 0);
-__decorate([
-    (0, swagger_1.ApiPropertyOptional)({
-        description: 'Filter brands by active status flag',
-        example: true,
-    }),
-    (0, class_validator_1.IsBoolean)(),
-    (0, class_validator_1.IsOptional)(),
-    (0, class_transformer_1.Transform)(({ value }) => {
-        if (value === 'true')
-            return true;
-        if (value === 'false')
-            return false;
-        return value;
-    }),
-    __metadata("design:type", Boolean)
-], QueryBrandDto.prototype, "status", void 0);
 //# sourceMappingURL=query-brand.dto.js.map

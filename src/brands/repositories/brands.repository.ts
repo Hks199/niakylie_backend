@@ -24,19 +24,23 @@ export class BrandsRepository {
     return this.brandModel.findOne({ slug, isDeleted: false }).exec();
   }
 
+  async findByIdOrSlug(idOrSlug: string): Promise<BrandDocument | null> {
+    if (Types.ObjectId.isValid(idOrSlug)) {
+      const brand = await this.brandModel
+        .findOne({ _id: new Types.ObjectId(idOrSlug), isDeleted: false })
+        .exec();
+      if (brand) return brand;
+    }
+    return this.brandModel.findOne({ slug: idOrSlug, isDeleted: false }).exec();
+  }
+
   async findAll(queryDto: QueryBrandDto): Promise<{ data: BrandDocument[]; total: number }> {
-    const { page = 1, limit = 10, search, sortBy = 'createdAt', sortOrder = 'asc', status } = queryDto;
+    const { page = 1, limit = 10, search, sortBy = 'createdAt', sortOrder = 'desc' } = queryDto;
     const filter: Record<string, any> = { isDeleted: false };
 
     if (search) {
-      filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-      ];
-    }
-
-    if (status !== undefined) {
-      filter.status = status;
+      const searchRegex = { $regex: search, $options: 'i' };
+      filter.$or = [{ name: searchRegex }, { slug: searchRegex }];
     }
 
     const sort: Record<string, any> = {};
@@ -64,9 +68,10 @@ export class BrandsRepository {
     return this.brandModel
       .findOneAndUpdate(
         { _id: new Types.ObjectId(id), isDeleted: false },
-        { $set: { isDeleted: true, deletedAt: new Date() } },
+        { $set: { isDeleted: true, status: false, deletedAt: new Date() } },
         { new: true },
       )
       .exec();
   }
 }
+

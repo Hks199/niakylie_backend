@@ -60,9 +60,13 @@ exports.BrandsModule = BrandsModule = __decorate([
             platform_express_1.MulterModule.register({
                 storage: (0, multer_1.diskStorage)({
                     destination: (req, file, cb) => {
-                        const uploadPath = './public/uploads/brands';
+                        const uploadPath = './uploads/brands';
                         if (!fs.existsSync(uploadPath)) {
                             fs.mkdirSync(uploadPath, { recursive: true });
+                        }
+                        const publicUploadPath = './public/uploads/brands';
+                        if (!fs.existsSync(publicUploadPath)) {
+                            fs.mkdirSync(publicUploadPath, { recursive: true });
                         }
                         cb(null, uploadPath);
                     },

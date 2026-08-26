@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class QueryBrandDto {
@@ -11,23 +11,24 @@ export class QueryBrandDto {
   @IsInt()
   @Min(1)
   @IsOptional()
-  @Transform(({ value }) => parseInt(value, 10))
+  @Transform(({ value }) => (value !== undefined ? parseInt(value, 10) : 1))
   page?: number = 1;
 
   @ApiPropertyOptional({
-    description: 'Limit size of paginated array list',
+    description: 'Limit size of paginated array list (max 100)',
     example: 10,
     default: 10,
   })
   @IsInt()
   @Min(1)
+  @Max(100)
   @IsOptional()
-  @Transform(({ value }) => parseInt(value, 10))
+  @Transform(({ value }) => (value !== undefined ? parseInt(value, 10) : 10))
   limit?: number = 10;
 
   @ApiPropertyOptional({
-    description: 'Keyword search (matches against brand name or description)',
-    example: 'Zara',
+    description: 'Keyword search (matches regex against brand name or slug)',
+    example: 'nike',
   })
   @IsString()
   @IsOptional()
@@ -35,7 +36,7 @@ export class QueryBrandDto {
 
   @ApiPropertyOptional({
     description: 'Field name to sort results by',
-    example: 'name',
+    example: 'createdAt',
     default: 'createdAt',
   })
   @IsString()
@@ -44,23 +45,12 @@ export class QueryBrandDto {
 
   @ApiPropertyOptional({
     description: 'Sorting direction (asc or desc)',
-    example: 'asc',
-    default: 'asc',
+    example: 'desc',
+    enum: ['asc', 'desc'],
+    default: 'desc',
   })
-  @IsString()
+  @IsIn(['asc', 'desc'])
   @IsOptional()
-  sortOrder?: 'asc' | 'desc' = 'asc';
-
-  @ApiPropertyOptional({
-    description: 'Filter brands by active status flag',
-    example: true,
-  })
-  @IsBoolean()
-  @IsOptional()
-  @Transform(({ value }) => {
-    if (value === 'true') return true;
-    if (value === 'false') return false;
-    return value;
-  })
-  status?: boolean;
+  sortOrder?: 'asc' | 'desc' = 'desc';
 }
+

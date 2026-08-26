@@ -11,7 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BrandsService = void 0;
 const common_1 = require("@nestjs/common");
-const mongoose_1 = require("mongoose");
 const brands_repository_js_1 = require("./repositories/brands.repository.js");
 const generateSlug = (text) => {
     return text
@@ -30,7 +29,7 @@ let BrandsService = class BrandsService {
         const slug = generateSlug(name);
         const existing = await this.brandsRepository.findBySlug(slug);
         if (existing) {
-            throw new common_1.BadRequestException(`Brand with slug '${slug}' already exists`);
+            throw new common_1.BadRequestException(`Brand with name '${name}' or slug '${slug}' already exists`);
         }
         return this.brandsRepository.create({
             name,
@@ -40,12 +39,48 @@ let BrandsService = class BrandsService {
             seoTitle,
             seoDescription,
             seoKeywords: seoKeywords || [],
+            status: true,
+            isDeleted: false,
         });
+    }
+    async findAll(queryDto) {
+        const page = queryDto.page || 1;
+        const limit = queryDto.limit || 10;
+        const { data, total } = await this.brandsRepository.findAll(queryDto);
+        const totalPages = limit > 0 ? Math.ceil(total / limit) : 0;
+        return {
+            data,
+            total,
+            page,
+            limit,
+            totalPages,
+        };
+    }
+    async findByIdOrSlug(idOrSlug) {
+        const brand = await this.brandsRepository.findByIdOrSlug(idOrSlug);
+        if (!brand) {
+            throw new common_1.NotFoundException('Brand not found');
+        }
+        return brand;
+    }
+    async findById(id) {
+        const brand = await this.brandsRepository.findById(id);
+        if (!brand) {
+            throw new common_1.NotFoundException('Brand not found');
+        }
+        return brand;
+    }
+    async findBySlug(slug) {
+        const brand = await this.brandsRepository.findBySlug(slug);
+        if (!brand) {
+            throw new common_1.NotFoundException('Brand not found');
+        }
+        return brand;
     }
     async update(id, updateDto, logoPath) {
         const brand = await this.brandsRepository.findById(id);
         if (!brand) {
-            throw new common_1.NotFoundException(`Brand with ID ${id} not found`);
+            throw new common_1.NotFoundException('Brand not found');
         }
         const { name, description, seoTitle, seoDescription, seoKeywords, status } = updateDto;
         const updateData = {};
@@ -65,53 +100,23 @@ let BrandsService = class BrandsService {
             const newSlug = generateSlug(name);
             const existing = await this.brandsRepository.findBySlug(newSlug);
             if (existing && existing._id.toString() !== id) {
-                throw new common_1.BadRequestException(`Brand with slug '${newSlug}' already exists`);
+                throw new common_1.BadRequestException(`Brand with name '${name}' or slug '${newSlug}' already exists`);
             }
             updateData.name = name;
             updateData.slug = newSlug;
         }
         const updatedBrand = await this.brandsRepository.update(id, { $set: updateData });
         if (!updatedBrand) {
-            throw new common_1.NotFoundException(`Brand with ID ${id} not found`);
+            throw new common_1.NotFoundException('Brand not found');
         }
         return updatedBrand;
     }
     async delete(id) {
         const brand = await this.brandsRepository.findById(id);
         if (!brand) {
-            throw new common_1.NotFoundException(`Brand with ID ${id} not found`);
+            throw new common_1.NotFoundException('Brand not found');
         }
         await this.brandsRepository.softDelete(id);
-    }
-    async findById(id) {
-        const brand = await this.brandsRepository.findById(id);
-        if (!brand) {
-            throw new common_1.NotFoundException(`Brand with ID ${id} not found`);
-        }
-        return brand;
-    }
-    async findBySlug(slug) {
-        const brand = await this.brandsRepository.findBySlug(slug);
-        if (!brand) {
-            throw new common_1.NotFoundException(`Brand with slug '${slug}' not found`);
-        }
-        return brand;
-    }
-    async findByIdOrSlug(idOrSlug) {
-        let brand = null;
-        if (mongoose_1.Types.ObjectId.isValid(idOrSlug)) {
-            brand = await this.brandsRepository.findById(idOrSlug);
-        }
-        if (!brand) {
-            brand = await this.brandsRepository.findBySlug(idOrSlug);
-        }
-        if (!brand) {
-            throw new common_1.NotFoundException(`Brand with identifier '${idOrSlug}' not found`);
-        }
-        return brand;
-    }
-    async findAll(queryDto) {
-        return this.brandsRepository.findAll(queryDto);
     }
 };
 exports.BrandsService = BrandsService;

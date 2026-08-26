@@ -51,7 +51,7 @@ let Category = class Category {
 };
 exports.Category = Category;
 __decorate([
-    (0, mongoose_1.Prop)({ required: true, trim: true }),
+    (0, mongoose_1.Prop)({ required: true, trim: true, unique: true }),
     __metadata("design:type", String)
 ], Category.prototype, "name", void 0);
 __decorate([
@@ -71,11 +71,11 @@ __decorate([
     __metadata("design:type", String)
 ], Category.prototype, "description", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
+    (0, mongoose_1.Prop)({ trim: true }),
     __metadata("design:type", String)
 ], Category.prototype, "image", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
+    (0, mongoose_1.Prop)({ trim: true }),
     __metadata("design:type", String)
 ], Category.prototype, "banner", void 0);
 __decorate([
@@ -109,5 +109,5 @@ exports.CategorySchema = mongoose_1.SchemaFactory.createForClass(Category);
 exports.CategorySchema.index({ slug: 1 });
 exports.CategorySchema.index({ parentId: 1 });
 exports.CategorySchema.index({ 'ancestors._id': 1 });
-exports.CategorySchema.index({ name: 'text', description: 'text' });
+exports.CategorySchema.index({ name: 'text', slug: 'text', description: 'text' });
 //# sourceMappingURL=category.schema.js.map

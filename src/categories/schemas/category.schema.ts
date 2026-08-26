@@ -19,7 +19,7 @@ const CategoryAncestorSchema = SchemaFactory.createForClass(CategoryAncestor);
 
 @Schema({ timestamps: true })
 export class Category {
-  @Prop({ required: true, trim: true })
+  @Prop({ required: true, trim: true, unique: true })
   name!: string;
 
   @Prop({ required: true, unique: true, trim: true, index: true })
@@ -34,10 +34,10 @@ export class Category {
   @Prop({ trim: true })
   description?: string;
 
-  @Prop()
+  @Prop({ trim: true })
   image?: string;
 
-  @Prop()
+  @Prop({ trim: true })
   banner?: string;
 
   @Prop({ default: true })
@@ -50,13 +50,13 @@ export class Category {
   seoDescription?: string;
 
   @Prop({ type: [String], default: [] })
-  seoKeywords!: string[];
+  seoKeywords?: string[];
 
   @Prop({ default: false, index: true })
   isDeleted!: boolean;
 
   @Prop({ type: Date, default: null })
-  deletedAt!: Date | null;
+  deletedAt?: Date | null;
 }
 
 export const CategorySchema = SchemaFactory.createForClass(Category);
@@ -65,4 +65,5 @@ export const CategorySchema = SchemaFactory.createForClass(Category);
 CategorySchema.index({ slug: 1 });
 CategorySchema.index({ parentId: 1 });
 CategorySchema.index({ 'ancestors._id': 1 });
-CategorySchema.index({ name: 'text', description: 'text' });
+CategorySchema.index({ name: 'text', slug: 'text', description: 'text' });
+

@@ -24,18 +24,27 @@ export class CategoriesRepository {
     return this.categoryModel.findOne({ slug, isDeleted: false }).exec();
   }
 
+  async findByIdOrSlug(idOrSlug: string): Promise<CategoryDocument | null> {
+    if (Types.ObjectId.isValid(idOrSlug)) {
+      const byId = await this.categoryModel.findOne({ _id: new Types.ObjectId(idOrSlug), isDeleted: false }).exec();
+      if (byId) return byId;
+    }
+    return this.categoryModel.findOne({ slug: idOrSlug, isDeleted: false }).exec();
+  }
+
   async findAll(queryDto: QueryCategoryDto): Promise<{ data: CategoryDocument[]; total: number }> {
-    const { page = 1, limit = 10, search, sortBy = 'createdAt', sortOrder = 'asc', parentId, status } = queryDto;
+    const { page = 1, limit = 10, search, sort, sortBy, sortOrder, parentId, status } = queryDto;
     const filter: Record<string, any> = { isDeleted: false };
 
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
+        { slug: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } },
       ];
     }
 
-    if (parentId !== undefined) {
+    if (parentId !== undefined && parentId !== '') {
       if (parentId === 'null') {
         filter.parentId = null;
       } else if (Types.ObjectId.isValid(parentId)) {
@@ -47,13 +56,21 @@ export class CategoriesRepository {
       filter.status = status;
     }
 
-    const sort: Record<string, any> = {};
-    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    const sortOption: Record<string, any> = {};
+    if (sort) {
+      const isDesc = sort.startsWith('-');
+      const field = isDesc ? sort.substring(1) : sort;
+      sortOption[field] = isDesc ? -1 : 1;
+    } else if (sortBy) {
+      sortOption[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    } else {
+      sortOption.createdAt = -1;
+    }
 
     const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([
-      this.categoryModel.find(filter).sort(sort).skip(skip).limit(limit).exec(),
+      this.categoryModel.find(filter).sort(sortOption).skip(skip).limit(limit).exec(),
       this.categoryModel.countDocuments(filter).exec(),
     ]);
 
@@ -72,7 +89,7 @@ export class CategoriesRepository {
     return this.categoryModel
       .findOneAndUpdate(
         { _id: new Types.ObjectId(id), isDeleted: false },
-        { $set: { isDeleted: true, deletedAt: new Date() } },
+        { $set: { isDeleted: true, status: false, deletedAt: new Date() } },
         { new: true },
       )
       .exec();
@@ -97,8 +114,9 @@ export class CategoriesRepository {
     await this.categoryModel
       .updateMany(
         { 'ancestors._id': new Types.ObjectId(categoryId), isDeleted: false },
-        { $set: { isDeleted: true, deletedAt: new Date() } },
+        { $set: { isDeleted: true, status: false, deletedAt: new Date() } },
       )
       .exec();
   }
 }
+

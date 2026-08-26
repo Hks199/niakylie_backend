@@ -40,7 +40,7 @@ let CategoriesService = class CategoriesService {
         }
         let ancestors = [];
         let parentObjectId = null;
-        if (parentId) {
+        if (parentId && parentId !== 'null' && parentId.trim() !== '') {
             const parent = await this.categoriesRepository.findById(parentId);
             if (!parent) {
                 throw new common_1.NotFoundException(`Parent category with ID ${parentId} not found`);
@@ -99,7 +99,7 @@ let CategoriesService = class CategoriesService {
         }
         if (parentId !== undefined && String(parentId) !== String(category.parentId)) {
             parentChanged = true;
-            if (parentId === null) {
+            if (parentId === null || parentId === 'null' || parentId.trim() === '') {
                 updateData.parentId = null;
                 updateData.ancestors = [];
             }
@@ -154,29 +154,45 @@ let CategoriesService = class CategoriesService {
         return category;
     }
     async findByIdOrSlug(idOrSlug) {
-        let category = null;
-        if (mongoose_1.Types.ObjectId.isValid(idOrSlug)) {
-            category = await this.categoriesRepository.findById(idOrSlug);
-        }
-        if (!category) {
-            category = await this.categoriesRepository.findBySlug(idOrSlug);
-        }
+        const category = await this.categoriesRepository.findByIdOrSlug(idOrSlug);
         if (!category) {
             throw new common_1.NotFoundException(`Category with identifier '${idOrSlug}' not found`);
         }
         return category;
     }
     async findAll(queryDto) {
+        const page = queryDto.page || 1;
+        const limit = queryDto.limit || 10;
         if (this.cacheService) {
             const cacheKey = `categories:list:${JSON.stringify(queryDto)}`;
             const cached = await this.cacheService.get(cacheKey);
             if (cached)
                 return cached;
-            const result = await this.categoriesRepository.findAll(queryDto);
+            const { data, total } = await this.categoriesRepository.findAll(queryDto);
+            const totalPages = Math.ceil(total / limit) || 1;
+            const result = {
+                data,
+                meta: {
+                    total,
+                    page,
+                    limit,
+                    totalPages,
+                },
+            };
             await this.cacheService.set(cacheKey, result, 600000);
             return result;
         }
-        return this.categoriesRepository.findAll(queryDto);
+        const { data, total } = await this.categoriesRepository.findAll(queryDto);
+        const totalPages = Math.ceil(total / limit) || 1;
+        return {
+            data,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages,
+            },
+        };
     }
     async updateDescendantsAncestors(parentId, parentAncestors, parentName, parentSlug) {
         const children = await this.categoriesRepository.findDirectChildren(parentId);

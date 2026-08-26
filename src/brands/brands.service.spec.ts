@@ -13,6 +13,7 @@ describe('BrandsService', () => {
       create: jest.fn(),
       findById: jest.fn(),
       findBySlug: jest.fn(),
+      findByIdOrSlug: jest.fn(),
       findAll: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),
@@ -59,6 +60,21 @@ describe('BrandsService', () => {
     });
   });
 
+  describe('findAll', () => {
+    it('should calculate totalPages and return paginated result structure', async () => {
+      repository.findAll.mockResolvedValue({ data: [{ name: 'Zara' }] as any, total: 25 });
+
+      const result = await service.findAll({ page: 1, limit: 10 });
+      expect(result).toEqual({
+        data: [{ name: 'Zara' }],
+        total: 25,
+        page: 1,
+        limit: 10,
+        totalPages: 3,
+      });
+    });
+  });
+
   describe('update', () => {
     it('should throw NotFoundException if brand not found', async () => {
       repository.findById.mockResolvedValue(null);
@@ -100,19 +116,18 @@ describe('BrandsService', () => {
 
   describe('findByIdOrSlug', () => {
     it('should throw NotFoundException if not found by id or slug', async () => {
-      repository.findById.mockResolvedValue(null);
-      repository.findBySlug.mockResolvedValue(null);
+      repository.findByIdOrSlug.mockResolvedValue(null);
 
       await expect(service.findByIdOrSlug('nonexistent')).rejects.toThrow(NotFoundException);
     });
 
-    it('should return brand found by slug', async () => {
+    it('should return brand found by id or slug', async () => {
       const mockBrand = { name: 'Zara', slug: 'zara' } as any;
-      repository.findById.mockResolvedValue(null);
-      repository.findBySlug.mockResolvedValue(mockBrand);
+      repository.findByIdOrSlug.mockResolvedValue(mockBrand);
 
       const result = await service.findByIdOrSlug('zara');
       expect(result).toBe(mockBrand);
     });
   });
 });
+

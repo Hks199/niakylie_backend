@@ -16,16 +16,16 @@ let Brand = class Brand {
     slug;
     logo;
     description;
-    status;
     seoTitle;
     seoDescription;
     seoKeywords;
+    status;
     isDeleted;
     deletedAt;
 };
 exports.Brand = Brand;
 __decorate([
-    (0, mongoose_1.Prop)({ required: true, trim: true }),
+    (0, mongoose_1.Prop)({ required: true, trim: true, unique: true }),
     __metadata("design:type", String)
 ], Brand.prototype, "name", void 0);
 __decorate([
@@ -33,29 +33,29 @@ __decorate([
     __metadata("design:type", String)
 ], Brand.prototype, "slug", void 0);
 __decorate([
-    (0, mongoose_1.Prop)(),
+    (0, mongoose_1.Prop)({ required: false, trim: true }),
     __metadata("design:type", String)
 ], Brand.prototype, "logo", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true }),
+    (0, mongoose_1.Prop)({ required: false, trim: true }),
     __metadata("design:type", String)
 ], Brand.prototype, "description", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ default: true }),
-    __metadata("design:type", Boolean)
-], Brand.prototype, "status", void 0);
-__decorate([
-    (0, mongoose_1.Prop)({ trim: true }),
+    (0, mongoose_1.Prop)({ required: false, trim: true }),
     __metadata("design:type", String)
 ], Brand.prototype, "seoTitle", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ trim: true }),
+    (0, mongoose_1.Prop)({ required: false, trim: true }),
     __metadata("design:type", String)
 ], Brand.prototype, "seoDescription", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ type: [String], default: [] }),
     __metadata("design:type", Array)
 ], Brand.prototype, "seoKeywords", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: true }),
+    __metadata("design:type", Boolean)
+], Brand.prototype, "status", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ default: false, index: true }),
     __metadata("design:type", Boolean)
@@ -69,5 +69,5 @@ exports.Brand = Brand = __decorate([
 ], Brand);
 exports.BrandSchema = mongoose_1.SchemaFactory.createForClass(Brand);
 exports.BrandSchema.index({ slug: 1 });
-exports.BrandSchema.index({ name: 'text', description: 'text' });
+exports.BrandSchema.index({ name: 'text', slug: 'text', description: 'text' });
 //# sourceMappingURL=brand.schema.js.map

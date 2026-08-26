@@ -60,9 +60,13 @@ exports.CategoriesModule = CategoriesModule = __decorate([
             platform_express_1.MulterModule.register({
                 storage: (0, multer_1.diskStorage)({
                     destination: (req, file, cb) => {
-                        const uploadPath = './public/uploads/categories';
+                        const uploadPath = './uploads/categories';
                         if (!fs.existsSync(uploadPath)) {
                             fs.mkdirSync(uploadPath, { recursive: true });
+                        }
+                        const publicUploadPath = './public/uploads/categories';
+                        if (!fs.existsSync(publicUploadPath)) {
+                            fs.mkdirSync(publicUploadPath, { recursive: true });
                         }
                         cb(null, uploadPath);
                     },

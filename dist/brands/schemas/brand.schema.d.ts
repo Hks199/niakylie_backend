@@ -5,12 +5,12 @@ export declare class Brand {
     slug: string;
     logo?: string;
     description?: string;
-    status: boolean;
     seoTitle?: string;
     seoDescription?: string;
-    seoKeywords: string[];
+    seoKeywords?: string[];
+    status: boolean;
     isDeleted: boolean;
-    deletedAt: Date | null;
+    deletedAt?: Date | null;
 }
 export declare const BrandSchema: import("mongoose").Schema<Brand, import("mongoose").Model<Brand, any, any, any, any, any, Brand>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Brand, Document<unknown, {}, Brand, {
     id: string;
@@ -57,15 +57,6 @@ export declare const BrandSchema: import("mongoose").Schema<Brand, import("mongo
     }, "id"> & import("mongoose").HydratedDocumentOverrides<{
         id: string;
     }>> | undefined;
-    status?: import("mongoose").SchemaDefinitionProperty<boolean, Brand, Document<unknown, {}, Brand, {
-        id: string;
-    }, import("mongoose").DefaultSchemaOptions> & Omit<Brand & {
-        _id: import("mongoose").Types.ObjectId;
-    } & {
-        __v: number;
-    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
-        id: string;
-    }>> | undefined;
     seoTitle?: import("mongoose").SchemaDefinitionProperty<string | undefined, Brand, Document<unknown, {}, Brand, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<Brand & {
@@ -84,7 +75,16 @@ export declare const BrandSchema: import("mongoose").Schema<Brand, import("mongo
     }, "id"> & import("mongoose").HydratedDocumentOverrides<{
         id: string;
     }>> | undefined;
-    seoKeywords?: import("mongoose").SchemaDefinitionProperty<string[], Brand, Document<unknown, {}, Brand, {
+    seoKeywords?: import("mongoose").SchemaDefinitionProperty<string[] | undefined, Brand, Document<unknown, {}, Brand, {
+        id: string;
+    }, import("mongoose").DefaultSchemaOptions> & Omit<Brand & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
+        id: string;
+    }>> | undefined;
+    status?: import("mongoose").SchemaDefinitionProperty<boolean, Brand, Document<unknown, {}, Brand, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<Brand & {
         _id: import("mongoose").Types.ObjectId;
@@ -102,7 +102,7 @@ export declare const BrandSchema: import("mongoose").Schema<Brand, import("mongo
     }, "id"> & import("mongoose").HydratedDocumentOverrides<{
         id: string;
     }>> | undefined;
-    deletedAt?: import("mongoose").SchemaDefinitionProperty<Date | null, Brand, Document<unknown, {}, Brand, {
+    deletedAt?: import("mongoose").SchemaDefinitionProperty<Date | null | undefined, Brand, Document<unknown, {}, Brand, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<Brand & {
         _id: import("mongoose").Types.ObjectId;

@@ -1,10 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateBrandDto {
   @ApiProperty({
     description: 'Brand name',
-    example: 'Zara',
+    example: 'Nike',
   })
   @IsString()
   @IsNotEmpty({ message: 'Name is required' })
@@ -12,7 +13,7 @@ export class CreateBrandDto {
 
   @ApiPropertyOptional({
     description: 'Detailed description of the brand profile',
-    example: 'Global fast-fashion store featuring high-end women clothing collections',
+    example: 'Leading global athletic footwear and apparel brand',
   })
   @IsString()
   @IsOptional()
@@ -20,7 +21,7 @@ export class CreateBrandDto {
 
   @ApiPropertyOptional({
     description: 'SEO Optimized page title',
-    example: 'Shop Women Zara Clothing Online - NiaKylie',
+    example: 'Shop Nike Shoes & Apparel Online - NiaKylie',
   })
   @IsString()
   @IsOptional()
@@ -28,7 +29,7 @@ export class CreateBrandDto {
 
   @ApiPropertyOptional({
     description: 'SEO Meta description tag content',
-    example: 'Buy Zara women clothing at great discounts. Exclusive dresses, outerwear and accessories.',
+    example: 'Explore exclusive Nike collection at best prices.',
   })
   @IsString()
   @IsOptional()
@@ -36,10 +37,23 @@ export class CreateBrandDto {
 
   @ApiPropertyOptional({
     description: 'SEO Meta keywords list',
-    example: ['zara', 'fast-fashion', 'women clothing', 'dresses'],
+    example: ['nike', 'shoes', 'sportswear', 'apparel'],
+    type: [String],
+  })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {
+        return value.split(',').map((item: string) => item.trim()).filter(Boolean);
+      }
+    }
+    return value;
   })
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
   seoKeywords?: string[];
 }
+

@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateBrandDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 const create_brand_dto_js_1 = require("./create-brand.dto.js");
 class UpdateBrandDto extends (0, swagger_1.PartialType)(create_brand_dto_js_1.CreateBrandDto) {
     status;
@@ -21,6 +22,13 @@ __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: 'Active status of the brand',
         example: true,
+    }),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        if (value === 'true' || value === true)
+            return true;
+        if (value === 'false' || value === false)
+            return false;
+        return value;
     }),
     (0, class_validator_1.IsBoolean)(),
     (0, class_validator_1.IsOptional)(),

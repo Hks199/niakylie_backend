@@ -7,6 +7,7 @@ export declare class CategoriesRepository {
     create(categoryData: Partial<Category>): Promise<CategoryDocument>;
     findById(id: string): Promise<CategoryDocument | null>;
     findBySlug(slug: string): Promise<CategoryDocument | null>;
+    findByIdOrSlug(idOrSlug: string): Promise<CategoryDocument | null>;
     findAll(queryDto: QueryCategoryDto): Promise<{
         data: CategoryDocument[];
         total: number;

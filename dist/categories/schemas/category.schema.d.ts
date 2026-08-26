@@ -16,9 +16,9 @@ export declare class Category {
     status: boolean;
     seoTitle?: string;
     seoDescription?: string;
-    seoKeywords: string[];
+    seoKeywords?: string[];
     isDeleted: boolean;
-    deletedAt: Date | null;
+    deletedAt?: Date | null;
 }
 export declare const CategorySchema: MongooseSchema<Category, import("mongoose").Model<Category, any, any, any, any, any, Category>, {}, {}, {}, {}, import("mongoose").DefaultSchemaOptions, Category, Document<unknown, {}, Category, {
     id: string;
@@ -119,7 +119,7 @@ export declare const CategorySchema: MongooseSchema<Category, import("mongoose")
     }, "id"> & import("mongoose").HydratedDocumentOverrides<{
         id: string;
     }>> | undefined;
-    seoKeywords?: import("mongoose").SchemaDefinitionProperty<string[], Category, Document<unknown, {}, Category, {
+    seoKeywords?: import("mongoose").SchemaDefinitionProperty<string[] | undefined, Category, Document<unknown, {}, Category, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<Category & {
         _id: Types.ObjectId;
@@ -137,7 +137,7 @@ export declare const CategorySchema: MongooseSchema<Category, import("mongoose")
     }, "id"> & import("mongoose").HydratedDocumentOverrides<{
         id: string;
     }>> | undefined;
-    deletedAt?: import("mongoose").SchemaDefinitionProperty<Date | null, Category, Document<unknown, {}, Category, {
+    deletedAt?: import("mongoose").SchemaDefinitionProperty<Date | null | undefined, Category, Document<unknown, {}, Category, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<Category & {
         _id: Types.ObjectId;

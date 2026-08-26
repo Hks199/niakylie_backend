@@ -4,5 +4,4 @@ export declare class QueryBrandDto {
     search?: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
-    status?: boolean;
 }

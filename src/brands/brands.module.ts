@@ -16,9 +16,14 @@ import { BrandsController } from './brands.controller.js';
     MulterModule.register({
       storage: diskStorage({
         destination: (req: any, file: any, cb: any) => {
-          const uploadPath = './public/uploads/brands';
+          const uploadPath = './uploads/brands';
           if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true });
+          }
+          // Also create public/uploads/brands for static file fallback
+          const publicUploadPath = './public/uploads/brands';
+          if (!fs.existsSync(publicUploadPath)) {
+            fs.mkdirSync(publicUploadPath, { recursive: true });
           }
           cb(null, uploadPath);
         },
@@ -34,3 +39,4 @@ import { BrandsController } from './brands.controller.js';
   exports: [BrandsService, BrandsRepository],
 })
 export class BrandsModule {}
+
