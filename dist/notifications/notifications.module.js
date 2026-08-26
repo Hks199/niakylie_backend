@@ -1,0 +1,38 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.NotificationsModule = void 0;
+const common_1 = require("@nestjs/common");
+const mongoose_1 = require("@nestjs/mongoose");
+const notification_schema_js_1 = require("./schemas/notification.schema.js");
+const notifications_repository_js_1 = require("./repositories/notifications.repository.js");
+const notifications_service_js_1 = require("./notifications.service.js");
+const notifications_controller_js_1 = require("./notifications.controller.js");
+const email_provider_js_1 = require("./providers/email.provider.js");
+const sms_provider_js_1 = require("./providers/sms.provider.js");
+const users_module_js_1 = require("../users/users.module.js");
+let NotificationsModule = class NotificationsModule {
+};
+exports.NotificationsModule = NotificationsModule;
+exports.NotificationsModule = NotificationsModule = __decorate([
+    (0, common_1.Module)({
+        imports: [
+            mongoose_1.MongooseModule.forFeature([{ name: notification_schema_js_1.Notification.name, schema: notification_schema_js_1.NotificationSchema }]),
+            users_module_js_1.UsersModule,
+        ],
+        controllers: [notifications_controller_js_1.NotificationsController],
+        providers: [
+            notifications_service_js_1.NotificationsService,
+            notifications_repository_js_1.NotificationsRepository,
+            email_provider_js_1.EmailProvider,
+            sms_provider_js_1.SmsProvider,
+        ],
+        exports: [notifications_service_js_1.NotificationsService, email_provider_js_1.EmailProvider, sms_provider_js_1.SmsProvider],
+    })
+], NotificationsModule);
+//# sourceMappingURL=notifications.module.js.map

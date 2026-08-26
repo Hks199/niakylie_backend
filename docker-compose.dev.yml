@@ -1,0 +1,38 @@
+# Docker Compose for LOCAL DEVELOPMENT only
+# Starts only MongoDB + Redis.
+# Run your NestJS app separately with: npm run start:dev
+
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: niakylie_mongo_dev
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_dev_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: niakylie_redis_dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongo_dev_data:
+  redis_dev_data:

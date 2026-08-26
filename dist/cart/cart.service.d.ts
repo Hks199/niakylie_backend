@@ -1,0 +1,29 @@
+import { CartRepository } from './repositories/cart.repository.js';
+import { ProductsRepository } from '../products/repositories/products.repository.js';
+import { InventoryRepository } from '../inventory/repositories/inventory.repository.js';
+import { UsersRepository } from '../users/repositories/users.repository.js';
+import { CouponsService } from '../coupons/coupons.service.js';
+import { AddToCartDto } from './dto/add-to-cart.dto.js';
+import { UpdateCartItemDto } from './dto/update-cart-item.dto.js';
+import { MergeCartDto } from './dto/merge-cart.dto.js';
+import { ApplyCouponDto } from './dto/apply-coupon.dto.js';
+import { CartDocument } from './schemas/cart.schema.js';
+export declare class CartService {
+    private readonly cartRepository;
+    private readonly productsRepository;
+    private readonly inventoryRepository;
+    private readonly usersRepository;
+    private readonly couponsService?;
+    constructor(cartRepository: CartRepository, productsRepository: ProductsRepository, inventoryRepository: InventoryRepository, usersRepository: UsersRepository, couponsService?: CouponsService | undefined);
+    private recalculateCart;
+    getCart(userId?: string, guestId?: string): Promise<CartDocument>;
+    addToCart(dto: AddToCartDto, userId?: string): Promise<CartDocument>;
+    updateItemQuantity(sku: string, dto: UpdateCartItemDto, userId?: string): Promise<CartDocument>;
+    removeItem(sku: string, userId?: string, guestId?: string): Promise<CartDocument>;
+    mergeGuestCart(dto: MergeCartDto, userId: string): Promise<CartDocument>;
+    toggleSaveForLater(sku: string, userId?: string, guestId?: string): Promise<CartDocument>;
+    moveToWishlist(sku: string, userId: string): Promise<CartDocument>;
+    applyCoupon(dto: ApplyCouponDto, userId?: string): Promise<CartDocument>;
+    removeCoupon(userId?: string, guestId?: string): Promise<CartDocument>;
+    clearCart(userId?: string, guestId?: string): Promise<CartDocument>;
+}

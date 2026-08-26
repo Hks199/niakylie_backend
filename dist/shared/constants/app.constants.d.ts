@@ -1,0 +1,13 @@
+export declare const DEFAULT_PAGE = 1;
+export declare const DEFAULT_LIMIT = 10;
+export declare const MAX_LIMIT = 100;
+export declare const DEFAULT_SORT_FIELD = "createdAt";
+export declare const DEFAULT_SORT_ORDER = "desc";
+export declare const MAX_FILE_SIZE: number;
+export declare const MAX_FILES_COUNT = 10;
+export declare const ALLOWED_IMAGE_MIMES: string[];
+export declare const ALLOWED_VIDEO_MIMES: string[];
+export declare const PASSWORD_MIN_LENGTH = 8;
+export declare const PASSWORD_MAX_LENGTH = 128;
+export declare const BCRYPT_SALT_ROUNDS = 12;
+export declare const REQUEST_TIMEOUT_MS = 30000;
