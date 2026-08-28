@@ -52,6 +52,9 @@ export class Category {
   @Prop({ type: [String], default: [] })
   seoKeywords?: string[];
 
+  @Prop({ default: 0 })
+  displayOrder!: number;
+
   @Prop({ default: false, index: true })
   isDeleted!: boolean;
 

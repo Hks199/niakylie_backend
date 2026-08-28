@@ -114,8 +114,20 @@ let CategoriesRepository = class CategoriesRepository {
         if (!mongoose_2.Types.ObjectId.isValid(categoryId))
             return;
         await this.categoryModel
-            .updateMany({ 'ancestors._id': new mongoose_2.Types.ObjectId(categoryId), isDeleted: false }, { $set: { isDeleted: true, status: false, deletedAt: new Date() } })
+            .updateMany({
+            $or: [
+                { parentId: new mongoose_2.Types.ObjectId(categoryId) },
+                { 'ancestors._id': new mongoose_2.Types.ObjectId(categoryId) },
+            ],
+            isDeleted: false,
+        }, { $set: { isDeleted: true, status: false, deletedAt: new Date() } })
             .exec();
+    }
+    async findRootCategories() {
+        return this.categoryModel.find({ parentId: null, isDeleted: false }).sort({ displayOrder: 1, createdAt: -1 }).exec();
+    }
+    async findAllSubCategories() {
+        return this.categoryModel.find({ parentId: { $ne: null }, isDeleted: false }).sort({ displayOrder: 1, createdAt: -1 }).exec();
     }
 };
 exports.CategoriesRepository = CategoriesRepository;

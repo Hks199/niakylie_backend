@@ -11,7 +11,11 @@ describe('CategoriesController', () => {
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      softDelete: jest.fn(),
       findByIdOrSlug: jest.fn(),
+      findOne: jest.fn(),
+      getCategoryTree: jest.fn(),
+      toggleActive: jest.fn(),
       findAll: jest.fn(),
     };
 
@@ -30,7 +34,7 @@ describe('CategoriesController', () => {
 
   describe('findAll', () => {
     it('should delegate list retrieval to categoriesService', async () => {
-      const mockResult = { data: [], total: 0 };
+      const mockResult = { data: [], total: 0 } as any;
       service.findAll.mockResolvedValue(mockResult);
 
       const query = { page: 1, limit: 10 };
@@ -44,10 +48,10 @@ describe('CategoriesController', () => {
   describe('findOne', () => {
     it('should fetch category details by slug/id', async () => {
       const mockCategory = { name: 'Ethnic', slug: 'ethnic' } as any;
-      service.findByIdOrSlug.mockResolvedValue(mockCategory);
+      service.findOne.mockResolvedValue(mockCategory);
 
       const result = await controller.findOne('ethnic');
-      expect(service.findByIdOrSlug).toHaveBeenCalledWith('ethnic');
+      expect(service.findOne).toHaveBeenCalledWith('ethnic');
       expect(result).toBe(mockCategory);
     });
   });

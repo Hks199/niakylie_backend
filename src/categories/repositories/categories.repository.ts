@@ -113,10 +113,24 @@ export class CategoriesRepository {
     if (!Types.ObjectId.isValid(categoryId)) return;
     await this.categoryModel
       .updateMany(
-        { 'ancestors._id': new Types.ObjectId(categoryId), isDeleted: false },
+        {
+          $or: [
+            { parentId: new Types.ObjectId(categoryId) },
+            { 'ancestors._id': new Types.ObjectId(categoryId) },
+          ],
+          isDeleted: false,
+        },
         { $set: { isDeleted: true, status: false, deletedAt: new Date() } },
       )
       .exec();
+  }
+
+  async findRootCategories(): Promise<CategoryDocument[]> {
+    return this.categoryModel.find({ parentId: null, isDeleted: false }).sort({ displayOrder: 1, createdAt: -1 }).exec();
+  }
+
+  async findAllSubCategories(): Promise<CategoryDocument[]> {
+    return this.categoryModel.find({ parentId: { $ne: null }, isDeleted: false }).sort({ displayOrder: 1, createdAt: -1 }).exec();
   }
 }
 

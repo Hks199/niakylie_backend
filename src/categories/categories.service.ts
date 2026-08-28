@@ -27,19 +27,19 @@ export class CategoriesService {
     imagePath?: string,
     bannerPath?: string,
   ): Promise<CategoryDocument> {
-    const { name, parentId, description, seoTitle, seoDescription, seoKeywords } = createDto;
-    const slug = generateSlug(name);
+    const { name, slug: providedSlug, parentId, description, displayOrder, status, seoTitle, seoDescription, seoKeywords } = createDto;
+    const slug = generateSlug(providedSlug || name);
 
     // Check duplicate slug
     const existing = await this.categoriesRepository.findBySlug(slug);
     if (existing) {
-      throw new BadRequestException(`Category with slug '${slug}' already exists`);
+      throw new BadRequestException('Category slug already exists');
     }
 
     let ancestors: any[] = [];
     let parentObjectId: Types.ObjectId | null = null;
 
-    if (parentId && parentId !== 'null' && parentId.trim() !== '') {
+    if (parentId && parentId !== 'null' && String(parentId).trim() !== '') {
       const parent = await this.categoriesRepository.findById(parentId);
       if (!parent) {
         throw new NotFoundException(`Parent category with ID ${parentId} not found`);
@@ -51,18 +51,119 @@ export class CategoriesService {
       ];
     }
 
-    return this.categoriesRepository.create({
+    const created = await this.categoriesRepository.create({
       name,
       slug,
       parentId: parentObjectId,
       ancestors,
-      description,
-      image: imagePath,
-      banner: bannerPath,
-      seoTitle,
-      seoDescription,
+      description: description || '',
+      displayOrder: displayOrder ?? 0,
+      status: status !== undefined ? status : true,
+      image: imagePath || '',
+      banner: bannerPath || '',
+      seoTitle: seoTitle || '',
+      seoDescription: seoDescription || '',
       seoKeywords: seoKeywords || [],
     });
+
+    if (this.cacheService) {
+      await this.cacheService.reset();
+    }
+
+    return created;
+  }
+
+  async getCategoryTree() {
+    if (this.cacheService) {
+      const cached = await this.cacheService.get<any>('categories:tree');
+      if (cached) return cached;
+    }
+
+    const roots = await this.categoriesRepository.findRootCategories();
+    const allSubs = await this.categoriesRepository.findAllSubCategories();
+
+    const tree = roots.map((root) => {
+      const rootIdStr = root._id.toString();
+      const children = allSubs.filter((sub) => {
+        const pId = typeof sub.parentId === 'object' && sub.parentId ? ((sub.parentId as any)._id || (sub.parentId as any).id) : sub.parentId;
+        return String(pId) === rootIdStr;
+      });
+      return {
+        ...root.toObject(),
+        subCategories: children,
+      };
+    });
+
+    if (this.cacheService) {
+      await this.cacheService.set('categories:tree', tree, 600000);
+    }
+
+    return tree;
+  }
+
+  async findOne(idOrSlug: string): Promise<CategoryDocument> {
+    const category = await this.categoriesRepository.findByIdOrSlug(idOrSlug);
+    if (!category) {
+      throw new NotFoundException(`Category with identifier '${idOrSlug}' not found`);
+    }
+    return category;
+  }
+
+  async findByIdOrSlug(idOrSlug: string): Promise<CategoryDocument> {
+    return this.findOne(idOrSlug);
+  }
+
+  async findById(id: string): Promise<CategoryDocument> {
+    const category = await this.categoriesRepository.findById(id);
+    if (!category) {
+      throw new NotFoundException(`Category with ID ${id} not found`);
+    }
+    return category;
+  }
+
+  async findBySlug(slug: string): Promise<CategoryDocument> {
+    const category = await this.categoriesRepository.findBySlug(slug);
+    if (!category) {
+      throw new NotFoundException(`Category with slug '${slug}' not found`);
+    }
+    return category;
+  }
+
+  async findAll(queryDto: QueryCategoryDto) {
+    const page = queryDto.page || 1;
+    const limit = queryDto.limit || 10;
+
+    if (this.cacheService) {
+      const cacheKey = `categories:list:${JSON.stringify(queryDto)}`;
+      const cached = await this.cacheService.get<any>(cacheKey);
+      if (cached) return cached;
+
+      const { data, total } = await this.categoriesRepository.findAll(queryDto);
+      const totalPages = Math.ceil(total / limit) || 1;
+      const result = {
+        data,
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages,
+        },
+      };
+      await this.cacheService.set(cacheKey, result, 600000);
+      return result;
+    }
+
+    const { data, total } = await this.categoriesRepository.findAll(queryDto);
+    const totalPages = Math.ceil(total / limit) || 1;
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages,
+      },
+    };
   }
 
   async update(
@@ -76,10 +177,11 @@ export class CategoriesService {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
-    const { name, parentId, description, seoTitle, seoDescription, seoKeywords, status } = updateDto;
+    const { name, slug: providedSlug, parentId, description, displayOrder, seoTitle, seoDescription, seoKeywords, status } = updateDto;
     const updateData: Record<string, any> = {};
 
     if (description !== undefined) updateData.description = description;
+    if (displayOrder !== undefined) updateData.displayOrder = displayOrder;
     if (seoTitle !== undefined) updateData.seoTitle = seoTitle;
     if (seoDescription !== undefined) updateData.seoDescription = seoDescription;
     if (seoKeywords !== undefined) updateData.seoKeywords = seoKeywords;
@@ -90,20 +192,20 @@ export class CategoriesService {
     let nameChanged = false;
     let parentChanged = false;
 
-    if (name && name !== category.name) {
-      const newSlug = generateSlug(name);
+    if ((name && name !== category.name) || (providedSlug && providedSlug !== category.slug)) {
+      const newSlug = generateSlug(providedSlug || name || category.name);
       const existing = await this.categoriesRepository.findBySlug(newSlug);
       if (existing && existing._id.toString() !== id) {
-        throw new BadRequestException(`Category with slug '${newSlug}' already exists`);
+        throw new BadRequestException('Category slug already exists');
       }
-      updateData.name = name;
+      if (name) updateData.name = name;
       updateData.slug = newSlug;
       nameChanged = true;
     }
 
     if (parentId !== undefined && String(parentId) !== String(category.parentId)) {
       parentChanged = true;
-      if (parentId === null || parentId === 'null' || parentId.trim() === '') {
+      if (parentId === null || parentId === 'null' || String(parentId).trim() === '') {
         updateData.parentId = null;
         updateData.ancestors = [];
       } else {
@@ -136,7 +238,6 @@ export class CategoriesService {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
-    // Cascade ancestors updates to descendants recursively
     if (nameChanged || parentChanged) {
       await this.updateDescendantsAncestors(
         id,
@@ -146,81 +247,50 @@ export class CategoriesService {
       );
     }
 
+    if (this.cacheService) {
+      await this.cacheService.reset();
+    }
+
     return updatedCategory;
   }
 
-  async delete(id: string): Promise<void> {
+  async softDelete(id: string): Promise<void> {
     const category = await this.categoriesRepository.findById(id);
     if (!category) {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
-    // Soft delete target category
     await this.categoriesRepository.softDelete(id);
-
-    // Cascading soft delete to all descendants
     await this.categoriesRepository.softDeleteDescendants(id);
-  }
-
-  async findById(id: string): Promise<CategoryDocument> {
-    const category = await this.categoriesRepository.findById(id);
-    if (!category) {
-      throw new NotFoundException(`Category with ID ${id} not found`);
-    }
-    return category;
-  }
-
-  async findBySlug(slug: string): Promise<CategoryDocument> {
-    const category = await this.categoriesRepository.findBySlug(slug);
-    if (!category) {
-      throw new NotFoundException(`Category with slug '${slug}' not found`);
-    }
-    return category;
-  }
-
-  async findByIdOrSlug(idOrSlug: string): Promise<CategoryDocument> {
-    const category = await this.categoriesRepository.findByIdOrSlug(idOrSlug);
-    if (!category) {
-      throw new NotFoundException(`Category with identifier '${idOrSlug}' not found`);
-    }
-    return category;
-  }
-
-  async findAll(queryDto: QueryCategoryDto) {
-    const page = queryDto.page || 1;
-    const limit = queryDto.limit || 10;
 
     if (this.cacheService) {
-      const cacheKey = `categories:list:${JSON.stringify(queryDto)}`;
-      const cached = await this.cacheService.get<any>(cacheKey);
-      if (cached) return cached;
+      await this.cacheService.reset();
+    }
+  }
 
-      const { data, total } = await this.categoriesRepository.findAll(queryDto);
-      const totalPages = Math.ceil(total / limit) || 1;
-      const result = {
-        data,
-        meta: {
-          total,
-          page,
-          limit,
-          totalPages,
-        },
-      };
-      await this.cacheService.set(cacheKey, result, 600000); // 10 mins TTL
-      return result;
+  async delete(id: string): Promise<void> {
+    return this.softDelete(id);
+  }
+
+  async toggleActive(id: string): Promise<CategoryDocument> {
+    const category = await this.categoriesRepository.findById(id);
+    if (!category) {
+      throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
-    const { data, total } = await this.categoriesRepository.findAll(queryDto);
-    const totalPages = Math.ceil(total / limit) || 1;
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages,
-      },
-    };
+    const updated = await this.categoriesRepository.update(id, {
+      $set: { status: !category.status },
+    });
+
+    if (!updated) {
+      throw new NotFoundException(`Category with ID ${id} not found`);
+    }
+
+    if (this.cacheService) {
+      await this.cacheService.reset();
+    }
+
+    return updated;
   }
 
   private async updateDescendantsAncestors(
@@ -246,4 +316,3 @@ export class CategoriesService {
     }
   }
 }
-

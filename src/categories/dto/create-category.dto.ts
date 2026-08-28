@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsMongoId, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsInt, IsMongoId, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateCategoryDto {
@@ -10,6 +10,14 @@ export class CreateCategoryDto {
   @IsString()
   @IsNotEmpty({ message: 'Name is required' })
   name!: string;
+
+  @ApiPropertyOptional({
+    description: 'Category slug (auto-generated from name if omitted)',
+    example: 'ethnic-wear',
+  })
+  @IsString()
+  @IsOptional()
+  slug?: string;
 
   @ApiPropertyOptional({
     description: 'Parent category Mongo ID for nested structures (null for root)',
@@ -27,6 +35,30 @@ export class CreateCategoryDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Display order priority number',
+    example: 0,
+    default: 0,
+  })
+  @Transform(({ value }) => parseInt(value, 10))
+  @IsInt()
+  @IsOptional()
+  displayOrder?: number = 0;
+
+  @ApiPropertyOptional({
+    description: 'Active status flag of category',
+    example: true,
+    default: true,
+  })
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return value;
+  })
+  @IsBoolean()
+  @IsOptional()
+  status?: boolean = true;
 
   @ApiPropertyOptional({
     description: 'SEO Optimized page title',

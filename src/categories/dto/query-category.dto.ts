@@ -15,13 +15,13 @@ export class QueryCategoryDto {
   page?: number = 1;
 
   @ApiPropertyOptional({
-    description: 'Limit size of paginated array list (Max: 100)',
-    example: 10,
+    description: 'Limit size of paginated array list (Max: 500)',
+    example: 100,
     default: 10,
   })
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(500)
   @IsOptional()
   @Transform(({ value }) => parseInt(value, 10))
   limit?: number = 10;

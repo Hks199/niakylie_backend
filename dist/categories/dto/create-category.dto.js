@@ -15,8 +15,11 @@ const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class CreateCategoryDto {
     name;
+    slug;
     parentId = null;
     description;
+    displayOrder = 0;
+    status = true;
     seoTitle;
     seoDescription;
     seoKeywords;
@@ -31,6 +34,15 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)({ message: 'Name is required' }),
     __metadata("design:type", String)
 ], CreateCategoryDto.prototype, "name", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Category slug (auto-generated from name if omitted)',
+        example: 'ethnic-wear',
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateCategoryDto.prototype, "slug", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: 'Parent category Mongo ID for nested structures (null for root)',
@@ -50,6 +62,34 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateCategoryDto.prototype, "description", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Display order priority number',
+        example: 0,
+        default: 0,
+    }),
+    (0, class_transformer_1.Transform)(({ value }) => parseInt(value, 10)),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateCategoryDto.prototype, "displayOrder", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Active status flag of category',
+        example: true,
+        default: true,
+    }),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        if (value === 'true' || value === true)
+            return true;
+        if (value === 'false' || value === false)
+            return false;
+        return value;
+    }),
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateCategoryDto.prototype, "status", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: 'SEO Optimized page title',

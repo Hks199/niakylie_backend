@@ -17,6 +17,7 @@ export declare class Category {
     seoTitle?: string;
     seoDescription?: string;
     seoKeywords?: string[];
+    displayOrder: number;
     isDeleted: boolean;
     deletedAt?: Date | null;
 }
@@ -120,6 +121,15 @@ export declare const CategorySchema: MongooseSchema<Category, import("mongoose")
         id: string;
     }>> | undefined;
     seoKeywords?: import("mongoose").SchemaDefinitionProperty<string[] | undefined, Category, Document<unknown, {}, Category, {
+        id: string;
+    }, import("mongoose").DefaultSchemaOptions> & Omit<Category & {
+        _id: Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
+        id: string;
+    }>> | undefined;
+    displayOrder?: import("mongoose").SchemaDefinitionProperty<number, Category, Document<unknown, {}, Category, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<Category & {
         _id: Types.ObjectId;

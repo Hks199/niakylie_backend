@@ -46,6 +46,7 @@ let Category = class Category {
     seoTitle;
     seoDescription;
     seoKeywords;
+    displayOrder;
     isDeleted;
     deletedAt;
 };
@@ -94,6 +95,10 @@ __decorate([
     (0, mongoose_1.Prop)({ type: [String], default: [] }),
     __metadata("design:type", Array)
 ], Category.prototype, "seoKeywords", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: 0 }),
+    __metadata("design:type", Number)
+], Category.prototype, "displayOrder", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ default: false, index: true }),
     __metadata("design:type", Boolean)

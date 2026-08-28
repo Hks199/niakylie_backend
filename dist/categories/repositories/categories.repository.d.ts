@@ -17,4 +17,6 @@ export declare class CategoriesRepository {
     findDirectChildren(parentId: string): Promise<CategoryDocument[]>;
     findDescendants(categoryId: string): Promise<CategoryDocument[]>;
     softDeleteDescendants(categoryId: string): Promise<void>;
+    findRootCategories(): Promise<CategoryDocument[]>;
+    findAllSubCategories(): Promise<CategoryDocument[]>;
 }

@@ -50,8 +50,11 @@ let CategoriesController = class CategoriesController {
     async findAll(queryDto) {
         return this.categoriesService.findAll(queryDto);
     }
+    async getCategoryTree() {
+        return this.categoriesService.getCategoryTree();
+    }
     async findOne(idOrSlug) {
-        return this.categoriesService.findByIdOrSlug(idOrSlug);
+        return this.categoriesService.findOne(idOrSlug);
     }
     async update(id, updateDto, files) {
         const imageFile = files?.image?.[0];
@@ -63,14 +66,17 @@ let CategoriesController = class CategoriesController {
         return this.categoriesService.update(id, updateDto, imagePath, bannerPath);
     }
     async remove(id) {
-        await this.categoriesService.delete(id);
+        await this.categoriesService.softDelete(id);
+    }
+    async toggleActive(id) {
+        return this.categoriesService.toggleActive(id);
     }
 };
 exports.CategoriesController = CategoriesController;
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard, index_js_1.RolesGuard),
-    (0, index_js_1.Roles)(index_js_1.Role.ADMIN),
+    (0, index_js_1.Roles)(index_js_1.Role.ADMIN, 'admin'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileFieldsInterceptor)([
         { name: 'image', maxCount: 1 },
@@ -83,8 +89,11 @@ __decorate([
             type: 'object',
             properties: {
                 name: { type: 'string', example: 'Ethnic Wear' },
+                slug: { type: 'string', example: 'ethnic-wear' },
                 parentId: { type: 'string', nullable: true, example: '60d5ecb8b392d40015f8a001' },
                 description: { type: 'string', example: 'Traditional women wear collection' },
+                displayOrder: { type: 'number', example: 0 },
+                status: { type: 'boolean', example: true },
                 seoTitle: { type: 'string', example: 'Buy Ethnic Wear Online' },
                 seoDescription: { type: 'string', example: 'Shop sarees, kurtas and lehengas' },
                 seoKeywords: { type: 'array', items: { type: 'string' }, example: ['ethnic', 'sarees'] },
@@ -114,6 +123,14 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], CategoriesController.prototype, "findAll", null);
 __decorate([
+    (0, common_1.Get)('tree'),
+    (0, swagger_1.ApiOperation)({ summary: 'Fetch full 2-level category hierarchy tree array' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Category tree hierarchy returned' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], CategoriesController.prototype, "getCategoryTree", null);
+__decorate([
     (0, common_1.Get)(':idOrSlug'),
     (0, swagger_1.ApiOperation)({ summary: 'Get active category details by Mongo ObjectId or Slug' }),
     (0, swagger_1.ApiParam)({ name: 'idOrSlug', description: '24-character Mongo ObjectId or string slug' }),
@@ -127,7 +144,7 @@ __decorate([
 __decorate([
     (0, common_1.Put)(':id'),
     (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard, index_js_1.RolesGuard),
-    (0, index_js_1.Roles)(index_js_1.Role.ADMIN),
+    (0, index_js_1.Roles)(index_js_1.Role.ADMIN, 'admin'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileFieldsInterceptor)([
         { name: 'image', maxCount: 1 },
@@ -141,8 +158,10 @@ __decorate([
             type: 'object',
             properties: {
                 name: { type: 'string' },
+                slug: { type: 'string' },
                 parentId: { type: 'string', nullable: true },
                 description: { type: 'string' },
+                displayOrder: { type: 'number' },
                 seoTitle: { type: 'string' },
                 seoDescription: { type: 'string' },
                 seoKeywords: { type: 'array', items: { type: 'string' } },
@@ -167,7 +186,7 @@ __decorate([
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard, index_js_1.RolesGuard),
-    (0, index_js_1.Roles)(index_js_1.Role.ADMIN),
+    (0, index_js_1.Roles)(index_js_1.Role.ADMIN, 'admin'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
     (0, swagger_1.ApiOperation)({ summary: 'Soft delete category and recursively soft delete all child sub-categories (Admin only)' }),
@@ -181,6 +200,22 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], CategoriesController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Patch)(':id/toggle-active'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard, index_js_1.RolesGuard),
+    (0, index_js_1.Roles)(index_js_1.Role.ADMIN, 'admin'),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, swagger_1.ApiOperation)({ summary: 'Toggle category active status flag (Admin only)' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Category Mongo ObjectId' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Category active status toggled' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Unauthorized' }),
+    (0, swagger_1.ApiResponse)({ status: 403, description: 'Forbidden - Admin access required' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Category not found' }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], CategoriesController.prototype, "toggleActive", null);
 exports.CategoriesController = CategoriesController = __decorate([
     (0, swagger_1.ApiTags)('Categories'),
     (0, common_1.Controller)('categories'),

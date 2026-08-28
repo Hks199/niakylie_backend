@@ -4,6 +4,7 @@ import {
   Post,
   Put,
   Delete,
+  Patch,
   Body,
   Param,
   Query,
@@ -52,7 +53,7 @@ export class CategoriesController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, 'admin' as any)
   @ApiBearerAuth('JWT-auth')
   @UseInterceptors(
     FileFieldsInterceptor([
@@ -67,8 +68,11 @@ export class CategoriesController {
       type: 'object',
       properties: {
         name: { type: 'string', example: 'Ethnic Wear' },
+        slug: { type: 'string', example: 'ethnic-wear' },
         parentId: { type: 'string', nullable: true, example: '60d5ecb8b392d40015f8a001' },
         description: { type: 'string', example: 'Traditional women wear collection' },
+        displayOrder: { type: 'number', example: 0 },
+        status: { type: 'boolean', example: true },
         seoTitle: { type: 'string', example: 'Buy Ethnic Wear Online' },
         seoDescription: { type: 'string', example: 'Shop sarees, kurtas and lehengas' },
         seoKeywords: { type: 'array', items: { type: 'string' }, example: ['ethnic', 'sarees'] },
@@ -109,18 +113,25 @@ export class CategoriesController {
     return this.categoriesService.findAll(queryDto);
   }
 
+  @Get('tree')
+  @ApiOperation({ summary: 'Fetch full 2-level category hierarchy tree array' })
+  @ApiResponse({ status: 200, description: 'Category tree hierarchy returned' })
+  async getCategoryTree() {
+    return this.categoriesService.getCategoryTree();
+  }
+
   @Get(':idOrSlug')
   @ApiOperation({ summary: 'Get active category details by Mongo ObjectId or Slug' })
   @ApiParam({ name: 'idOrSlug', description: '24-character Mongo ObjectId or string slug' })
   @ApiResponse({ status: 200, description: 'Category details returned' })
   @ApiResponse({ status: 404, description: 'Category not found' })
   async findOne(@Param('idOrSlug') idOrSlug: string) {
-    return this.categoriesService.findByIdOrSlug(idOrSlug);
+    return this.categoriesService.findOne(idOrSlug);
   }
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, 'admin' as any)
   @ApiBearerAuth('JWT-auth')
   @UseInterceptors(
     FileFieldsInterceptor([
@@ -136,8 +147,10 @@ export class CategoriesController {
       type: 'object',
       properties: {
         name: { type: 'string' },
+        slug: { type: 'string' },
         parentId: { type: 'string', nullable: true },
         description: { type: 'string' },
+        displayOrder: { type: 'number' },
         seoTitle: { type: 'string' },
         seoDescription: { type: 'string' },
         seoKeywords: { type: 'array', items: { type: 'string' } },
@@ -175,7 +188,7 @@ export class CategoriesController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, 'admin' as any)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Soft delete category and recursively soft delete all child sub-categories (Admin only)' })
@@ -185,7 +198,20 @@ export class CategoriesController {
   @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
   @ApiResponse({ status: 404, description: 'Category not found' })
   async remove(@Param('id') id: string) {
-    await this.categoriesService.delete(id);
+    await this.categoriesService.softDelete(id);
+  }
+
+  @Patch(':id/toggle-active')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, 'admin' as any)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Toggle category active status flag (Admin only)' })
+  @ApiParam({ name: 'id', description: 'Category Mongo ObjectId' })
+  @ApiResponse({ status: 200, description: 'Category active status toggled' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
+  @ApiResponse({ status: 404, description: 'Category not found' })
+  async toggleActive(@Param('id') id: string) {
+    return this.categoriesService.toggleActive(id);
   }
 }
-

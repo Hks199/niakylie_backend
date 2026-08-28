@@ -10,10 +10,12 @@ export declare class CategoriesController {
         banner?: Express.Multer.File[];
     }): Promise<import("./schemas/category.schema.js").CategoryDocument>;
     findAll(queryDto: QueryCategoryDto): Promise<any>;
+    getCategoryTree(): Promise<any>;
     findOne(idOrSlug: string): Promise<import("./schemas/category.schema.js").CategoryDocument>;
     update(id: string, updateDto: UpdateCategoryDto, files: {
         image?: Express.Multer.File[];
         banner?: Express.Multer.File[];
     }): Promise<import("./schemas/category.schema.js").CategoryDocument>;
     remove(id: string): Promise<void>;
+    toggleActive(id: string): Promise<import("./schemas/category.schema.js").CategoryDocument>;
 }
