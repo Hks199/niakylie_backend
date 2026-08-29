@@ -14,6 +14,7 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  Header,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
@@ -107,6 +108,9 @@ export class CategoriesController {
   }
 
   @Get()
+  @Header('Cache-Control', 'no-cache, no-store, must-revalidate')
+  @Header('Pragma', 'no-cache')
+  @Header('Expires', '0')
   @ApiOperation({ summary: 'List categories with pagination, parent filtering, regex search and sorting' })
   @ApiResponse({ status: 200, description: 'Paginated list of active categories returned with metadata' })
   async findAll(@Query() queryDto: QueryCategoryDto) {
@@ -114,6 +118,9 @@ export class CategoriesController {
   }
 
   @Get('tree')
+  @Header('Cache-Control', 'no-cache, no-store, must-revalidate')
+  @Header('Pragma', 'no-cache')
+  @Header('Expires', '0')
   @ApiOperation({ summary: 'Fetch full 2-level category hierarchy tree array' })
   @ApiResponse({ status: 200, description: 'Category tree hierarchy returned' })
   async getCategoryTree() {

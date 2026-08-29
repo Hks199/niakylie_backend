@@ -42,6 +42,12 @@ async function bootstrap(): Promise<void> {
       'x-guest-id',
       'X-Guest-ID',
       'x-requested-with',
+      'Cache-Control',
+      'cache-control',
+      'Pragma',
+      'pragma',
+      'Expires',
+      'expires',
     ],
   });
   app.use(compression());

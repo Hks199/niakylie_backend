@@ -74,11 +74,6 @@ export class CategoriesService {
   }
 
   async getCategoryTree() {
-    if (this.cacheService) {
-      const cached = await this.cacheService.get<any>('categories:tree');
-      if (cached) return cached;
-    }
-
     const roots = await this.categoriesRepository.findRootCategories();
     const allSubs = await this.categoriesRepository.findAllSubCategories();
 
@@ -93,10 +88,6 @@ export class CategoriesService {
         subCategories: children,
       };
     });
-
-    if (this.cacheService) {
-      await this.cacheService.set('categories:tree', tree, 600000);
-    }
 
     return tree;
   }
@@ -132,26 +123,6 @@ export class CategoriesService {
   async findAll(queryDto: QueryCategoryDto) {
     const page = queryDto.page || 1;
     const limit = queryDto.limit || 10;
-
-    if (this.cacheService) {
-      const cacheKey = `categories:list:${JSON.stringify(queryDto)}`;
-      const cached = await this.cacheService.get<any>(cacheKey);
-      if (cached) return cached;
-
-      const { data, total } = await this.categoriesRepository.findAll(queryDto);
-      const totalPages = Math.ceil(total / limit) || 1;
-      const result = {
-        data,
-        meta: {
-          total,
-          page,
-          limit,
-          totalPages,
-        },
-      };
-      await this.cacheService.set(cacheKey, result, 600000);
-      return result;
-    }
 
     const { data, total } = await this.categoriesRepository.findAll(queryDto);
     const totalPages = Math.ceil(total / limit) || 1;

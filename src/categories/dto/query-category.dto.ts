@@ -81,5 +81,10 @@ export class QueryCategoryDto {
     return value;
   })
   status?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(({ value }) => (value !== undefined ? String(value) : value))
+  _t?: string;
 }
 
