@@ -9,12 +9,20 @@ export declare class CategoriesService {
     private readonly cacheService?;
     constructor(categoriesRepository: CategoriesRepository, cacheService?: RedisCacheService | undefined);
     create(createDto: CreateCategoryDto, imagePath?: string, bannerPath?: string): Promise<CategoryDocument>;
-    getCategoryTree(): Promise<any>;
+    getCategoryTree(): Promise<any[]>;
     findOne(idOrSlug: string): Promise<CategoryDocument>;
     findByIdOrSlug(idOrSlug: string): Promise<CategoryDocument>;
     findById(id: string): Promise<CategoryDocument>;
     findBySlug(slug: string): Promise<CategoryDocument>;
-    findAll(queryDto: QueryCategoryDto): Promise<any>;
+    findAll(queryDto: QueryCategoryDto): Promise<{
+        data: CategoryDocument[];
+        meta: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+        };
+    }>;
     update(id: string, updateDto: UpdateCategoryDto, imagePath?: string, bannerPath?: string): Promise<CategoryDocument>;
     softDelete(id: string): Promise<void>;
     delete(id: string): Promise<void>;

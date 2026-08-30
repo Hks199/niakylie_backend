@@ -17,14 +17,14 @@ export class QueryCategoryDto {
   @ApiPropertyOptional({
     description: 'Limit size of paginated array list (Max: 500)',
     example: 100,
-    default: 10,
+    default: 500,
   })
   @IsInt()
   @Min(1)
   @Max(500)
   @IsOptional()
   @Transform(({ value }) => parseInt(value, 10))
-  limit?: number = 10;
+  limit?: number = 500;
 
   @ApiPropertyOptional({
     description: 'Keyword search (matches regex against name, slug, or description)',
@@ -83,8 +83,9 @@ export class QueryCategoryDto {
   status?: boolean;
 
   @ApiPropertyOptional()
+  @IsString()
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined ? String(value) : value))
+  @Transform(({ value }) => (value !== undefined ? String(value) : undefined))
   _t?: string;
 }
 

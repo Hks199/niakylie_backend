@@ -71,11 +71,6 @@ let CategoriesService = class CategoriesService {
         return created;
     }
     async getCategoryTree() {
-        if (this.cacheService) {
-            const cached = await this.cacheService.get('categories:tree');
-            if (cached)
-                return cached;
-        }
         const roots = await this.categoriesRepository.findRootCategories();
         const allSubs = await this.categoriesRepository.findAllSubCategories();
         const tree = roots.map((root) => {
@@ -89,9 +84,6 @@ let CategoriesService = class CategoriesService {
                 subCategories: children,
             };
         });
-        if (this.cacheService) {
-            await this.cacheService.set('categories:tree', tree, 600000);
-        }
         return tree;
     }
     async findOne(idOrSlug) {
@@ -120,26 +112,7 @@ let CategoriesService = class CategoriesService {
     }
     async findAll(queryDto) {
         const page = queryDto.page || 1;
-        const limit = queryDto.limit || 10;
-        if (this.cacheService) {
-            const cacheKey = `categories:list:${JSON.stringify(queryDto)}`;
-            const cached = await this.cacheService.get(cacheKey);
-            if (cached)
-                return cached;
-            const { data, total } = await this.categoriesRepository.findAll(queryDto);
-            const totalPages = Math.ceil(total / limit) || 1;
-            const result = {
-                data,
-                meta: {
-                    total,
-                    page,
-                    limit,
-                    totalPages,
-                },
-            };
-            await this.cacheService.set(cacheKey, result, 600000);
-            return result;
-        }
+        const limit = queryDto.limit || 500;
         const { data, total } = await this.categoriesRepository.findAll(queryDto);
         const totalPages = Math.ceil(total / limit) || 1;
         return {

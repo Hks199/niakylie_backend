@@ -34,6 +34,12 @@ async function bootstrap() {
             'x-guest-id',
             'X-Guest-ID',
             'x-requested-with',
+            'Cache-Control',
+            'cache-control',
+            'Pragma',
+            'pragma',
+            'Expires',
+            'expires',
         ],
     });
     app.use((0, compression_1.default)());

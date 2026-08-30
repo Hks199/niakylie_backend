@@ -70,7 +70,7 @@ export class CategoriesRepository {
     const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([
-      this.categoryModel.find(filter).sort(sortOption).skip(skip).limit(limit).exec(),
+      this.categoryModel.find(filter).populate('parentId', 'name slug _id').sort(sortOption).skip(skip).limit(limit).exec(),
       this.categoryModel.countDocuments(filter).exec(),
     ]);
 

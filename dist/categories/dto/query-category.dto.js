@@ -15,13 +15,14 @@ const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class QueryCategoryDto {
     page = 1;
-    limit = 10;
+    limit = 500;
     search;
     sort = '-createdAt';
     sortBy;
     sortOrder;
     parentId;
     status;
+    _t;
 }
 exports.QueryCategoryDto = QueryCategoryDto;
 __decorate([
@@ -40,7 +41,7 @@ __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: 'Limit size of paginated array list (Max: 500)',
         example: 100,
-        default: 10,
+        default: 500,
     }),
     (0, class_validator_1.IsInt)(),
     (0, class_validator_1.Min)(1),
@@ -113,4 +114,11 @@ __decorate([
     }),
     __metadata("design:type", Boolean)
 ], QueryCategoryDto.prototype, "status", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value !== undefined ? String(value) : undefined)),
+    __metadata("design:type", String)
+], QueryCategoryDto.prototype, "_t", void 0);
 //# sourceMappingURL=query-category.dto.js.map

@@ -115,6 +115,9 @@ __decorate([
 ], CategoriesController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
+    (0, common_1.Header)('Cache-Control', 'no-cache, no-store, must-revalidate'),
+    (0, common_1.Header)('Pragma', 'no-cache'),
+    (0, common_1.Header)('Expires', '0'),
     (0, swagger_1.ApiOperation)({ summary: 'List categories with pagination, parent filtering, regex search and sorting' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Paginated list of active categories returned with metadata' }),
     __param(0, (0, common_1.Query)()),
@@ -124,6 +127,9 @@ __decorate([
 ], CategoriesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('tree'),
+    (0, common_1.Header)('Cache-Control', 'no-cache, no-store, must-revalidate'),
+    (0, common_1.Header)('Pragma', 'no-cache'),
+    (0, common_1.Header)('Expires', '0'),
     (0, swagger_1.ApiOperation)({ summary: 'Fetch full 2-level category hierarchy tree array' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Category tree hierarchy returned' }),
     __metadata("design:type", Function),

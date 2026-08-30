@@ -7,4 +7,5 @@ export declare class QueryCategoryDto {
     sortOrder?: 'asc' | 'desc';
     parentId?: string;
     status?: boolean;
+    _t?: string;
 }

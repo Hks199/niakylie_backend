@@ -122,7 +122,7 @@ export class CategoriesService {
 
   async findAll(queryDto: QueryCategoryDto) {
     const page = queryDto.page || 1;
-    const limit = queryDto.limit || 10;
+    const limit = queryDto.limit || 500;
 
     const { data, total } = await this.categoriesRepository.findAll(queryDto);
     const totalPages = Math.ceil(total / limit) || 1;
