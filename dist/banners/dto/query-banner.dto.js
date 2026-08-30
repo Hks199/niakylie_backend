@@ -17,6 +17,7 @@ const banner_schema_js_1 = require("../schemas/banner.schema.js");
 class QueryBannerDto {
     type;
     isActive;
+    _t;
 }
 exports.QueryBannerDto = QueryBannerDto;
 __decorate([
@@ -32,4 +33,10 @@ __decorate([
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], QueryBannerDto.prototype, "isActive", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Timestamp cache buster' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], QueryBannerDto.prototype, "_t", void 0);
 //# sourceMappingURL=query-banner.dto.js.map

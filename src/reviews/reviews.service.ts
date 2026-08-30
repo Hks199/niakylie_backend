@@ -186,4 +186,14 @@ export class ReviewsService {
     await this.updateProductRatingSummary(review.productId.toString());
     return updated!;
   }
+
+  async getAllReviews(query: QueryReviewDto) {
+    const res = await this.reviewsRepo.findAll(query);
+    return {
+      reviews: res.data,
+      total: res.total,
+      page: res.page,
+      limit: res.limit,
+    };
+  }
 }

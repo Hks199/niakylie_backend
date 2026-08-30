@@ -20,5 +20,17 @@ export declare class ReviewsController {
         message: string;
     }>;
     toggleHelpfulVote(reviewId: string, req: any): Promise<import("./schemas/review.schema.js").ReviewDocument>;
+    getAllReviewsAdminAll(query: QueryReviewDto): Promise<{
+        reviews: import("./schemas/review.schema.js").ReviewDocument[];
+        total: number;
+        page: number;
+        limit: number;
+    }>;
+    getAllReviewsAdmin(query: QueryReviewDto): Promise<{
+        reviews: import("./schemas/review.schema.js").ReviewDocument[];
+        total: number;
+        page: number;
+        limit: number;
+    }>;
     moderateReview(reviewId: string, dto: ModerateReviewDto): Promise<import("./schemas/review.schema.js").ReviewDocument>;
 }

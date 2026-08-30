@@ -4,10 +4,10 @@ import {
   IsEnum,
   IsBoolean,
   IsNumber,
-  IsUrl,
   IsDateString,
   IsObject,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { BannerType, BannerPosition } from '../schemas/banner.schema.js';
 
@@ -32,9 +32,9 @@ export class UpdateBannerDto {
   @IsEnum(BannerPosition)
   position?: BannerPosition;
 
-  @ApiPropertyOptional({ example: 'https://niakylie.com/offers' })
+  @ApiPropertyOptional({ example: '/category/sarees' })
   @IsOptional()
-  @IsUrl()
+  @IsString()
   linkUrl?: string;
 
   @ApiPropertyOptional({ example: 'Shop Offers' })
@@ -44,11 +44,13 @@ export class UpdateBannerDto {
 
   @ApiPropertyOptional({ example: 2 })
   @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? parseInt(value, 10) : value))
   @IsNumber()
   displayOrder?: number;
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   isActive?: boolean;
 

@@ -27,6 +27,7 @@ class QueryReviewDto {
     rating;
     sortBy;
     status;
+    _t;
 }
 exports.QueryReviewDto = QueryReviewDto;
 __decorate([
@@ -66,4 +67,10 @@ __decorate([
     (0, class_validator_1.IsEnum)(review_schema_js_1.ReviewStatus),
     __metadata("design:type", String)
 ], QueryReviewDto.prototype, "status", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Timestamp cache buster' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], QueryReviewDto.prototype, "_t", void 0);
 //# sourceMappingURL=query-review.dto.js.map

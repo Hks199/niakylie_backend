@@ -1,4 +1,4 @@
-import { IsOptional, IsEnum, IsBoolean } from 'class-validator';
+import { IsOptional, IsEnum, IsBoolean, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { BannerType } from '../schemas/banner.schema.js';
@@ -14,4 +14,9 @@ export class QueryBannerDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({ description: 'Timestamp cache buster' })
+  @IsOptional()
+  @IsString()
+  _t?: string;
 }

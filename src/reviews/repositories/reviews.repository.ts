@@ -81,6 +81,30 @@ export class ReviewsRepository {
     return { data, total, page, limit };
   }
 
+  async findAll(
+    query: QueryReviewDto,
+  ): Promise<{ data: ReviewDocument[]; total: number; page: number; limit: number }> {
+    const { page = 1, limit = 25, status, rating } = query;
+    const filter: Record<string, any> = { isDeleted: false };
+    if (status) filter.status = status;
+    if (rating) filter.rating = rating;
+
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.reviewModel
+        .find(filter)
+        .populate('productId', 'title images')
+        .populate('userId', 'firstName lastName email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.reviewModel.countDocuments(filter).exec(),
+    ]);
+
+    return { data, total, page, limit };
+  }
+
   async findByUserId(userId: string): Promise<ReviewDocument[]> {
     if (!Types.ObjectId.isValid(userId)) return [];
     return this.reviewModel

@@ -98,6 +98,22 @@ export class ReviewsController {
     return this.reviewsService.toggleHelpfulVote(reviewId, userId);
   }
 
+  @Get('admin/all')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '[Admin] Get all reviews with status filtering and pagination' })
+  @ApiResponse({ status: 200, description: 'All reviews returned' })
+  async getAllReviewsAdminAll(@Query() query: QueryReviewDto) {
+    return this.reviewsService.getAllReviews(query);
+  }
+
+  @Get('admin')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '[Admin] Get all reviews with status filtering and pagination' })
+  @ApiResponse({ status: 200, description: 'All reviews returned' })
+  async getAllReviewsAdmin(@Query() query: QueryReviewDto) {
+    return this.reviewsService.getAllReviews(query);
+  }
+
   @Patch('admin/:id/moderate')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: '[Admin] Approve or reject review and add official response' })
