@@ -45,6 +45,8 @@ let BannersRepository = class BannersRepository {
         };
         if (query.type)
             filter.type = query.type;
+        if (query.position)
+            filter.position = query.position;
         return this.bannerModel
             .find(filter)
             .sort({ displayOrder: 1, createdAt: -1 })
@@ -54,6 +56,8 @@ let BannersRepository = class BannersRepository {
         const filter = { isDeleted: false };
         if (query.type)
             filter.type = query.type;
+        if (query.position)
+            filter.position = query.position;
         if (query.isActive !== undefined)
             filter.isActive = query.isActive;
         return this.bannerModel

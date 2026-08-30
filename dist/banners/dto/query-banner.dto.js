@@ -16,6 +16,7 @@ const swagger_1 = require("@nestjs/swagger");
 const banner_schema_js_1 = require("../schemas/banner.schema.js");
 class QueryBannerDto {
     type;
+    position;
     isActive;
     _t;
 }
@@ -26,6 +27,12 @@ __decorate([
     (0, class_validator_1.IsEnum)(banner_schema_js_1.BannerType),
     __metadata("design:type", String)
 ], QueryBannerDto.prototype, "type", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: banner_schema_js_1.BannerPosition, example: banner_schema_js_1.BannerPosition.TOP, description: 'Filter by banner position' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(banner_schema_js_1.BannerPosition),
+    __metadata("design:type", String)
+], QueryBannerDto.prototype, "position", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ example: true, description: 'Filter by active status' }),
     (0, class_validator_1.IsOptional)(),
