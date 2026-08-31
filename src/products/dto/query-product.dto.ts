@@ -46,6 +46,11 @@ export class QueryProductDto {
   @IsOptional()
   brandId?: string;
 
+  @ApiPropertyOptional({ description: 'Filter by brand name or ID' })
+  @IsString()
+  @IsOptional()
+  brand?: string;
+
   @ApiPropertyOptional({ description: 'Minimum offer price', example: 500 })
   @IsNumber()
   @Min(0)
@@ -60,10 +65,29 @@ export class QueryProductDto {
   @Transform(({ value }) => parseFloat(value))
   maxPrice?: number;
 
+  @ApiPropertyOptional({ description: 'Filter by color (single or comma-separated)', example: 'Red' })
+  @IsString()
+  @IsOptional()
+  color?: string;
+
   @ApiPropertyOptional({ description: 'Filter by colors (comma-separated)', example: 'Red,Blue' })
   @IsString()
   @IsOptional()
   colors?: string;
+
+  @ApiPropertyOptional({ description: 'Minimum discount percentage', example: 10 })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Transform(({ value }) => parseFloat(value))
+  discount?: number;
+
+  @ApiPropertyOptional({ description: 'Minimum rating threshold', example: 4 })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Transform(({ value }) => parseFloat(value))
+  rating?: number;
 
   @ApiPropertyOptional({ description: 'Filter by sizes (comma-separated)', example: 'S,M,L' })
   @IsString()

@@ -5,9 +5,13 @@ export declare class QueryProductDto {
     categoryId?: string;
     category?: string;
     brandId?: string;
+    brand?: string;
     minPrice?: number;
     maxPrice?: number;
+    color?: string;
     colors?: string;
+    discount?: number;
+    rating?: number;
     sizes?: string;
     material?: string;
     pattern?: string;
