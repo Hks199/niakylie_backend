@@ -14,6 +14,13 @@ export declare class UsersController {
     updateAddress(user: User, addressId: string, addressDto: AddressDto): Promise<import("./schemas/user.schema.js").UserDocument>;
     deleteAddress(user: User, addressId: string): Promise<import("./schemas/user.schema.js").UserDocument>;
     getWishlist(user: User): Promise<import("mongoose").Types.ObjectId[]>;
+    toggleWishlist(user: User, dto: {
+        productId: string;
+        variantId?: string;
+    }): Promise<{
+        isWishlisted: boolean;
+        message: string;
+    }>;
     addToWishlist(user: User, productId: string): Promise<import("./schemas/user.schema.js").UserDocument>;
     removeFromWishlist(user: User, productId: string): Promise<import("./schemas/user.schema.js").UserDocument>;
     getRecentlyViewed(user: User): Promise<{
