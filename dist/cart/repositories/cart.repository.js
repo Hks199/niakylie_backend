@@ -42,7 +42,9 @@ let CartRepository = class CartRepository {
     }
     async findCart(userId, guestId) {
         if (userId && mongoose_2.Types.ObjectId.isValid(userId)) {
-            return this.findByUserId(userId);
+            const userCart = await this.findByUserId(userId);
+            if (userCart)
+                return userCart;
         }
         if (guestId) {
             return this.findByGuestId(guestId);
@@ -51,17 +53,23 @@ let CartRepository = class CartRepository {
     }
     async findOrCreateCart(userId, guestId) {
         let cart = await this.findCart(userId, guestId);
-        if (!cart) {
-            const initData = { items: [] };
-            if (userId && mongoose_2.Types.ObjectId.isValid(userId)) {
-                initData.userId = new mongoose_2.Types.ObjectId(userId);
+        if (cart) {
+            if (userId && mongoose_2.Types.ObjectId.isValid(userId) && !cart.userId) {
+                cart.userId = new mongoose_2.Types.ObjectId(userId);
+                await cart.save();
             }
-            else if (guestId) {
-                initData.guestId = guestId;
-            }
-            cart = await this.create(initData);
+            return cart;
         }
-        return cart;
+        const initData = { items: [] };
+        if (userId && mongoose_2.Types.ObjectId.isValid(userId)) {
+            initData.userId = new mongoose_2.Types.ObjectId(userId);
+            if (guestId)
+                initData.guestId = guestId;
+        }
+        else if (guestId) {
+            initData.guestId = guestId;
+        }
+        return this.create(initData);
     }
     async update(id, updateData) {
         if (!mongoose_2.Types.ObjectId.isValid(id))

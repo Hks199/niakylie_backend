@@ -21,14 +21,16 @@ import { UpdateCartItemDto } from './dto/update-cart-item.dto.js';
 import { MergeCartDto } from './dto/merge-cart.dto.js';
 import { ApplyCouponDto } from './dto/apply-coupon.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard.js';
 
 @ApiTags('Cart')
+@UseGuards(OptionalJwtAuthGuard)
 @Controller('cart')
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
   private extractUserIdAndGuestId(req: any, guestIdHeader?: string): { userId?: string; guestId?: string } {
-    const userId = req.user?.id || req.user?._id;
+    const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub;
     const guestId = guestIdHeader || req.body?.guestId || req.query?.guestId;
     return { userId, guestId };
   }

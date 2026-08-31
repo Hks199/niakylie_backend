@@ -62,19 +62,22 @@ export class ProductsRepository {
       sort,
     } = queryDto;
 
+    let resolvedSortBy = sortBy;
+    let resolvedSortOrder = sortOrder;
+
     if (sort) {
       if (sort === 'recommended' || sort === 'newest') {
-        sortBy = 'createdAt';
-        sortOrder = 'desc';
+        resolvedSortBy = 'createdAt';
+        resolvedSortOrder = 'desc';
       } else if (sort === 'price-low' || sort === 'price_asc') {
-        sortBy = 'price';
-        sortOrder = 'asc';
+        resolvedSortBy = 'price';
+        resolvedSortOrder = 'asc';
       } else if (sort === 'price-high' || sort === 'price_desc') {
-        sortBy = 'price';
-        sortOrder = 'desc';
+        resolvedSortBy = 'price';
+        resolvedSortOrder = 'desc';
       } else if (sort === 'rating') {
-        sortBy = 'averageRating';
-        sortOrder = 'desc';
+        resolvedSortBy = 'averageRating';
+        resolvedSortOrder = 'desc';
       }
     }
 
@@ -174,8 +177,8 @@ export class ProductsRepository {
       reviewsCount: 'reviewsCount',
       createdAt: 'createdAt',
     };
-    const sortField = sortMap[sortBy] ?? 'createdAt';
-    const sortDir = sortOrder === 'asc' ? 1 : -1;
+    const sortField = sortMap[resolvedSortBy] ?? 'createdAt';
+    const sortDir = resolvedSortOrder === 'asc' ? 1 : -1;
 
     // ── Aggregation pipeline ─────────────────────────────────────────────────
     const pipeline: PipelineStage[] = [

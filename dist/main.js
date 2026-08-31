@@ -46,7 +46,9 @@ async function bootstrap() {
     });
     app.use((0, compression_1.default)());
     app.use('/public', express_1.default.static((0, path_1.join)(process.cwd(), 'public')));
+    app.use('/uploads', express_1.default.static((0, path_1.join)(process.cwd(), 'uploads')));
     app.use('/uploads', express_1.default.static((0, path_1.join)(process.cwd(), 'public', 'uploads')));
+    app.use('/public/uploads', express_1.default.static((0, path_1.join)(process.cwd(), 'uploads')));
     app.use('/public/uploads', express_1.default.static((0, path_1.join)(process.cwd(), 'public', 'uploads')));
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,
