@@ -20,7 +20,17 @@ const logger = new Logger('RedisCacheModule');
 
         try {
           const store = await redisStore({
-            socket: { host, port, connectTimeout: 3000 },
+            socket: {
+              host,
+              port,
+              connectTimeout: 2000,
+              reconnectStrategy: (retries: number) => {
+                if (retries > 1) {
+                  return new Error('Redis connection retry limit reached');
+                }
+                return 100;
+              },
+            },
             password,
             ttl,
           });

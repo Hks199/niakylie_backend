@@ -29,7 +29,17 @@ exports.RedisCacheModule = RedisCacheModule = __decorate([
                     const ttl = (configService.get('redis.ttl') ?? 600) * 1000;
                     try {
                         const store = await (0, cache_manager_redis_yet_1.redisStore)({
-                            socket: { host, port, connectTimeout: 3000 },
+                            socket: {
+                                host,
+                                port,
+                                connectTimeout: 2000,
+                                reconnectStrategy: (retries) => {
+                                    if (retries > 1) {
+                                        return new Error('Redis connection retry limit reached');
+                                    }
+                                    return 100;
+                                },
+                            },
                             password,
                             ttl,
                         });
