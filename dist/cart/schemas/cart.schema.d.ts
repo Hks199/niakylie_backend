@@ -113,7 +113,7 @@ export declare const CartItemSchema: MongooseSchema<CartItem, import("mongoose")
     }>> | undefined;
 }, CartItem>;
 export declare class Cart {
-    userId?: Types.ObjectId;
+    userId?: Types.ObjectId | string;
     guestId?: string;
     items: CartItem[];
     couponCode?: string;
@@ -134,7 +134,7 @@ export declare const CartSchema: MongooseSchema<Cart, import("mongoose").Model<C
 }, "id"> & import("mongoose").HydratedDocumentOverrides<{
     id: string;
 }>, {
-    userId?: import("mongoose").SchemaDefinitionProperty<Types.ObjectId | undefined, Cart, Document<unknown, {}, Cart, {
+    userId?: import("mongoose").SchemaDefinitionProperty<string | Types.ObjectId | undefined, Cart, Document<unknown, {}, Cart, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<Cart & {
         _id: Types.ObjectId;

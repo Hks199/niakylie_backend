@@ -84,8 +84,8 @@ let Cart = class Cart {
 };
 exports.Cart = Cart;
 __decorate([
-    (0, mongoose_1.Prop)({ type: mongoose_2.Schema.Types.ObjectId, ref: 'User', index: true, sparse: true }),
-    __metadata("design:type", mongoose_2.Types.ObjectId)
+    (0, mongoose_1.Prop)({ type: mongoose_2.Schema.Types.Mixed, ref: 'User', index: true, sparse: true }),
+    __metadata("design:type", Object)
 ], Cart.prototype, "userId", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ trim: true, index: true, sparse: true }),

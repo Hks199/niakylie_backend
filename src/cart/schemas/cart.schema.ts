@@ -40,8 +40,8 @@ export const CartItemSchema = SchemaFactory.createForClass(CartItem);
 
 @Schema({ timestamps: true })
 export class Cart {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', index: true, sparse: true })
-  userId?: Types.ObjectId;
+  @Prop({ type: MongooseSchema.Types.Mixed, ref: 'User', index: true, sparse: true })
+  userId?: Types.ObjectId | string;
 
   @Prop({ trim: true, index: true, sparse: true })
   guestId?: string;

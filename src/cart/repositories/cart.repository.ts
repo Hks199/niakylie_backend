@@ -15,9 +15,13 @@ export class CartRepository {
   }
 
   async findByUserId(userId: string): Promise<CartDocument | null> {
-    if (!Types.ObjectId.isValid(userId)) return null;
+    if (!userId) return null;
+    const query = Types.ObjectId.isValid(userId)
+      ? { $or: [{ userId: new Types.ObjectId(userId) }, { userId: userId }] }
+      : { userId: userId };
+
     return this.cartModel
-      .findOne({ userId: new Types.ObjectId(userId) })
+      .findOne(query)
       .populate('items.productId', 'name slug images status isDeleted')
       .exec();
   }
@@ -30,7 +34,7 @@ export class CartRepository {
   }
 
   async findCart(userId?: string, guestId?: string): Promise<CartDocument | null> {
-    if (userId && Types.ObjectId.isValid(userId)) {
+    if (userId) {
       const userCart = await this.findByUserId(userId);
       if (userCart) return userCart;
     }
@@ -44,16 +48,16 @@ export class CartRepository {
     let cart = await this.findCart(userId, guestId);
     if (cart) {
       // If user is logged in but cart currently has no userId (was created as guest), assign userId to claim it!
-      if (userId && Types.ObjectId.isValid(userId) && !cart.userId) {
-        cart.userId = new Types.ObjectId(userId);
+      if (userId && !cart.userId) {
+        cart.userId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : (userId as any);
         await cart.save();
       }
       return cart;
     }
 
     const initData: Partial<Cart> = { items: [] };
-    if (userId && Types.ObjectId.isValid(userId)) {
-      initData.userId = new Types.ObjectId(userId);
+    if (userId) {
+      initData.userId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : (userId as any);
       if (guestId) initData.guestId = guestId;
     } else if (guestId) {
       initData.guestId = guestId;
