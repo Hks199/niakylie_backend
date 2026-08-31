@@ -24,6 +24,12 @@ export declare class ReviewsRepository {
         page: number;
         limit: number;
     }>;
+    findAll(query: QueryReviewDto): Promise<{
+        data: ReviewDocument[];
+        total: number;
+        page: number;
+        limit: number;
+    }>;
     findByUserId(userId: string): Promise<ReviewDocument[]>;
     update(id: string, updateData: Partial<Review>): Promise<ReviewDocument | null>;
     softDelete(id: string): Promise<ReviewDocument | null>;

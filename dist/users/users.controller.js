@@ -53,7 +53,21 @@ let UsersController = class UsersController {
     }
     async getWishlist(user) {
         const fullUser = await this.usersService.findById(user.id);
-        return fullUser.wishlist;
+        return fullUser.wishlist || [];
+    }
+    async toggleWishlist(user, dto) {
+        const userId = user.id;
+        const fullUser = await this.usersService.findById(userId);
+        const wishlistStr = (fullUser.wishlist || []).map((id) => id.toString());
+        const isWishlisted = wishlistStr.includes(dto.productId);
+        if (isWishlisted) {
+            await this.usersService.removeFromWishlist(userId, dto.productId);
+            return { isWishlisted: false, message: 'Removed from wishlist' };
+        }
+        else {
+            await this.usersService.addToWishlist(userId, dto.productId);
+            return { isWishlisted: true, message: 'Added to wishlist' };
+        }
     }
     async addToWishlist(user, productId) {
         return this.usersService.addToWishlist(user.id, productId);
@@ -169,6 +183,7 @@ __decorate([
 ], UsersController.prototype, "deleteAddress", null);
 __decorate([
     (0, common_1.Get)('profile/wishlist'),
+    (0, common_1.Get)('wishlist'),
     (0, swagger_1.ApiOperation)({ summary: 'Get current user wishlist' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Wishlist items returned successfully' }),
     __param(0, (0, index_js_1.CurrentUser)()),
@@ -177,7 +192,17 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getWishlist", null);
 __decorate([
+    (0, common_1.Post)('wishlist/toggle'),
+    (0, swagger_1.ApiOperation)({ summary: 'Toggle product in wishlist' }),
+    __param(0, (0, index_js_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [user_schema_js_1.User, Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "toggleWishlist", null);
+__decorate([
     (0, common_1.Post)('profile/wishlist/:productId'),
+    (0, common_1.Post)('wishlist/:productId'),
     (0, swagger_1.ApiOperation)({ summary: 'Add product to wishlist' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Product added to wishlist' }),
     __param(0, (0, index_js_1.CurrentUser)()),
@@ -188,6 +213,7 @@ __decorate([
 ], UsersController.prototype, "addToWishlist", null);
 __decorate([
     (0, common_1.Delete)('profile/wishlist/:productId'),
+    (0, common_1.Delete)('wishlist/:productId'),
     (0, swagger_1.ApiOperation)({ summary: 'Remove product from wishlist' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Product removed from wishlist' }),
     __param(0, (0, index_js_1.CurrentUser)()),

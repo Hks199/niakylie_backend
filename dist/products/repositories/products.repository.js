@@ -43,35 +43,76 @@ let ProductsRepository = class ProductsRepository {
             .exec();
     }
     async findAll(queryDto) {
-        let { page = 1, limit = 12, search, categoryId, category, brandId, minPrice, maxPrice, colors, sizes, material, pattern, season, productCollection: collection, isFeatured, isTrending, isBestSeller, status, sortBy = 'createdAt', sortOrder = 'desc', sort, } = queryDto;
+        const { page = 1, limit = 12, search, categoryId, category, brandId, brand, minPrice, maxPrice, color, colors, discount, rating, sizes, material, pattern, season, productCollection: collection, isFeatured, isTrending, isBestSeller, status, sortBy = 'createdAt', sortOrder = 'desc', sort, } = queryDto;
+        let resolvedSortBy = sortBy;
+        let resolvedSortOrder = sortOrder;
         if (sort) {
             if (sort === 'recommended' || sort === 'newest') {
-                sortBy = 'createdAt';
-                sortOrder = 'desc';
+                resolvedSortBy = 'createdAt';
+                resolvedSortOrder = 'desc';
             }
             else if (sort === 'price-low' || sort === 'price_asc') {
-                sortBy = 'price';
-                sortOrder = 'asc';
+                resolvedSortBy = 'price';
+                resolvedSortOrder = 'asc';
             }
             else if (sort === 'price-high' || sort === 'price_desc') {
-                sortBy = 'price';
-                sortOrder = 'desc';
+                resolvedSortBy = 'price';
+                resolvedSortOrder = 'desc';
             }
             else if (sort === 'rating') {
-                sortBy = 'averageRating';
-                sortOrder = 'desc';
+                resolvedSortBy = 'averageRating';
+                resolvedSortOrder = 'desc';
             }
         }
-        const effectiveCatId = categoryId || (category && mongoose_2.Types.ObjectId.isValid(category) ? category : undefined);
-        const categorySlug = category && !mongoose_2.Types.ObjectId.isValid(category) ? category.toLowerCase().trim() : undefined;
         const skip = (page - 1) * limit;
+        let resolvedCategoryId = undefined;
+        if (categoryId && mongoose_2.Types.ObjectId.isValid(categoryId)) {
+            resolvedCategoryId = new mongoose_2.Types.ObjectId(categoryId);
+        }
+        else if (category) {
+            if (mongoose_2.Types.ObjectId.isValid(category)) {
+                resolvedCategoryId = new mongoose_2.Types.ObjectId(category);
+            }
+            else {
+                const foundCat = await this.productModel.db.collection('categories').findOne({
+                    $or: [
+                        { slug: category.toLowerCase().trim() },
+                        { name: new RegExp(`^${category.trim()}$`, 'i') },
+                    ],
+                    isDeleted: { $ne: true },
+                });
+                if (foundCat) {
+                    resolvedCategoryId = foundCat._id;
+                }
+            }
+        }
+        let resolvedBrandId = undefined;
+        if (brandId && mongoose_2.Types.ObjectId.isValid(brandId)) {
+            resolvedBrandId = new mongoose_2.Types.ObjectId(brandId);
+        }
+        else if (brand) {
+            if (mongoose_2.Types.ObjectId.isValid(brand)) {
+                resolvedBrandId = new mongoose_2.Types.ObjectId(brand);
+            }
+            else {
+                const foundBrand = await this.productModel.db.collection('brands').findOne({
+                    $or: [
+                        { slug: brand.toLowerCase().trim() },
+                        { name: new RegExp(`^${brand.trim()}$`, 'i') },
+                    ],
+                });
+                if (foundBrand) {
+                    resolvedBrandId = foundBrand._id;
+                }
+            }
+        }
         const baseMatch = { isDeleted: false };
         if (status !== undefined)
             baseMatch.status = status;
-        if (effectiveCatId && mongoose_2.Types.ObjectId.isValid(effectiveCatId))
-            baseMatch.categoryId = new mongoose_2.Types.ObjectId(effectiveCatId);
-        if (brandId && mongoose_2.Types.ObjectId.isValid(brandId))
-            baseMatch.brandId = new mongoose_2.Types.ObjectId(brandId);
+        if (resolvedCategoryId)
+            baseMatch.categoryId = resolvedCategoryId;
+        if (resolvedBrandId)
+            baseMatch.brandId = resolvedBrandId;
         if (material)
             baseMatch.material = { $regex: material, $options: 'i' };
         if (pattern)
@@ -86,20 +127,33 @@ let ProductsRepository = class ProductsRepository {
             baseMatch.isTrending = isTrending;
         if (isBestSeller !== undefined)
             baseMatch.isBestSeller = isBestSeller;
-        if (search)
-            baseMatch.$text = { $search: search };
+        if (rating !== undefined)
+            baseMatch.averageRating = { $gte: rating };
+        if (search) {
+            baseMatch.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } },
+                { tags: { $regex: search, $options: 'i' } },
+                { material: { $regex: search, $options: 'i' } },
+            ];
+        }
         const variantMatch = { 'variants.isActive': true };
         if (minPrice !== undefined)
             variantMatch['variants.offerPrice'] = { ...(variantMatch['variants.offerPrice'] || {}), $gte: minPrice };
         if (maxPrice !== undefined)
             variantMatch['variants.offerPrice'] = { ...(variantMatch['variants.offerPrice'] || {}), $lte: maxPrice };
-        if (colors) {
-            const colorArr = colors.split(',').map((c) => c.trim());
-            variantMatch['variants.color'] = { $in: colorArr };
+        const colorInput = colors || color;
+        if (colorInput) {
+            const colorArr = colorInput.split(',').map((c) => c.trim()).filter(Boolean);
+            if (colorArr.length > 0) {
+                variantMatch['variants.color'] = { $in: colorArr.map((c) => new RegExp(c, 'i')) };
+            }
         }
         if (sizes) {
-            const sizeArr = sizes.split(',').map((s) => s.trim());
-            variantMatch['variants.size'] = { $in: sizeArr };
+            const sizeArr = sizes.split(',').map((s) => s.trim()).filter(Boolean);
+            if (sizeArr.length > 0) {
+                variantMatch['variants.size'] = { $in: sizeArr };
+            }
         }
         const hasVariantFilter = Object.keys(variantMatch).length > 1 || minPrice !== undefined || maxPrice !== undefined;
         const sortMap = {
@@ -109,8 +163,8 @@ let ProductsRepository = class ProductsRepository {
             reviewsCount: 'reviewsCount',
             createdAt: 'createdAt',
         };
-        const sortField = sortMap[sortBy] ?? 'createdAt';
-        const sortDir = sortOrder === 'asc' ? 1 : -1;
+        const sortField = sortMap[resolvedSortBy] ?? 'createdAt';
+        const sortDir = resolvedSortOrder === 'asc' ? 1 : -1;
         const pipeline = [
             { $match: baseMatch },
             ...(hasVariantFilter

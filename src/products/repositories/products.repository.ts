@@ -34,16 +34,20 @@ export class ProductsRepository {
   }
 
   async findAll(queryDto: QueryProductDto): Promise<{ data: any[]; total: number; page: number; limit: number }> {
-    let {
+    const {
       page = 1,
       limit = 12,
       search,
       categoryId,
       category,
       brandId,
+      brand,
       minPrice,
       maxPrice,
+      color,
       colors,
+      discount,
+      rating,
       sizes,
       material,
       pattern,
@@ -58,32 +62,73 @@ export class ProductsRepository {
       sort,
     } = queryDto;
 
+    let resolvedSortBy = sortBy;
+    let resolvedSortOrder = sortOrder;
+
     if (sort) {
       if (sort === 'recommended' || sort === 'newest') {
-        sortBy = 'createdAt';
-        sortOrder = 'desc';
+        resolvedSortBy = 'createdAt';
+        resolvedSortOrder = 'desc';
       } else if (sort === 'price-low' || sort === 'price_asc') {
-        sortBy = 'price';
-        sortOrder = 'asc';
+        resolvedSortBy = 'price';
+        resolvedSortOrder = 'asc';
       } else if (sort === 'price-high' || sort === 'price_desc') {
-        sortBy = 'price';
-        sortOrder = 'desc';
+        resolvedSortBy = 'price';
+        resolvedSortOrder = 'desc';
       } else if (sort === 'rating') {
-        sortBy = 'averageRating';
-        sortOrder = 'desc';
+        resolvedSortBy = 'averageRating';
+        resolvedSortOrder = 'desc';
       }
     }
 
-    const effectiveCatId = categoryId || (category && Types.ObjectId.isValid(category) ? category : undefined);
-    const categorySlug = category && !Types.ObjectId.isValid(category) ? category.toLowerCase().trim() : undefined;
-
     const skip = (page - 1) * limit;
 
-    // ── Stage 1: base match ──────────────────────────────────────────────────
+    // ── Resolve Category Slug/ID ──────────────────────────────────────────────
+    let resolvedCategoryId: Types.ObjectId | undefined = undefined;
+    if (categoryId && Types.ObjectId.isValid(categoryId)) {
+      resolvedCategoryId = new Types.ObjectId(categoryId);
+    } else if (category) {
+      if (Types.ObjectId.isValid(category)) {
+        resolvedCategoryId = new Types.ObjectId(category);
+      } else {
+        const foundCat = await this.productModel.db.collection('categories').findOne({
+          $or: [
+            { slug: category.toLowerCase().trim() },
+            { name: new RegExp(`^${category.trim()}$`, 'i') },
+          ],
+          isDeleted: { $ne: true },
+        });
+        if (foundCat) {
+          resolvedCategoryId = foundCat._id as any;
+        }
+      }
+    }
+
+    // ── Resolve Brand Name/ID ────────────────────────────────────────────────
+    let resolvedBrandId: Types.ObjectId | undefined = undefined;
+    if (brandId && Types.ObjectId.isValid(brandId)) {
+      resolvedBrandId = new Types.ObjectId(brandId);
+    } else if (brand) {
+      if (Types.ObjectId.isValid(brand)) {
+        resolvedBrandId = new Types.ObjectId(brand);
+      } else {
+        const foundBrand = await this.productModel.db.collection('brands').findOne({
+          $or: [
+            { slug: brand.toLowerCase().trim() },
+            { name: new RegExp(`^${brand.trim()}$`, 'i') },
+          ],
+        });
+        if (foundBrand) {
+          resolvedBrandId = foundBrand._id as any;
+        }
+      }
+    }
+
+    // ── Stage 1: Base match ──────────────────────────────────────────────────
     const baseMatch: Record<string, any> = { isDeleted: false };
     if (status !== undefined) baseMatch.status = status;
-    if (effectiveCatId && Types.ObjectId.isValid(effectiveCatId)) baseMatch.categoryId = new Types.ObjectId(effectiveCatId);
-    if (brandId && Types.ObjectId.isValid(brandId)) baseMatch.brandId = new Types.ObjectId(brandId);
+    if (resolvedCategoryId) baseMatch.categoryId = resolvedCategoryId;
+    if (resolvedBrandId) baseMatch.brandId = resolvedBrandId;
     if (material) baseMatch.material = { $regex: material, $options: 'i' };
     if (pattern) baseMatch.pattern = { $regex: pattern, $options: 'i' };
     if (season) baseMatch.season = { $regex: season, $options: 'i' };
@@ -91,19 +136,35 @@ export class ProductsRepository {
     if (isFeatured !== undefined) baseMatch.isFeatured = isFeatured;
     if (isTrending !== undefined) baseMatch.isTrending = isTrending;
     if (isBestSeller !== undefined) baseMatch.isBestSeller = isBestSeller;
-    if (search) baseMatch.$text = { $search: search };
+    if (rating !== undefined) baseMatch.averageRating = { $gte: rating };
 
-    // ── Stage 2: variant-level filter ────────────────────────────────────────
+    if (search) {
+      baseMatch.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { tags: { $regex: search, $options: 'i' } },
+        { material: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    // ── Stage 2: Variant-level filter ────────────────────────────────────────
     const variantMatch: Record<string, any> = { 'variants.isActive': true };
     if (minPrice !== undefined) variantMatch['variants.offerPrice'] = { ...(variantMatch['variants.offerPrice'] || {}), $gte: minPrice };
     if (maxPrice !== undefined) variantMatch['variants.offerPrice'] = { ...(variantMatch['variants.offerPrice'] || {}), $lte: maxPrice };
-    if (colors) {
-      const colorArr = colors.split(',').map((c) => c.trim());
-      variantMatch['variants.color'] = { $in: colorArr };
+
+    const colorInput = colors || color;
+    if (colorInput) {
+      const colorArr = colorInput.split(',').map((c) => c.trim()).filter(Boolean);
+      if (colorArr.length > 0) {
+        variantMatch['variants.color'] = { $in: colorArr.map((c) => new RegExp(c, 'i')) };
+      }
     }
+
     if (sizes) {
-      const sizeArr = sizes.split(',').map((s) => s.trim());
-      variantMatch['variants.size'] = { $in: sizeArr };
+      const sizeArr = sizes.split(',').map((s) => s.trim()).filter(Boolean);
+      if (sizeArr.length > 0) {
+        variantMatch['variants.size'] = { $in: sizeArr };
+      }
     }
 
     const hasVariantFilter = Object.keys(variantMatch).length > 1 || minPrice !== undefined || maxPrice !== undefined;
@@ -116,8 +177,8 @@ export class ProductsRepository {
       reviewsCount: 'reviewsCount',
       createdAt: 'createdAt',
     };
-    const sortField = sortMap[sortBy] ?? 'createdAt';
-    const sortDir = sortOrder === 'asc' ? 1 : -1;
+    const sortField = sortMap[resolvedSortBy] ?? 'createdAt';
+    const sortDir = resolvedSortOrder === 'asc' ? 1 : -1;
 
     // ── Aggregation pipeline ─────────────────────────────────────────────────
     const pipeline: PipelineStage[] = [

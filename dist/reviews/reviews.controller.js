@@ -49,6 +49,12 @@ let ReviewsController = class ReviewsController {
         const userId = req.user?.id || req.user?._id;
         return this.reviewsService.toggleHelpfulVote(reviewId, userId);
     }
+    async getAllReviewsAdminAll(query) {
+        return this.reviewsService.getAllReviews(query);
+    }
+    async getAllReviewsAdmin(query) {
+        return this.reviewsService.getAllReviews(query);
+    }
     async moderateReview(reviewId, dto) {
         return this.reviewsService.moderateReview(reviewId, dto);
     }
@@ -126,6 +132,26 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], ReviewsController.prototype, "toggleHelpfulVote", null);
+__decorate([
+    (0, common_1.Get)('admin/all'),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, swagger_1.ApiOperation)({ summary: '[Admin] Get all reviews with status filtering and pagination' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'All reviews returned' }),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [query_review_dto_js_1.QueryReviewDto]),
+    __metadata("design:returntype", Promise)
+], ReviewsController.prototype, "getAllReviewsAdminAll", null);
+__decorate([
+    (0, common_1.Get)('admin'),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, swagger_1.ApiOperation)({ summary: '[Admin] Get all reviews with status filtering and pagination' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'All reviews returned' }),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [query_review_dto_js_1.QueryReviewDto]),
+    __metadata("design:returntype", Promise)
+], ReviewsController.prototype, "getAllReviewsAdmin", null);
 __decorate([
     (0, common_1.Patch)('admin/:id/moderate'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),

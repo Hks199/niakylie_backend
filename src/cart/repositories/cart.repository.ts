@@ -15,9 +15,13 @@ export class CartRepository {
   }
 
   async findByUserId(userId: string): Promise<CartDocument | null> {
-    if (!Types.ObjectId.isValid(userId)) return null;
+    if (!userId) return null;
+    const query = Types.ObjectId.isValid(userId)
+      ? { $or: [{ userId: new Types.ObjectId(userId) }, { userId: userId }] }
+      : { userId: userId };
+
     return this.cartModel
-      .findOne({ userId: new Types.ObjectId(userId) })
+      .findOne(query)
       .populate('items.productId', 'name slug images status isDeleted')
       .exec();
   }
@@ -30,8 +34,9 @@ export class CartRepository {
   }
 
   async findCart(userId?: string, guestId?: string): Promise<CartDocument | null> {
-    if (userId && Types.ObjectId.isValid(userId)) {
-      return this.findByUserId(userId);
+    if (userId) {
+      const userCart = await this.findByUserId(userId);
+      if (userCart) return userCart;
     }
     if (guestId) {
       return this.findByGuestId(guestId);
@@ -41,16 +46,23 @@ export class CartRepository {
 
   async findOrCreateCart(userId?: string, guestId?: string): Promise<CartDocument> {
     let cart = await this.findCart(userId, guestId);
-    if (!cart) {
-      const initData: Partial<Cart> = { items: [] };
-      if (userId && Types.ObjectId.isValid(userId)) {
-        initData.userId = new Types.ObjectId(userId);
-      } else if (guestId) {
-        initData.guestId = guestId;
+    if (cart) {
+      // If user is logged in but cart currently has no userId (was created as guest), assign userId to claim it!
+      if (userId && !cart.userId) {
+        cart.userId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : (userId as any);
+        await cart.save();
       }
-      cart = await this.create(initData);
+      return cart;
     }
-    return cart;
+
+    const initData: Partial<Cart> = { items: [] };
+    if (userId) {
+      initData.userId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : (userId as any);
+      if (guestId) initData.guestId = guestId;
+    } else if (guestId) {
+      initData.guestId = guestId;
+    }
+    return this.create(initData);
   }
 
   async update(id: string, updateData: UpdateQuery<CartDocument>): Promise<CartDocument | null> {

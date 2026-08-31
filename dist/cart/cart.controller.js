@@ -21,13 +21,14 @@ const update_cart_item_dto_js_1 = require("./dto/update-cart-item.dto.js");
 const merge_cart_dto_js_1 = require("./dto/merge-cart.dto.js");
 const apply_coupon_dto_js_1 = require("./dto/apply-coupon.dto.js");
 const jwt_auth_guard_js_1 = require("../auth/guards/jwt-auth.guard.js");
+const optional_jwt_auth_guard_js_1 = require("../auth/guards/optional-jwt-auth.guard.js");
 let CartController = class CartController {
     cartService;
     constructor(cartService) {
         this.cartService = cartService;
     }
     extractUserIdAndGuestId(req, guestIdHeader) {
-        const userId = req.user?.id || req.user?._id;
+        const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub;
         const guestId = guestIdHeader || req.body?.guestId || req.query?.guestId;
         return { userId, guestId };
     }
@@ -210,6 +211,7 @@ __decorate([
 ], CartController.prototype, "clearCart", null);
 exports.CartController = CartController = __decorate([
     (0, swagger_1.ApiTags)('Cart'),
+    (0, common_1.UseGuards)(optional_jwt_auth_guard_js_1.OptionalJwtAuthGuard),
     (0, common_1.Controller)('cart'),
     __metadata("design:paramtypes", [cart_service_js_1.CartService])
 ], CartController);

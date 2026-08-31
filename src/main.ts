@@ -30,7 +30,11 @@ async function bootstrap(): Promise<void> {
   app.setGlobalPrefix(globalPrefix);
 
   // Security
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
   app.enableCors({
     origin: true,
     credentials: true,
@@ -52,6 +56,10 @@ async function bootstrap(): Promise<void> {
   });
   app.use(compression());
   app.use('/public', express.static(join(process.cwd(), 'public')));
+  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
+  app.use('/uploads', express.static(join(process.cwd(), 'public', 'uploads')));
+  app.use('/public/uploads', express.static(join(process.cwd(), 'uploads')));
+  app.use('/public/uploads', express.static(join(process.cwd(), 'public', 'uploads')));
 
   // Global validation pipe
   app.useGlobalPipes(

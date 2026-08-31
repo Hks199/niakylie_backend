@@ -183,23 +183,54 @@ export class MongoSearchProvider implements ISearchProvider {
   }
 
   async autocomplete(query: string, limit: number = 5): Promise<AutocompleteResponse> {
-    const regex = new RegExp(`^${query}`, 'i');
+    const cleanQuery = query.trim();
+    if (!cleanQuery) return { query, suggestions: [] };
+
+    const regex = new RegExp(cleanQuery, 'i');
 
     const products = await this.productModel
-      .find({ isDeleted: false, status: true, name: regex })
-      .select('_id name tags')
+      .find({
+        isDeleted: false,
+        status: true,
+        $or: [
+          { name: regex },
+          { tags: regex },
+          { material: regex },
+          { description: regex },
+        ],
+      })
+      .select('_id name slug variants images thumbnail categoryId')
+      .populate('categoryId', 'name')
       .limit(limit)
       .exec();
 
-    const suggestions = products.map((p) => ({
-      text: p.name,
-      type: 'product' as const,
-      id: p._id.toString(),
-    }));
+    const suggestions = products.map((p: any) => {
+      const firstVariant = p.variants?.[0];
+      const offerPrice = firstVariant?.offerPrice ?? (p as any).price ?? 1999;
+      const mrpPrice = firstVariant?.mrp ?? (p as any).originalPrice ?? offerPrice * 1.5;
+      const rawImg = p.images?.[0] || p.thumbnail;
+      const imageVal = rawImg
+        ? rawImg.startsWith('http')
+          ? rawImg
+          : `http://localhost:3000${rawImg}`
+        : undefined;
+
+      return {
+        text: p.name,
+        type: 'product' as const,
+        id: p._id.toString(),
+        category: p.categoryId?.name || 'Ethnic Couture',
+        productId: p._id.toString(),
+        slug: p.slug || p._id.toString(),
+        price: offerPrice,
+        originalPrice: mrpPrice > offerPrice ? mrpPrice : undefined,
+        image: imageVal,
+      };
+    });
 
     return {
       query,
-      suggestions,
+      suggestions: suggestions as any,
     };
   }
 

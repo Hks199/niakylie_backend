@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateBannerDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 const swagger_1 = require("@nestjs/swagger");
 const banner_schema_js_1 = require("../schemas/banner.schema.js");
 class CreateBannerDto {
@@ -52,9 +53,9 @@ __decorate([
     __metadata("design:type", String)
 ], CreateBannerDto.prototype, "position", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ example: 'https://niakylie.com/sale', description: 'CTA link destination' }),
+    (0, swagger_1.ApiPropertyOptional)({ example: '/category/sarees', description: 'CTA link destination' }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsUrl)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateBannerDto.prototype, "linkUrl", void 0);
 __decorate([
@@ -66,12 +67,14 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ example: 1, description: 'Sorting order for display' }),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (typeof value === 'string' ? parseInt(value, 10) : value)),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], CreateBannerDto.prototype, "displayOrder", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ example: true }),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => value === 'true' || value === true),
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], CreateBannerDto.prototype, "isActive", void 0);

@@ -20,9 +20,13 @@ class QueryProductDto {
     categoryId;
     category;
     brandId;
+    brand;
     minPrice;
     maxPrice;
+    color;
     colors;
+    discount;
+    rating;
     sizes;
     material;
     pattern;
@@ -78,6 +82,12 @@ __decorate([
     __metadata("design:type", String)
 ], QueryProductDto.prototype, "brandId", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Filter by brand name or ID' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], QueryProductDto.prototype, "brand", void 0);
+__decorate([
     (0, swagger_1.ApiPropertyOptional)({ description: 'Minimum offer price', example: 500 }),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.Min)(0),
@@ -94,11 +104,33 @@ __decorate([
     __metadata("design:type", Number)
 ], QueryProductDto.prototype, "maxPrice", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Filter by color (single or comma-separated)', example: 'Red' }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], QueryProductDto.prototype, "color", void 0);
+__decorate([
     (0, swagger_1.ApiPropertyOptional)({ description: 'Filter by colors (comma-separated)', example: 'Red,Blue' }),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], QueryProductDto.prototype, "colors", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Minimum discount percentage', example: 10 }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => parseFloat(value)),
+    __metadata("design:type", Number)
+], QueryProductDto.prototype, "discount", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Minimum rating threshold', example: 4 }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => parseFloat(value)),
+    __metadata("design:type", Number)
+], QueryProductDto.prototype, "rating", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ description: 'Filter by sizes (comma-separated)', example: 'S,M,L' }),
     (0, class_validator_1.IsString)(),

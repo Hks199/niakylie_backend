@@ -27,10 +27,13 @@ let CartRepository = class CartRepository {
         return cart.save();
     }
     async findByUserId(userId) {
-        if (!mongoose_2.Types.ObjectId.isValid(userId))
+        if (!userId)
             return null;
+        const query = mongoose_2.Types.ObjectId.isValid(userId)
+            ? { $or: [{ userId: new mongoose_2.Types.ObjectId(userId) }, { userId: userId }] }
+            : { userId: userId };
         return this.cartModel
-            .findOne({ userId: new mongoose_2.Types.ObjectId(userId) })
+            .findOne(query)
             .populate('items.productId', 'name slug images status isDeleted')
             .exec();
     }
@@ -41,8 +44,10 @@ let CartRepository = class CartRepository {
             .exec();
     }
     async findCart(userId, guestId) {
-        if (userId && mongoose_2.Types.ObjectId.isValid(userId)) {
-            return this.findByUserId(userId);
+        if (userId) {
+            const userCart = await this.findByUserId(userId);
+            if (userCart)
+                return userCart;
         }
         if (guestId) {
             return this.findByGuestId(guestId);
@@ -51,17 +56,23 @@ let CartRepository = class CartRepository {
     }
     async findOrCreateCart(userId, guestId) {
         let cart = await this.findCart(userId, guestId);
-        if (!cart) {
-            const initData = { items: [] };
-            if (userId && mongoose_2.Types.ObjectId.isValid(userId)) {
-                initData.userId = new mongoose_2.Types.ObjectId(userId);
+        if (cart) {
+            if (userId && !cart.userId) {
+                cart.userId = mongoose_2.Types.ObjectId.isValid(userId) ? new mongoose_2.Types.ObjectId(userId) : userId;
+                await cart.save();
             }
-            else if (guestId) {
-                initData.guestId = guestId;
-            }
-            cart = await this.create(initData);
+            return cart;
         }
-        return cart;
+        const initData = { items: [] };
+        if (userId) {
+            initData.userId = mongoose_2.Types.ObjectId.isValid(userId) ? new mongoose_2.Types.ObjectId(userId) : userId;
+            if (guestId)
+                initData.guestId = guestId;
+        }
+        else if (guestId) {
+            initData.guestId = guestId;
+        }
+        return this.create(initData);
     }
     async update(id, updateData) {
         if (!mongoose_2.Types.ObjectId.isValid(id))

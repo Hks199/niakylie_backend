@@ -37,6 +37,7 @@ export class BannersRepository {
     };
 
     if (query.type) filter.type = query.type;
+    if (query.position) filter.position = query.position;
 
     return this.bannerModel
       .find(filter)
@@ -50,6 +51,7 @@ export class BannersRepository {
   async findAll(query: QueryBannerDto): Promise<BannerDocument[]> {
     const filter: Record<string, any> = { isDeleted: false };
     if (query.type) filter.type = query.type;
+    if (query.position) filter.position = query.position;
     if (query.isActive !== undefined) filter.isActive = query.isActive;
 
     return this.bannerModel

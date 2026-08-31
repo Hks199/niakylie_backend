@@ -7,7 +7,8 @@ import {
 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { Readable } from 'stream';
-import { extname } from 'path';
+import { extname, join } from 'path';
+import { writeFileSync, mkdirSync, existsSync, unlinkSync } from 'fs';
 import { randomBytes } from 'crypto';
 
 @Injectable()
@@ -30,7 +31,7 @@ export class S3Service {
   }
 
   /**
-   * Upload a single file buffer to S3 and return the public URL.
+   * Upload a single file buffer to S3 or fall back to local disk storage if S3 is not configured.
    */
   async uploadBuffer(
     buffer: Buffer,
@@ -38,30 +39,39 @@ export class S3Service {
     originalName: string,
     mimeType: string,
   ): Promise<string> {
+    const ext = extname(originalName) || '.jpg';
+    const filename = `image-${Date.now()}-${randomBytes(4).toString('hex')}${ext}`;
+
     if (!this.bucket) {
-      throw new BadRequestException(
-        'AWS S3 Bucket name is not configured in server environment variables (AWS_S3_BUCKET). Please set AWS_S3_BUCKET, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY in .env.',
-      );
+      const uploadDir = join(process.cwd(), 'public', 'uploads', folder);
+      mkdirSync(uploadDir, { recursive: true });
+      writeFileSync(join(uploadDir, filename), buffer);
+      return `/uploads/${folder}/${filename}`;
     }
 
+    const key = `${folder}/${filename}`;
 
-    const ext = extname(originalName) || '.jpg';
-    const key = `${folder}/${Date.now()}-${randomBytes(8).toString('hex')}${ext}`;
+    try {
+      const upload = new Upload({
+        client: this.client,
+        params: {
+          Bucket: this.bucket,
+          Key: key,
+          Body: Readable.from(buffer),
+          ContentType: mimeType,
+          ACL: 'public-read' as ObjectCannedACL,
+        },
+      });
 
-
-    const upload = new Upload({
-      client: this.client,
-      params: {
-        Bucket: this.bucket,
-        Key: key,
-        Body: Readable.from(buffer),
-        ContentType: mimeType,
-        ACL: 'public-read' as ObjectCannedACL,
-      },
-    });
-
-    await upload.done();
-    return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
+      await upload.done();
+      return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
+    } catch (error) {
+      // Fallback to local storage if S3 upload fails
+      const uploadDir = join(process.cwd(), 'public', 'uploads', folder);
+      mkdirSync(uploadDir, { recursive: true });
+      writeFileSync(join(uploadDir, filename), buffer);
+      return `/uploads/${folder}/${filename}`;
+    }
   }
 
   /**
@@ -77,14 +87,26 @@ export class S3Service {
   }
 
   /**
-   * Delete an object from S3 using its public URL.
+   * Delete an object from S3 or local disk using its URL.
    */
   async deleteByUrl(url: string): Promise<void> {
-    // Extract key from URL: https://bucket.s3.region.amazonaws.com/key
-    const urlObj = new URL(url);
-    const key = urlObj.pathname.slice(1); // remove leading slash
-    await this.client.send(
-      new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
-    );
+    if (!url) return;
+    if (url.startsWith('/uploads/')) {
+      const localPath = join(process.cwd(), 'public', url);
+      if (existsSync(localPath)) {
+        try {
+          unlinkSync(localPath);
+        } catch {}
+      }
+      return;
+    }
+    if (!this.bucket) return;
+    try {
+      const urlObj = new URL(url);
+      const key = urlObj.pathname.slice(1);
+      await this.client.send(
+        new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
+    } catch {}
   }
 }

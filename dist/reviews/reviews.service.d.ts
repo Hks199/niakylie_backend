@@ -30,4 +30,10 @@ export declare class ReviewsService {
     }>;
     toggleHelpfulVote(reviewId: string, userId: string): Promise<ReviewDocument>;
     moderateReview(reviewId: string, dto: ModerateReviewDto): Promise<ReviewDocument>;
+    getAllReviews(query: QueryReviewDto): Promise<{
+        reviews: ReviewDocument[];
+        total: number;
+        page: number;
+        limit: number;
+    }>;
 }

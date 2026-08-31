@@ -42,4 +42,9 @@ export class QueryReviewDto {
   @IsOptional()
   @IsEnum(ReviewStatus)
   status?: ReviewStatus;
+
+  @ApiPropertyOptional({ description: 'Timestamp cache buster' })
+  @IsOptional()
+  @IsString()
+  _t?: string;
 }

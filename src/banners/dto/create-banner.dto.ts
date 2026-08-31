@@ -9,6 +9,7 @@ import {
   IsDateString,
   IsObject,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BannerType, BannerPosition } from '../schemas/banner.schema.js';
 
@@ -33,9 +34,9 @@ export class CreateBannerDto {
   @IsEnum(BannerPosition)
   position?: BannerPosition;
 
-  @ApiPropertyOptional({ example: 'https://niakylie.com/sale', description: 'CTA link destination' })
+  @ApiPropertyOptional({ example: '/category/sarees', description: 'CTA link destination' })
   @IsOptional()
-  @IsUrl()
+  @IsString()
   linkUrl?: string;
 
   @ApiPropertyOptional({ example: 'Shop Now', description: 'CTA button label' })
@@ -45,11 +46,13 @@ export class CreateBannerDto {
 
   @ApiPropertyOptional({ example: 1, description: 'Sorting order for display' })
   @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? parseInt(value, 10) : value))
   @IsNumber()
   displayOrder?: number;
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   isActive?: boolean;
 

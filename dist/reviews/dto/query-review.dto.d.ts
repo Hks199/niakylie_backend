@@ -11,4 +11,5 @@ export declare class QueryReviewDto {
     rating?: number;
     sortBy?: ReviewSortBy;
     status?: ReviewStatus;
+    _t?: string;
 }
