@@ -6,10 +6,10 @@ export default () => ({
     apiVersion: process.env.API_VERSION || 'v1',
   },
   database: {
-    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/niakylie',
+    uri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/niakylie',
   },
   redis: {
-    host: process.env.REDIS_HOST || 'localhost',
+    host: process.env.REDIS_HOST || '127.0.0.1',
     port: parseInt(process.env.REDIS_PORT || '6379', 10),
     password: process.env.REDIS_PASSWORD || undefined,
     ttl: parseInt(process.env.REDIS_TTL || '600', 10),
