@@ -107,6 +107,14 @@ export class CmsController {
 
   // ─── ADMIN FAQS ───────────────────────────────────────────────────────────
 
+  @Get('admin/faqs')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '[Admin] Get all FAQ entries' })
+  @ApiResponse({ status: 200, description: 'All FAQs returned' })
+  async getFaqsAdmin() {
+    return this.cmsService.getFaqsAdmin();
+  }
+
   @Post('admin/faqs')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: '[Admin] Create new FAQ entry' })
