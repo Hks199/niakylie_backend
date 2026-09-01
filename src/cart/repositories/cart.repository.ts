@@ -81,16 +81,7 @@ export class CartRepository {
   async clearCart(userId?: string, guestId?: string): Promise<CartDocument | null> {
     const cart = await this.findCart(userId, guestId);
     if (!cart) return null;
-    return this.update(cart._id.toString(), {
-      items: [],
-      couponCode: undefined,
-      couponDiscount: 0,
-      subtotal: 0,
-      totalMrp: 0,
-      totalDiscount: 0,
-      tax: 0,
-      shippingFee: 0,
-      grandTotal: 0,
-    });
+    await this.cartModel.deleteOne({ _id: cart._id }).exec();
+    return null;
   }
 }

@@ -299,16 +299,12 @@ export class CartService {
     return cart.save();
   }
 
-  async clearCart(userId?: string, guestId?: string): Promise<CartDocument> {
+  async clearCart(userId?: string, guestId?: string): Promise<CartDocument | null> {
     const cart = await this.cartRepository.findCart(userId, guestId);
     if (!cart) {
-      throw new NotFoundException('Cart not found');
+      return null;
     }
-
-    cart.items = [];
-    cart.couponCode = undefined;
-    cart.couponDiscount = 0;
-    this.recalculateCart(cart);
-    return cart.save();
+    await this.cartRepository.clearCart(userId, guestId);
+    return null;
   }
 }
