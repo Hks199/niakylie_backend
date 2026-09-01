@@ -47,7 +47,7 @@ let OrdersService = class OrdersService {
         return this.ordersRepository.findAll({
             page: query.page,
             limit: query.limit,
-            orderStatus: query.orderStatus,
+            orderStatus: query.orderStatus || query.status,
             search: query.search,
             startDate: query.startDate,
             endDate: query.endDate,

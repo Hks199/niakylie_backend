@@ -76,14 +76,40 @@ let OrdersRepository = class OrdersRepository {
             filter.userId = new mongoose_2.Types.ObjectId(userId);
         }
         if (orderStatus) {
-            filter.orderStatus = orderStatus;
-        }
-        if (search) {
             filter.$or = [
-                { orderNumber: { $regex: search, $options: 'i' } },
-                { invoiceNumber: { $regex: search, $options: 'i' } },
-                { 'customerInfo.email': { $regex: search, $options: 'i' } },
+                { orderStatus: orderStatus },
+                { status: orderStatus },
             ];
+        }
+        if (search && search.trim()) {
+            const searchRegex = new RegExp(search.trim(), 'i');
+            const searchConditions = [
+                { orderNumber: searchRegex },
+                { orderId: searchRegex },
+                { invoiceNumber: searchRegex },
+                { 'customerInfo.firstName': searchRegex },
+                { 'customerInfo.lastName': searchRegex },
+                { 'customerInfo.email': searchRegex },
+                { 'customerInfo.phone': searchRegex },
+                { 'shippingAddress.street': searchRegex },
+                { 'shippingAddress.city': searchRegex },
+                { 'shippingAddress.phone': searchRegex },
+                { 'items.name': searchRegex },
+                { 'items.sku': searchRegex },
+            ];
+            if (mongoose_2.Types.ObjectId.isValid(search.trim())) {
+                searchConditions.push({ _id: new mongoose_2.Types.ObjectId(search.trim()) });
+            }
+            if (filter.$or) {
+                filter.$and = [
+                    { $or: filter.$or },
+                    { $or: searchConditions },
+                ];
+                delete filter.$or;
+            }
+            else {
+                filter.$or = searchConditions;
+            }
         }
         if (startDate || endDate) {
             filter.createdAt = {};
