@@ -62,13 +62,43 @@ let DashboardService = DashboardService_1 = class DashboardService {
             order_schema_js_1.OrderStatus.CONFIRMED,
             order_schema_js_1.OrderStatus.PACKED,
             order_schema_js_1.OrderStatus.PENDING,
+            'DELIVERED',
+            'SHIPPED',
+            'CONFIRMED',
+            'PENDING',
         ];
-        const [revenueAgg, totalOrders, totalCustomers, newCustomers, totalProducts, outOfStockCount, lowStockCount] = await Promise.all([
+        const [revenueAgg, totalOrdersCount, totalCustomers, newCustomers, totalProducts, outOfStockCount, lowStockCount] = await Promise.all([
             this.orderModel.aggregate([
-                { $match: { ...dateFilter, status: { $in: validRevenueStatuses }, isDeleted: { $ne: true } } },
-                { $group: { _id: null, totalRevenue: { $sum: '$pricing.grandTotal' }, count: { $sum: 1 } } },
+                {
+                    $match: {
+                        ...dateFilter,
+                        isDeleted: { $ne: true },
+                        $or: [
+                            { orderStatus: { $in: validRevenueStatuses } },
+                            { status: { $in: validRevenueStatuses } },
+                        ],
+                    },
+                },
+                {
+                    $group: {
+                        _id: null,
+                        totalRevenue: {
+                            $sum: {
+                                $ifNull: ['$pricing.grandTotal', { $ifNull: ['$grandTotal', '$totalAmount'] }],
+                            },
+                        },
+                        count: { $sum: 1 },
+                    },
+                },
             ]),
-            this.orderModel.countDocuments({ ...dateFilter, isDeleted: { $ne: true } }),
+            this.orderModel.countDocuments({
+                ...dateFilter,
+                isDeleted: { $ne: true },
+                $or: [
+                    { orderStatus: { $ne: order_schema_js_1.OrderStatus.CANCELLED } },
+                    { status: { $ne: order_schema_js_1.OrderStatus.CANCELLED } },
+                ],
+            }),
             this.userModel.countDocuments({ isActive: true }),
             this.userModel.countDocuments({ ...dateFilter }),
             this.productModel.countDocuments({ isDeleted: { $ne: true } }),
@@ -80,7 +110,10 @@ let DashboardService = DashboardService_1 = class DashboardService {
             }),
         ]);
         const totalRevenue = revenueAgg[0]?.totalRevenue || 0;
-        const averageOrderValue = totalOrders > 0 ? Math.round((totalRevenue / totalOrders) * 100) / 100 : 0;
+        const revenueCount = revenueAgg[0]?.count || 0;
+        const totalOrders = totalOrdersCount > 0 ? totalOrdersCount : revenueCount;
+        const effectiveOrderCount = revenueCount > 0 ? revenueCount : totalOrders;
+        const averageOrderValue = effectiveOrderCount > 0 ? Math.round((totalRevenue / effectiveOrderCount) * 100) / 100 : 0;
         const summary = {
             totalRevenue,
             totalOrders,
@@ -116,22 +149,43 @@ let DashboardService = DashboardService_1 = class DashboardService {
         else {
             groupFormat = { $dateToString: { format: '%Y-%m', date: '$createdAt' } };
         }
-        const validStatuses = [
+        const validRevenueStatuses = [
             order_schema_js_1.OrderStatus.DELIVERED,
             order_schema_js_1.OrderStatus.SHIPPED,
             order_schema_js_1.OrderStatus.OUT_FOR_DELIVERY,
             order_schema_js_1.OrderStatus.CONFIRMED,
             order_schema_js_1.OrderStatus.PACKED,
             order_schema_js_1.OrderStatus.PENDING,
+            'DELIVERED',
+            'SHIPPED',
+            'CONFIRMED',
+            'PENDING',
         ];
         const analytics = await this.orderModel.aggregate([
-            { $match: { ...dateFilter, status: { $in: validStatuses }, isDeleted: { $ne: true } } },
+            {
+                $match: {
+                    ...dateFilter,
+                    isDeleted: { $ne: true },
+                    $or: [
+                        { orderStatus: { $in: validRevenueStatuses } },
+                        { status: { $in: validRevenueStatuses } },
+                    ],
+                },
+            },
             {
                 $group: {
                     _id: groupFormat,
-                    revenue: { $sum: '$pricing.grandTotal' },
+                    revenue: {
+                        $sum: {
+                            $ifNull: ['$pricing.grandTotal', { $ifNull: ['$grandTotal', '$totalAmount'] }],
+                        },
+                    },
                     orders: { $sum: 1 },
-                    avgOrderValue: { $avg: '$pricing.grandTotal' },
+                    avgOrderValue: {
+                        $avg: {
+                            $ifNull: ['$pricing.grandTotal', { $ifNull: ['$grandTotal', '$totalAmount'] }],
+                        },
+                    },
                 },
             },
             { $sort: { _id: 1 } },
@@ -158,9 +212,13 @@ let DashboardService = DashboardService_1 = class DashboardService {
             { $match: { ...dateFilter, isDeleted: { $ne: true } } },
             {
                 $group: {
-                    _id: '$status',
+                    _id: { $ifNull: ['$orderStatus', '$status'] },
                     count: { $sum: 1 },
-                    totalValue: { $sum: '$pricing.grandTotal' },
+                    totalValue: {
+                        $sum: {
+                            $ifNull: ['$pricing.grandTotal', { $ifNull: ['$grandTotal', '$totalAmount'] }],
+                        },
+                    },
                 },
             },
             {
@@ -183,7 +241,14 @@ let DashboardService = DashboardService_1 = class DashboardService {
         const dateFilter = this.getDateFilter(query.startDate, query.endDate);
         const limit = query.limit || 10;
         const topProducts = await this.orderModel.aggregate([
-            { $match: { ...dateFilter, isDeleted: { $ne: true }, status: { $ne: order_schema_js_1.OrderStatus.CANCELLED } } },
+            {
+                $match: {
+                    ...dateFilter,
+                    isDeleted: { $ne: true },
+                    orderStatus: { $ne: order_schema_js_1.OrderStatus.CANCELLED },
+                    status: { $ne: order_schema_js_1.OrderStatus.CANCELLED },
+                },
+            },
             { $unwind: '$items' },
             {
                 $group: {
@@ -192,7 +257,11 @@ let DashboardService = DashboardService_1 = class DashboardService {
                     sku: { $first: '$items.sku' },
                     image: { $first: '$items.image' },
                     totalQuantitySold: { $sum: '$items.quantity' },
-                    totalRevenue: { $sum: '$items.totalPrice' },
+                    totalRevenue: {
+                        $sum: {
+                            $ifNull: ['$items.totalPrice', { $multiply: ['$items.unitPrice', '$items.quantity'] }],
+                        },
+                    },
                     orderCount: { $sum: 1 },
                 },
             },
@@ -222,7 +291,14 @@ let DashboardService = DashboardService_1 = class DashboardService {
         const dateFilter = this.getDateFilter(query.startDate, query.endDate);
         const limit = query.limit || 10;
         const topCategories = await this.orderModel.aggregate([
-            { $match: { ...dateFilter, isDeleted: { $ne: true }, status: { $ne: order_schema_js_1.OrderStatus.CANCELLED } } },
+            {
+                $match: {
+                    ...dateFilter,
+                    isDeleted: { $ne: true },
+                    orderStatus: { $ne: order_schema_js_1.OrderStatus.CANCELLED },
+                    status: { $ne: order_schema_js_1.OrderStatus.CANCELLED },
+                },
+            },
             { $unwind: '$items' },
             {
                 $lookup: {
@@ -246,7 +322,11 @@ let DashboardService = DashboardService_1 = class DashboardService {
                 $group: {
                     _id: { $ifNull: ['$category.name', 'Uncategorized'] },
                     categoryId: { $first: '$category._id' },
-                    totalRevenue: { $sum: '$items.totalPrice' },
+                    totalRevenue: {
+                        $sum: {
+                            $ifNull: ['$items.totalPrice', { $multiply: ['$items.unitPrice', '$items.quantity'] }],
+                        },
+                    },
                     itemsSold: { $sum: '$items.quantity' },
                 },
             },
@@ -273,11 +353,23 @@ let DashboardService = DashboardService_1 = class DashboardService {
         const dateFilter = this.getDateFilter(query.startDate, query.endDate);
         const limit = query.limit || 10;
         const topCustomers = await this.orderModel.aggregate([
-            { $match: { ...dateFilter, isDeleted: { $ne: true }, userId: { $exists: true, $ne: null } } },
+            {
+                $match: {
+                    ...dateFilter,
+                    isDeleted: { $ne: true },
+                    userId: { $exists: true, $ne: null },
+                    orderStatus: { $ne: order_schema_js_1.OrderStatus.CANCELLED },
+                    status: { $ne: order_schema_js_1.OrderStatus.CANCELLED },
+                },
+            },
             {
                 $group: {
                     _id: '$userId',
-                    totalSpent: { $sum: '$pricing.grandTotal' },
+                    totalSpent: {
+                        $sum: {
+                            $ifNull: ['$pricing.grandTotal', { $ifNull: ['$grandTotal', '$totalAmount'] }],
+                        },
+                    },
                     orderCount: { $sum: 1 },
                     lastOrderDate: { $max: '$createdAt' },
                 },
