@@ -58,14 +58,13 @@ export class CartService {
     cart.totalMrp = totalMrp;
     cart.totalDiscount = totalDiscount;
 
-    // 18% GST Estimated Tax
-    const taxableSubtotal = Math.max(0, subtotal - couponDiscount);
-    cart.tax = Math.round(taxableSubtotal * 0.18);
+    // 0% Tax
+    cart.tax = 0;
 
     // Free shipping threshold: subtotal >= 1000
     cart.shippingFee = subtotal >= 1000 || subtotal === 0 ? 0 : 99;
 
-    cart.grandTotal = Math.max(0, subtotal - couponDiscount + cart.tax + cart.shippingFee);
+    cart.grandTotal = Math.max(0, subtotal - couponDiscount + cart.shippingFee);
 
     return cart;
   }

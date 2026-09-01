@@ -186,10 +186,9 @@ export class CheckoutService {
       }
     }
 
-    // Tax calculation: 18% GST on taxable subtotal
-    const taxableSubtotal = Math.max(0, subtotal - couponDiscount);
-    const tax = Math.round(taxableSubtotal * 0.18);
-    const grandTotal = Math.max(0, taxableSubtotal + tax + shippingFee);
+    // 0% Tax
+    const tax = 0;
+    const grandTotal = Math.max(0, taxableSubtotal + shippingFee);
 
     return {
       items: itemsSummary,
