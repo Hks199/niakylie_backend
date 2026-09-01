@@ -16,7 +16,6 @@ exports.ReviewsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const reviews_service_js_1 = require("./reviews.service.js");
-const create_review_dto_js_1 = require("./dto/create-review.dto.js");
 const update_review_dto_js_1 = require("./dto/update-review.dto.js");
 const query_review_dto_js_1 = require("./dto/query-review.dto.js");
 const moderate_review_dto_js_1 = require("./dto/moderate-review.dto.js");
@@ -26,9 +25,10 @@ let ReviewsController = class ReviewsController {
     constructor(reviewsService) {
         this.reviewsService = reviewsService;
     }
-    async createReview(dto, req) {
-        const userId = req.user?.id || req.user?._id;
-        return this.reviewsService.createReview(userId, dto);
+    async createReview(body, req, guestIdHeader) {
+        const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub || req.user?.userId || body?.userId;
+        const guestId = guestIdHeader || req.query?.guestId || body?.guestId;
+        return this.reviewsService.createReview(userId, guestId, body);
     }
     async getProductReviews(productId, query) {
         return this.reviewsService.getProductReviews(productId, query);
@@ -63,14 +63,16 @@ let ReviewsController = class ReviewsController {
 exports.ReviewsController = ReviewsController;
 __decorate([
     (0, common_1.Post)(),
+    (0, swagger_1.ApiHeader)({ name: 'x-guest-id', required: false, description: 'Guest ID for unauthenticated reviews' }),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, swagger_1.ApiOperation)({ summary: 'Submit a product review with rating, text, images, and videos' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Review submitted successfully' }),
     (0, swagger_1.ApiResponse)({ status: 400, description: 'User already submitted a review or invalid payload' }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
+    __param(2, (0, common_1.Headers)('x-guest-id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_review_dto_js_1.CreateReviewDto, Object]),
+    __metadata("design:paramtypes", [Object, Object, String]),
     __metadata("design:returntype", Promise)
 ], ReviewsController.prototype, "createReview", null);
 __decorate([

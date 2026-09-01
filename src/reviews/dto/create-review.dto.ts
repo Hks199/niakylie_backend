@@ -43,4 +43,14 @@ export class CreateReviewDto {
   @IsArray()
   @IsUrl({}, { each: true })
   videos?: string[];
+
+  @ApiPropertyOptional({ example: '6a8868eb5cd29085db590738', description: 'User Mongo ID' })
+  @IsOptional()
+  @IsString()
+  userId?: string;
+
+  @ApiPropertyOptional({ example: 'Harish Sahu', description: 'User Full Name' })
+  @IsOptional()
+  @IsString()
+  userName?: string;
 }

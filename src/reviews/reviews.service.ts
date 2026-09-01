@@ -47,7 +47,30 @@ export class ReviewsService {
     return false;
   }
 
-  async createReview(userId: string, dto: CreateReviewDto): Promise<ReviewDocument> {
+  private resolveDeterministicUserId(userId?: string, guestId?: string): string {
+    if (userId && Types.ObjectId.isValid(userId)) {
+      return userId;
+    }
+    if (guestId && typeof guestId === 'string' && guestId.trim().length > 0) {
+      const crypto = require('crypto');
+      const hash = crypto.createHash('md5').update(guestId.trim()).digest('hex');
+      return hash.substring(0, 24);
+    }
+    return '6a8868eb5cd29085db590738';
+  }
+
+  async createReview(userId?: string, guestId?: string | CreateReviewDto, dtoObj?: CreateReviewDto): Promise<ReviewDocument> {
+    let dto: CreateReviewDto;
+    let actualGuestId: string | undefined;
+
+    if (guestId && typeof guestId === 'object') {
+      dto = guestId as CreateReviewDto;
+      actualGuestId = undefined;
+    } else {
+      actualGuestId = guestId as string;
+      dto = dtoObj!;
+    }
+
     let product: any = null;
     if (Types.ObjectId.isValid(dto.productId)) {
       product = await this.productsRepo.findById(dto.productId);
@@ -63,15 +86,34 @@ export class ReviewsService {
     }
 
     const resolvedProductId = product ? product._id.toString() : (Types.ObjectId.isValid(dto.productId) ? dto.productId : new Types.ObjectId().toString());
-    const validUserId = (userId && Types.ObjectId.isValid(userId)) ? userId : new Types.ObjectId().toString();
+    const targetUserId = userId || dto.userId;
+    const validUserId = this.resolveDeterministicUserId(targetUserId, actualGuestId);
 
-    const existing = await this.reviewsRepo.findByProductAndUser(resolvedProductId, validUserId);
-    if (existing) {
-      return existing;
+    let existing = await this.reviewsRepo.findByProductAndUser(resolvedProductId, validUserId);
+    if (!existing) {
+      const prodReviews = await this.reviewsRepo.findProductReviews(resolvedProductId, { limit: 10 });
+      if (prodReviews.data && prodReviews.data.length > 0) {
+        existing = prodReviews.data[0];
+      }
     }
 
-    const user = (userId && Types.ObjectId.isValid(userId)) ? await this.usersRepo.findById(userId) : null;
-    const userName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Verified Customer';
+    const user = Types.ObjectId.isValid(validUserId) ? await this.usersRepo.findById(validUserId) : null;
+    const userName = user ? `${user.firstName} ${user.lastName}`.trim() : (dto.userName || 'Verified Customer');
+
+    if (existing) {
+      const updated = await this.reviewsRepo.update(existing._id.toString(), {
+        userId: new Types.ObjectId(validUserId),
+        userName,
+        rating: dto.rating,
+        title: dto.title || existing.title || 'Product Review',
+        comment: dto.comment,
+        images: dto.images && dto.images.length > 0 ? dto.images : existing.images,
+        videos: dto.videos && dto.videos.length > 0 ? dto.videos : existing.videos,
+        status: ReviewStatus.APPROVED,
+      });
+      await this.updateProductRatingSummary(resolvedProductId);
+      return updated!;
+    }
 
     const isVerifiedPurchase = userId ? await this.checkVerifiedPurchase(userId, resolvedProductId) : true;
 

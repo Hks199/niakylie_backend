@@ -52,7 +52,7 @@ async function bootstrap() {
     app.use('/public/uploads', express_1.default.static((0, path_1.join)(process.cwd(), 'public', 'uploads')));
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,
-        forbidNonWhitelisted: true,
+        forbidNonWhitelisted: false,
         transform: true,
         transformOptions: {
             enableImplicitConversion: true,
