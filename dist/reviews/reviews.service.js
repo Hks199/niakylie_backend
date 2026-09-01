@@ -32,11 +32,8 @@ let ReviewsService = class ReviewsService {
     async updateProductRatingSummary(productId) {
         const stats = await this.reviewsRepo.getRatingStatsForProduct(productId);
         await this.productsRepo.update(productId, {
-            ratings: {
-                averageRating: stats.averageRating,
-                reviewCount: stats.reviewCount,
-                ratingBreakdown: stats.ratingBreakdown,
-            },
+            averageRating: stats.averageRating,
+            reviewsCount: stats.reviewCount,
         });
     }
     async checkVerifiedPurchase(userId, productId) {

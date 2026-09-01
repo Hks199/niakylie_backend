@@ -28,11 +28,8 @@ export class ReviewsService {
   private async updateProductRatingSummary(productId: string): Promise<void> {
     const stats = await this.reviewsRepo.getRatingStatsForProduct(productId);
     await this.productsRepo.update(productId, {
-      ratings: {
-        averageRating: stats.averageRating,
-        reviewCount: stats.reviewCount,
-        ratingBreakdown: stats.ratingBreakdown,
-      },
+      averageRating: stats.averageRating,
+      reviewsCount: stats.reviewCount,
     } as any);
   }
 

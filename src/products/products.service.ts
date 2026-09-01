@@ -130,15 +130,6 @@ export class ProductsService {
   }
 
   async findAll(queryDto: QueryProductDto) {
-    if (this.cacheService) {
-      const cacheKey = `products:list:${JSON.stringify(queryDto)}`;
-      const cached = await this.cacheService.get<any>(cacheKey);
-      if (cached) return cached;
-
-      const result = await this.productsRepository.findAll(queryDto);
-      await this.cacheService.set(cacheKey, result, 300000); // 5 mins TTL
-      return result;
-    }
     return this.productsRepository.findAll(queryDto);
   }
 
