@@ -13,6 +13,7 @@ export declare class UsersService {
     addAddress(userId: string, addressDto: import('./dto/address.dto.js').AddressDto): Promise<UserDocument>;
     updateAddress(userId: string, addressId: string, addressDto: import('./dto/address.dto.js').AddressDto): Promise<UserDocument>;
     deleteAddress(userId: string, addressId: string): Promise<UserDocument>;
+    getWishlist(userId: string): Promise<any[]>;
     addToWishlist(userId: string, productId: string): Promise<UserDocument>;
     removeFromWishlist(userId: string, productId: string): Promise<UserDocument>;
     addRecentlyViewed(userId: string, productId: string): Promise<UserDocument>;

@@ -163,7 +163,31 @@ export class UsersRepository {
       .exec();
 
     if (!user || !user.wishlist) return [];
-    return user.wishlist.filter((item: any) => item && typeof item === 'object' && item._id);
+    const rawItems = user.wishlist.filter((item: any) => item && typeof item === 'object' && item._id);
+
+    return rawItems.map((item: any) => {
+      const prod = item.toObject ? item.toObject() : item;
+      const firstVariant = prod.variants && prod.variants.length > 0 ? prod.variants[0] : null;
+      const offerPrice = prod.offerPrice ?? prod.price ?? firstVariant?.offerPrice ?? 0;
+      const mrp = prod.mrp ?? prod.compareAtPrice ?? firstVariant?.mrp ?? offerPrice;
+      const discount = firstVariant?.discount ?? (mrp > 0 ? Math.round(((mrp - offerPrice) / mrp) * 100) : 0);
+      const thumbnail = prod.thumbnail || firstVariant?.images?.[0] || prod.images?.[0] || '';
+
+      return {
+        ...prod,
+        id: prod._id ? prod._id.toString() : prod.id,
+        title: prod.title || prod.name,
+        name: prod.name || prod.title,
+        price: offerPrice,
+        offerPrice,
+        mrp,
+        compareAtPrice: mrp,
+        originalPrice: mrp,
+        discountPercentage: discount,
+        discount,
+        thumbnail,
+      };
+    });
   }
 
   async addToWishlist(userId: string, productId: string): Promise<UserDocument | null> {

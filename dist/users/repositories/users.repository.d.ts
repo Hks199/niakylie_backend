@@ -24,6 +24,7 @@ export declare class UsersRepository {
     resetDefaultAddresses(userId: string): Promise<void>;
     updateAddress(userId: string, addressId: string, addressData: Partial<import('../schemas/address.schema.js').Address>): Promise<UserDocument | null>;
     deleteAddress(userId: string, addressId: string): Promise<UserDocument | null>;
+    getWishlist(userId: string): Promise<any[]>;
     addToWishlist(userId: string, productId: string): Promise<UserDocument | null>;
     removeFromWishlist(userId: string, productId: string): Promise<UserDocument | null>;
     addRecentlyViewed(userId: string, productId: string): Promise<UserDocument | null>;
