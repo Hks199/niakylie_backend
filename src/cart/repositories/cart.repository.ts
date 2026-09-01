@@ -36,10 +36,18 @@ export class CartRepository {
   async findCart(userId?: string, guestId?: string): Promise<CartDocument | null> {
     if (userId) {
       const userCart = await this.findByUserId(userId);
-      if (userCart) return userCart;
+      if (userCart && userCart.items && userCart.items.length > 0) {
+        return userCart;
+      }
     }
     if (guestId) {
-      return this.findByGuestId(guestId);
+      const guestCart = await this.findByGuestId(guestId);
+      if (guestCart && guestCart.items && guestCart.items.length > 0) {
+        return guestCart;
+      }
+    }
+    if (userId) {
+      return this.findByUserId(userId);
     }
     return null;
   }

@@ -46,11 +46,18 @@ let CartRepository = class CartRepository {
     async findCart(userId, guestId) {
         if (userId) {
             const userCart = await this.findByUserId(userId);
-            if (userCart)
+            if (userCart && userCart.items && userCart.items.length > 0) {
                 return userCart;
+            }
         }
         if (guestId) {
-            return this.findByGuestId(guestId);
+            const guestCart = await this.findByGuestId(guestId);
+            if (guestCart && guestCart.items && guestCart.items.length > 0) {
+                return guestCart;
+            }
+        }
+        if (userId) {
+            return this.findByUserId(userId);
         }
         return null;
     }
@@ -91,17 +98,8 @@ let CartRepository = class CartRepository {
         const cart = await this.findCart(userId, guestId);
         if (!cart)
             return null;
-        return this.update(cart._id.toString(), {
-            items: [],
-            couponCode: undefined,
-            couponDiscount: 0,
-            subtotal: 0,
-            totalMrp: 0,
-            totalDiscount: 0,
-            tax: 0,
-            shippingFee: 0,
-            grandTotal: 0,
-        });
+        await this.cartModel.deleteOne({ _id: cart._id }).exec();
+        return null;
     }
 };
 exports.CartRepository = CartRepository;

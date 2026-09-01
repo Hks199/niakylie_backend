@@ -25,5 +25,5 @@ export declare class CartService {
     moveToWishlist(sku: string, userId: string): Promise<CartDocument>;
     applyCoupon(dto: ApplyCouponDto, userId?: string): Promise<CartDocument>;
     removeCoupon(userId?: string, guestId?: string): Promise<CartDocument>;
-    clearCart(userId?: string, guestId?: string): Promise<CartDocument>;
+    clearCart(userId?: string, guestId?: string): Promise<CartDocument | null>;
 }

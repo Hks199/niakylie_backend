@@ -30,8 +30,8 @@ describe('BrandsController', () => {
 
   describe('findAll', () => {
     it('should delegate list retrieval to brandsService', async () => {
-      const mockResult = { data: [], total: 0 };
-      service.findAll.mockResolvedValue(mockResult);
+      const mockResult = { data: [], total: 0, page: 1, limit: 10, totalPages: 0 };
+      service.findAll.mockResolvedValue(mockResult as any);
 
       const query = { page: 1, limit: 10 };
       const result = await controller.findAll(query);

@@ -16,5 +16,5 @@ export declare class CartController {
     moveToWishlist(sku: string, req: any): Promise<import("./schemas/cart.schema.js").CartDocument>;
     applyCoupon(dto: ApplyCouponDto, req: any, guestIdHeader?: string): Promise<import("./schemas/cart.schema.js").CartDocument>;
     removeCoupon(req: any, guestIdHeader?: string): Promise<import("./schemas/cart.schema.js").CartDocument>;
-    clearCart(req: any, guestIdHeader?: string): Promise<import("./schemas/cart.schema.js").CartDocument>;
+    clearCart(req: any, guestIdHeader?: string): Promise<import("./schemas/cart.schema.js").CartDocument | null>;
 }

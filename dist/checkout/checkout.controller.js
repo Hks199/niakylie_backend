@@ -18,13 +18,14 @@ const swagger_1 = require("@nestjs/swagger");
 const checkout_service_js_1 = require("./checkout.service.js");
 const checkout_summary_dto_js_1 = require("./dto/checkout-summary.dto.js");
 const place_order_dto_js_1 = require("./dto/place-order.dto.js");
+const optional_jwt_auth_guard_js_1 = require("../auth/guards/optional-jwt-auth.guard.js");
 let CheckoutController = class CheckoutController {
     checkoutService;
     constructor(checkoutService) {
         this.checkoutService = checkoutService;
     }
     extractUserIdAndGuestId(req, guestIdHeader) {
-        const userId = req.user?.id || req.user?._id;
+        const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub || req.user?.userId;
         const guestId = guestIdHeader || req.body?.guestId || req.query?.guestId;
         return { userId, guestId };
     }
@@ -125,6 +126,7 @@ __decorate([
 ], CheckoutController.prototype, "getInvoice", null);
 exports.CheckoutController = CheckoutController = __decorate([
     (0, swagger_1.ApiTags)('Checkout'),
+    (0, common_1.UseGuards)(optional_jwt_auth_guard_js_1.OptionalJwtAuthGuard),
     (0, common_1.Controller)('checkout'),
     __metadata("design:paramtypes", [checkout_service_js_1.CheckoutService])
 ], CheckoutController);

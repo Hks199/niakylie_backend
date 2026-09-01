@@ -59,10 +59,9 @@ let CartService = class CartService {
         cart.subtotal = subtotal;
         cart.totalMrp = totalMrp;
         cart.totalDiscount = totalDiscount;
-        const taxableSubtotal = Math.max(0, subtotal - couponDiscount);
-        cart.tax = Math.round(taxableSubtotal * 0.18);
+        cart.tax = 0;
         cart.shippingFee = subtotal >= 1000 || subtotal === 0 ? 0 : 99;
-        cart.grandTotal = Math.max(0, subtotal - couponDiscount + cart.tax + cart.shippingFee);
+        cart.grandTotal = Math.max(0, subtotal - couponDiscount + cart.shippingFee);
         return cart;
     }
     async getCart(userId, guestId) {
@@ -249,13 +248,10 @@ let CartService = class CartService {
     async clearCart(userId, guestId) {
         const cart = await this.cartRepository.findCart(userId, guestId);
         if (!cart) {
-            throw new common_1.NotFoundException('Cart not found');
+            return null;
         }
-        cart.items = [];
-        cart.couponCode = undefined;
-        cart.couponDiscount = 0;
-        this.recalculateCart(cart);
-        return cart.save();
+        await this.cartRepository.clearCart(userId, guestId);
+        return null;
     }
 };
 exports.CartService = CartService;

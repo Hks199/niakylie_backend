@@ -24,6 +24,7 @@ export declare class CmsController {
     deletePage(id: string): Promise<{
         message: string;
     }>;
+    getFaqsAdmin(): Promise<import("./schemas/faq.schema.js").FaqDocument[]>;
     createFaq(dto: CreateFaqDto): Promise<import("./schemas/faq.schema.js").FaqDocument>;
     updateFaq(id: string, dto: UpdateFaqDto): Promise<import("./schemas/faq.schema.js").FaqDocument>;
     deleteFaq(id: string): Promise<{

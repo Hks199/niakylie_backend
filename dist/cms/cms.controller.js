@@ -52,6 +52,9 @@ let CmsController = class CmsController {
     async deletePage(id) {
         return this.cmsService.deletePage(id);
     }
+    async getFaqsAdmin() {
+        return this.cmsService.getFaqsAdmin();
+    }
     async createFaq(dto) {
         return this.cmsService.createFaq(dto);
     }
@@ -152,6 +155,15 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], CmsController.prototype, "deletePage", null);
+__decorate([
+    (0, common_1.Get)('admin/faqs'),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, swagger_1.ApiOperation)({ summary: '[Admin] Get all FAQ entries' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'All FAQs returned' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], CmsController.prototype, "getFaqsAdmin", null);
 __decorate([
     (0, common_1.Post)('admin/faqs'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),

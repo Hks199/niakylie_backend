@@ -26,6 +26,7 @@ export declare class CmsService implements OnModuleInit {
         message: string;
     }>;
     getFaqs(): Promise<Record<string, FaqDocument[]>>;
+    getFaqsAdmin(): Promise<FaqDocument[]>;
     createFaq(dto: CreateFaqDto): Promise<FaqDocument>;
     updateFaq(id: string, dto: UpdateFaqDto): Promise<FaqDocument>;
     deleteFaq(id: string): Promise<{

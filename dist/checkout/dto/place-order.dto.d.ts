@@ -7,11 +7,18 @@ export declare class CustomerInfoDto {
     phone: string;
 }
 export declare class PlaceOrderDto {
-    shippingAddress: AddressDto;
+    addressId?: string;
+    shippingAddress?: AddressDto;
     billingAddress?: AddressDto;
     customerInfo?: CustomerInfoDto;
     paymentMethod: PaymentMethod;
     shippingMethod?: ShippingMethod;
     couponCode?: string;
     guestId?: string;
+    shippingType?: string;
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
+    razorpaySignature?: string;
+    stripePaymentIntentId?: string;
+    items?: any[];
 }
