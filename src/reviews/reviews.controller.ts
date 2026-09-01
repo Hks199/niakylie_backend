@@ -9,6 +9,7 @@ import {
   Param,
   Query,
   Req,
+  UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -25,8 +26,10 @@ import { CreateReviewDto } from './dto/create-review.dto.js';
 import { UpdateReviewDto } from './dto/update-review.dto.js';
 import { QueryReviewDto } from './dto/query-review.dto.js';
 import { ModerateReviewDto } from './dto/moderate-review.dto.js';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard.js';
 
 @ApiTags('Reviews')
+@UseGuards(OptionalJwtAuthGuard)
 @Controller('reviews')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}

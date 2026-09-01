@@ -20,6 +20,7 @@ const create_review_dto_js_1 = require("./dto/create-review.dto.js");
 const update_review_dto_js_1 = require("./dto/update-review.dto.js");
 const query_review_dto_js_1 = require("./dto/query-review.dto.js");
 const moderate_review_dto_js_1 = require("./dto/moderate-review.dto.js");
+const optional_jwt_auth_guard_js_1 = require("../auth/guards/optional-jwt-auth.guard.js");
 let ReviewsController = class ReviewsController {
     reviewsService;
     constructor(reviewsService) {
@@ -166,6 +167,7 @@ __decorate([
 ], ReviewsController.prototype, "moderateReview", null);
 exports.ReviewsController = ReviewsController = __decorate([
     (0, swagger_1.ApiTags)('Reviews'),
+    (0, common_1.UseGuards)(optional_jwt_auth_guard_js_1.OptionalJwtAuthGuard),
     (0, common_1.Controller)('reviews'),
     __metadata("design:paramtypes", [reviews_service_js_1.ReviewsService])
 ], ReviewsController);
