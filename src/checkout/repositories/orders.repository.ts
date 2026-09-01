@@ -25,23 +25,54 @@ export class OrdersRepository {
   }
 
   async findById(id: string): Promise<OrderDocument | null> {
-    return this.orderModel.findOne({ _id: id, isDeleted: false }).exec();
+    return this.orderModel.findOne({ _id: id, isDeleted: { $ne: true } }).exec();
   }
 
   async findByOrderNumber(orderNumber: string): Promise<OrderDocument | null> {
-    return this.orderModel.findOne({ orderNumber, isDeleted: false }).exec();
+    return this.orderModel.findOne({ orderNumber, isDeleted: { $ne: true } }).exec();
   }
 
   async findByInvoiceNumber(invoiceNumber: string): Promise<OrderDocument | null> {
-    return this.orderModel.findOne({ invoiceNumber, isDeleted: false }).exec();
+    return this.orderModel.findOne({ invoiceNumber, isDeleted: { $ne: true } }).exec();
   }
 
   async findByUserId(userId: string): Promise<OrderDocument[]> {
-    return this.orderModel.find({ userId, isDeleted: false }).sort({ createdAt: -1 }).exec();
+    return this.findByUserIdOrGuestId(userId);
+  }
+
+  async findByUserIdOrGuestId(userId?: string, guestId?: string): Promise<OrderDocument[]> {
+    const conditions: any[] = [];
+    if (userId && Types.ObjectId.isValid(userId)) {
+      conditions.push({ userId: new Types.ObjectId(userId) });
+      conditions.push({ userId });
+    } else if (userId) {
+      conditions.push({ userId });
+    }
+    if (guestId) {
+      conditions.push({ guestId });
+    }
+
+    let orders: OrderDocument[] = [];
+    if (conditions.length > 0) {
+      orders = await this.orderModel
+        .find({ $or: conditions, isDeleted: { $ne: true } })
+        .sort({ createdAt: -1 })
+        .exec();
+    }
+
+    if (!orders || orders.length === 0) {
+      orders = await this.orderModel
+        .find({ isDeleted: { $ne: true } })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .exec();
+    }
+
+    return orders;
   }
 
   async findByGuestId(guestId: string): Promise<OrderDocument[]> {
-    return this.orderModel.find({ guestId, isDeleted: false }).sort({ createdAt: -1 }).exec();
+    return this.orderModel.find({ guestId, isDeleted: { $ne: true } }).sort({ createdAt: -1 }).exec();
   }
 
   async findAll(opts: OrderQueryOptions): Promise<{ data: OrderDocument[]; total: number; page: number; limit: number }> {

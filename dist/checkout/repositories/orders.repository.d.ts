@@ -17,6 +17,7 @@ export declare class OrdersRepository {
     findByOrderNumber(orderNumber: string): Promise<OrderDocument | null>;
     findByInvoiceNumber(invoiceNumber: string): Promise<OrderDocument | null>;
     findByUserId(userId: string): Promise<OrderDocument[]>;
+    findByUserIdOrGuestId(userId?: string, guestId?: string): Promise<OrderDocument[]>;
     findByGuestId(guestId: string): Promise<OrderDocument[]>;
     findAll(opts: OrderQueryOptions): Promise<{
         data: OrderDocument[];

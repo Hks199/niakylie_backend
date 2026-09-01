@@ -21,6 +21,7 @@ const update_order_status_dto_js_1 = require("./dto/update-order-status.dto.js")
 const update_tracking_dto_js_1 = require("./dto/update-tracking.dto.js");
 const request_return_dto_js_1 = require("./dto/request-return.dto.js");
 const cancel_order_dto_js_1 = require("./dto/cancel-order.dto.js");
+const optional_jwt_auth_guard_js_1 = require("../auth/guards/optional-jwt-auth.guard.js");
 let OrdersController = class OrdersController {
     ordersService;
     constructor(ordersService) {
@@ -44,9 +45,15 @@ let OrdersController = class OrdersController {
     async markRefunded(orderId, body) {
         return this.ordersService.markRefunded(orderId, body?.notes);
     }
-    async getMyOrders(req) {
-        const userId = req.user?.id || req.user?._id;
-        return this.ordersService.getMyOrders(userId);
+    async getMyOrders(req, guestIdHeader) {
+        const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub;
+        const guestId = guestIdHeader || req.query?.guestId;
+        return this.ordersService.getMyOrders(userId, guestId);
+    }
+    async getOrders(req, guestIdHeader) {
+        const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub;
+        const guestId = guestIdHeader || req.query?.guestId;
+        return this.ordersService.getMyOrders(userId, guestId);
     }
     async getMyOrder(orderId, req) {
         const userId = req.user?.id || req.user?._id;
@@ -147,14 +154,28 @@ __decorate([
 ], OrdersController.prototype, "markRefunded", null);
 __decorate([
     (0, common_1.Get)('my'),
+    (0, swagger_1.ApiHeader)({ name: 'x-guest-id', required: false, description: 'Guest ID for unauthenticated order lookup' }),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
-    (0, swagger_1.ApiOperation)({ summary: 'Get all orders for the authenticated customer' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Get all orders for the authenticated customer or guest session' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Customer order list returned' }),
     __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Headers)('x-guest-id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "getMyOrders", null);
+__decorate([
+    (0, common_1.Get)(),
+    (0, swagger_1.ApiHeader)({ name: 'x-guest-id', required: false, description: 'Guest ID for unauthenticated order lookup' }),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get all orders for the authenticated customer or guest session' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Customer order list returned' }),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Headers)('x-guest-id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "getOrders", null);
 __decorate([
     (0, common_1.Get)('my/:orderId'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
@@ -234,6 +255,7 @@ __decorate([
 ], OrdersController.prototype, "requestReturn", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, swagger_1.ApiTags)('Orders'),
+    (0, common_1.UseGuards)(optional_jwt_auth_guard_js_1.OptionalJwtAuthGuard),
     (0, common_1.Controller)('orders'),
     __metadata("design:paramtypes", [orders_service_js_1.OrdersService])
 ], OrdersController);

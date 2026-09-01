@@ -475,6 +475,7 @@ export class CheckoutService {
       <head>
         <title>Receipt - ${order.orderNumber}</title>
         <meta charset="utf-8" />
+        <base href="http://localhost:5173/" />
         <style>
           @media print {
             body { margin: 0; padding: 20px; box-shadow: none !important; border: none !important; }
@@ -602,7 +603,7 @@ export class CheckoutService {
 
         <div class="header">
           <div>
-            <img id="receipt-logo" src="${logoBase64}" alt="NiaKylie Logo" style="height: 60px; max-width: 220px; width: auto; object-fit: contain; display: block; margin-bottom: 6px;" />
+            <img id="receipt-logo" src="http://localhost:5173/asset/niakylie_logo.png" onerror="this.onerror=null; this.src='${logoBase64}';" alt="NiaKylie Logo" style="height: 60px; max-width: 220px; width: auto; object-fit: contain; display: block; margin-bottom: 6px;" />
             <div class="brand-tag">Luxury Ethnic Couture</div>
           </div>
           <div class="invoice-title">
@@ -677,17 +678,31 @@ export class CheckoutService {
         </div>
 
         <script>
-          function triggerPrint() {
+          function doPrint() {
             setTimeout(function() {
               window.print();
-            }, 300);
+            }, 400);
           }
           var logo = document.getElementById('receipt-logo');
-          if (logo && !logo.complete) {
-            logo.onload = triggerPrint;
-            logo.onerror = triggerPrint;
+          if (logo) {
+            if (logo.complete && logo.naturalWidth > 0) {
+              if ('decode' in logo) {
+                logo.decode().then(doPrint).catch(doPrint);
+              } else {
+                doPrint();
+              }
+            } else {
+              logo.onload = function() {
+                if ('decode' in logo) {
+                  logo.decode().then(doPrint).catch(doPrint);
+                } else {
+                  doPrint();
+                }
+              };
+              logo.onerror = doPrint;
+            }
           } else {
-            triggerPrint();
+            doPrint();
           }
         </script>
       </body>

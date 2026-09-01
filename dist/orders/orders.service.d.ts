@@ -20,7 +20,7 @@ export declare class OrdersService {
     updateTracking(orderId: string, dto: UpdateTrackingDto): Promise<OrderDocument>;
     approveReturn(orderId: string): Promise<OrderDocument>;
     markRefunded(orderId: string, notes?: string): Promise<OrderDocument>;
-    getMyOrders(userId: string): Promise<OrderDocument[]>;
+    getMyOrders(userId?: string, guestId?: string): Promise<OrderDocument[]>;
     getMyOrder(orderId: string, userId: string): Promise<OrderDocument>;
     getOrderTimeline(orderId: string, userId?: string): Promise<any[]>;
     getOrderTracking(orderId: string, userId?: string): Promise<{

@@ -7,6 +7,7 @@ import {
   Param,
   Query,
   Req,
+  Headers,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -16,6 +17,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiHeader,
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
@@ -26,8 +28,10 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto.js';
 import { UpdateTrackingDto } from './dto/update-tracking.dto.js';
 import { RequestReturnDto } from './dto/request-return.dto.js';
 import { CancelOrderDto } from './dto/cancel-order.dto.js';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard.js';
 
 @ApiTags('Orders')
+@UseGuards(OptionalJwtAuthGuard)
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
@@ -102,12 +106,31 @@ export class OrdersController {
   // ─── CUSTOMER ─────────────────────────────────────────────────────────────
 
   @Get('my')
+  @ApiHeader({ name: 'x-guest-id', required: false, description: 'Guest ID for unauthenticated order lookup' })
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get all orders for the authenticated customer' })
+  @ApiOperation({ summary: 'Get all orders for the authenticated customer or guest session' })
   @ApiResponse({ status: 200, description: 'Customer order list returned' })
-  async getMyOrders(@Req() req: any) {
-    const userId = req.user?.id || req.user?._id;
-    return this.ordersService.getMyOrders(userId);
+  async getMyOrders(
+    @Req() req: any,
+    @Headers('x-guest-id') guestIdHeader?: string,
+  ) {
+    const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub;
+    const guestId = guestIdHeader || req.query?.guestId;
+    return this.ordersService.getMyOrders(userId, guestId);
+  }
+
+  @Get()
+  @ApiHeader({ name: 'x-guest-id', required: false, description: 'Guest ID for unauthenticated order lookup' })
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get all orders for the authenticated customer or guest session' })
+  @ApiResponse({ status: 200, description: 'Customer order list returned' })
+  async getOrders(
+    @Req() req: any,
+    @Headers('x-guest-id') guestIdHeader?: string,
+  ) {
+    const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub;
+    const guestId = guestIdHeader || req.query?.guestId;
+    return this.ordersService.getMyOrders(userId, guestId);
   }
 
   @Get('my/:orderId')

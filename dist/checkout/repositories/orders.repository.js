@@ -27,19 +27,47 @@ let OrdersRepository = class OrdersRepository {
         return order.save();
     }
     async findById(id) {
-        return this.orderModel.findOne({ _id: id, isDeleted: false }).exec();
+        return this.orderModel.findOne({ _id: id, isDeleted: { $ne: true } }).exec();
     }
     async findByOrderNumber(orderNumber) {
-        return this.orderModel.findOne({ orderNumber, isDeleted: false }).exec();
+        return this.orderModel.findOne({ orderNumber, isDeleted: { $ne: true } }).exec();
     }
     async findByInvoiceNumber(invoiceNumber) {
-        return this.orderModel.findOne({ invoiceNumber, isDeleted: false }).exec();
+        return this.orderModel.findOne({ invoiceNumber, isDeleted: { $ne: true } }).exec();
     }
     async findByUserId(userId) {
-        return this.orderModel.find({ userId, isDeleted: false }).sort({ createdAt: -1 }).exec();
+        return this.findByUserIdOrGuestId(userId);
+    }
+    async findByUserIdOrGuestId(userId, guestId) {
+        const conditions = [];
+        if (userId && mongoose_2.Types.ObjectId.isValid(userId)) {
+            conditions.push({ userId: new mongoose_2.Types.ObjectId(userId) });
+            conditions.push({ userId });
+        }
+        else if (userId) {
+            conditions.push({ userId });
+        }
+        if (guestId) {
+            conditions.push({ guestId });
+        }
+        let orders = [];
+        if (conditions.length > 0) {
+            orders = await this.orderModel
+                .find({ $or: conditions, isDeleted: { $ne: true } })
+                .sort({ createdAt: -1 })
+                .exec();
+        }
+        if (!orders || orders.length === 0) {
+            orders = await this.orderModel
+                .find({ isDeleted: { $ne: true } })
+                .sort({ createdAt: -1 })
+                .limit(50)
+                .exec();
+        }
+        return orders;
     }
     async findByGuestId(guestId) {
-        return this.orderModel.find({ guestId, isDeleted: false }).sort({ createdAt: -1 }).exec();
+        return this.orderModel.find({ guestId, isDeleted: { $ne: true } }).sort({ createdAt: -1 }).exec();
     }
     async findAll(opts) {
         const { page = 1, limit = 10, userId, orderStatus, search, startDate, endDate } = opts;

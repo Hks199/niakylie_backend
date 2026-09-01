@@ -140,8 +140,8 @@ export class OrdersService {
 
   // ─── CUSTOMER ─────────────────────────────────────────────────────────────
 
-  async getMyOrders(userId: string): Promise<OrderDocument[]> {
-    return this.ordersRepository.findByUserId(userId);
+  async getMyOrders(userId?: string, guestId?: string): Promise<OrderDocument[]> {
+    return this.ordersRepository.findByUserIdOrGuestId(userId, guestId);
   }
 
   async getMyOrder(orderId: string, userId: string): Promise<OrderDocument> {
