@@ -152,6 +152,20 @@ export class UsersRepository {
 
   // --- Wishlist Operations ---
 
+  async getWishlist(userId: string): Promise<any[]> {
+    if (!Types.ObjectId.isValid(userId)) return [];
+    const user = await this.userModel
+      .findById(userId)
+      .populate({
+        path: 'wishlist',
+        match: { isDeleted: { $ne: true } },
+      })
+      .exec();
+
+    if (!user || !user.wishlist) return [];
+    return user.wishlist.filter((item: any) => item && typeof item === 'object' && item._id);
+  }
+
   async addToWishlist(userId: string, productId: string): Promise<UserDocument | null> {
     if (!Types.ObjectId.isValid(productId)) return null;
     return this.userModel

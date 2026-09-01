@@ -63,7 +63,7 @@ describe('UsersController', () => {
 
       const result = await controller.addToWishlist(mockUser, productId);
       expect(service.addToWishlist).toHaveBeenCalledWith('1', productId);
-      expect(result.wishlist).toContain(productId);
+      expect(result.isWishlisted).toBe(true);
     });
   });
 });
