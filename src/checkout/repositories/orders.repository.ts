@@ -41,34 +41,24 @@ export class OrdersRepository {
   }
 
   async findByUserIdOrGuestId(userId?: string, guestId?: string): Promise<OrderDocument[]> {
-    const conditions: any[] = [];
-    if (userId && Types.ObjectId.isValid(userId)) {
-      conditions.push({ userId: new Types.ObjectId(userId) });
-      conditions.push({ userId });
-    } else if (userId) {
-      conditions.push({ userId });
-    }
-    if (guestId) {
-      conditions.push({ guestId });
+    const filter: Record<string, any> = { isDeleted: { $ne: true } };
+
+    if (userId) {
+      if (Types.ObjectId.isValid(userId)) {
+        filter.$or = [{ userId: new Types.ObjectId(userId) }, { userId }];
+      } else {
+        filter.userId = userId;
+      }
+    } else if (guestId) {
+      filter.guestId = guestId;
+    } else {
+      return [];
     }
 
-    let orders: OrderDocument[] = [];
-    if (conditions.length > 0) {
-      orders = await this.orderModel
-        .find({ $or: conditions, isDeleted: { $ne: true } })
-        .sort({ createdAt: -1 })
-        .exec();
-    }
-
-    if (!orders || orders.length === 0) {
-      orders = await this.orderModel
-        .find({ isDeleted: { $ne: true } })
-        .sort({ createdAt: -1 })
-        .limit(50)
-        .exec();
-    }
-
-    return orders;
+    return this.orderModel
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .exec();
   }
 
   async findByGuestId(guestId: string): Promise<OrderDocument[]> {

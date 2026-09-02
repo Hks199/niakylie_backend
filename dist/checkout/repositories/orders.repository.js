@@ -39,32 +39,25 @@ let OrdersRepository = class OrdersRepository {
         return this.findByUserIdOrGuestId(userId);
     }
     async findByUserIdOrGuestId(userId, guestId) {
-        const conditions = [];
-        if (userId && mongoose_2.Types.ObjectId.isValid(userId)) {
-            conditions.push({ userId: new mongoose_2.Types.ObjectId(userId) });
-            conditions.push({ userId });
+        const filter = { isDeleted: { $ne: true } };
+        if (userId) {
+            if (mongoose_2.Types.ObjectId.isValid(userId)) {
+                filter.$or = [{ userId: new mongoose_2.Types.ObjectId(userId) }, { userId }];
+            }
+            else {
+                filter.userId = userId;
+            }
         }
-        else if (userId) {
-            conditions.push({ userId });
+        else if (guestId) {
+            filter.guestId = guestId;
         }
-        if (guestId) {
-            conditions.push({ guestId });
+        else {
+            return [];
         }
-        let orders = [];
-        if (conditions.length > 0) {
-            orders = await this.orderModel
-                .find({ $or: conditions, isDeleted: { $ne: true } })
-                .sort({ createdAt: -1 })
-                .exec();
-        }
-        if (!orders || orders.length === 0) {
-            orders = await this.orderModel
-                .find({ isDeleted: { $ne: true } })
-                .sort({ createdAt: -1 })
-                .limit(50)
-                .exec();
-        }
-        return orders;
+        return this.orderModel
+            .find(filter)
+            .sort({ createdAt: -1 })
+            .exec();
     }
     async findByGuestId(guestId) {
         return this.orderModel.find({ guestId, isDeleted: { $ne: true } }).sort({ createdAt: -1 }).exec();
