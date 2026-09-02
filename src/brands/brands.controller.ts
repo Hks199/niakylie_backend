@@ -15,6 +15,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import {
   ApiTags,
   ApiOperation,
@@ -26,6 +27,7 @@ import {
 } from '@nestjs/swagger';
 
 import { BrandsService } from './brands.service.js';
+import { S3Service } from '../s3/s3.service.js';
 import { CreateBrandDto } from './dto/create-brand.dto.js';
 import { UpdateBrandDto } from './dto/update-brand.dto.js';
 import { QueryBrandDto } from './dto/query-brand.dto.js';
@@ -48,13 +50,16 @@ const validateLogoFile = (file?: Express.Multer.File) => {
 @ApiTags('Brands')
 @Controller('brands')
 export class BrandsController {
-  constructor(private readonly brandsService: BrandsService) {}
+  constructor(
+    private readonly brandsService: BrandsService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth('JWT-auth')
-  @UseInterceptors(FileInterceptor('logo'))
+  @UseInterceptors(FileInterceptor('logo', { storage: memoryStorage() }))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Create a new brand (Admin only)' })
   @ApiBody({
@@ -80,7 +85,9 @@ export class BrandsController {
     @UploadedFile() logoFile?: Express.Multer.File,
   ) {
     validateLogoFile(logoFile);
-    const logoPath = logoFile ? `/uploads/brands/${logoFile.filename}` : undefined;
+    const logoPath = logoFile
+      ? await this.s3Service.uploadBuffer(logoFile.buffer, 'brands', logoFile.originalname, logoFile.mimetype)
+      : undefined;
     return this.brandsService.create(createDto, logoPath);
   }
 
@@ -104,7 +111,7 @@ export class BrandsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth('JWT-auth')
-  @UseInterceptors(FileInterceptor('logo'))
+  @UseInterceptors(FileInterceptor('logo', { storage: memoryStorage() }))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update brand details (Admin only)' })
   @ApiParam({ name: 'id', description: 'Brand Mongo ObjectId' })
@@ -133,7 +140,9 @@ export class BrandsController {
     @UploadedFile() logoFile?: Express.Multer.File,
   ) {
     validateLogoFile(logoFile);
-    const logoPath = logoFile ? `/uploads/brands/${logoFile.filename}` : undefined;
+    const logoPath = logoFile
+      ? await this.s3Service.uploadBuffer(logoFile.buffer, 'brands', logoFile.originalname, logoFile.mimetype)
+      : undefined;
     return this.brandsService.update(id, updateDto, logoPath);
   }
 

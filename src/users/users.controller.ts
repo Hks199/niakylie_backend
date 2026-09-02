@@ -17,9 +17,11 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 
 import { UsersService } from './users.service.js';
+import { S3Service } from '../s3/s3.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { AddressDto } from './dto/address.dto.js';
 import { UpdateNotificationPreferenceDto } from './dto/notification-preference.dto.js';
@@ -32,7 +34,10 @@ import { User } from './schemas/user.schema.js';
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   @Get('profile')
   @ApiOperation({ summary: 'Get current user profile' })
@@ -49,7 +54,7 @@ export class UsersController {
   }
 
   @Patch('profile/avatar')
-  @UseInterceptors(FileInterceptor('avatar'))
+  @UseInterceptors(FileInterceptor('avatar', { storage: memoryStorage() }))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload avatar image' })
   @ApiBody({
@@ -77,8 +82,12 @@ export class UsersController {
     )
     file: Express.Multer.File,
   ) {
-    // Generate public accessible relative file path
-    const filePath = `/uploads/avatars/${file.filename}`;
+    const filePath = await this.s3Service.uploadBuffer(
+      file.buffer,
+      'avatars',
+      file.originalname,
+      file.mimetype,
+    );
     return this.usersService.updateAvatar((user as any).id, filePath);
   }
 
