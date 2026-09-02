@@ -24,7 +24,11 @@ export class QueryCouponDto {
 
   @ApiPropertyOptional({ description: 'Filter by active status (true/false)' })
   @IsOptional()
-  @Transform(({ value }) => value === 'true' || value === true)
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return undefined;
+  })
   @IsBoolean()
   isActive?: boolean;
 }
