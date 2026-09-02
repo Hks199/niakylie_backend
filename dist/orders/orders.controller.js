@@ -226,7 +226,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "getInvoice", null);
 __decorate([
-    (0, common_1.Post)('my/:orderId/cancel'),
+    (0, common_1.Post)(['my/:orderId/cancel', ':orderId/cancel']),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: 'Cancel an order (only PENDING or CONFIRMED orders can be cancelled)' }),

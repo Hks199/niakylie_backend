@@ -14,6 +14,7 @@ import { UsersRepository } from '../users/repositories/users.repository.js';
 import { CouponsService } from '../coupons/coupons.service.js';
 import { CheckoutSummaryDto } from './dto/checkout-summary.dto.js';
 import { PlaceOrderDto } from './dto/place-order.dto.js';
+import { StockStatus } from '../inventory/schemas/inventory.schema.js';
 import {
   OrderDocument,
   PaymentMethod,
@@ -319,15 +320,36 @@ export class CheckoutService {
 
     // Deduct stock for each purchased item
     for (const item of summary.items) {
+      // 1. Deduct from Inventory collection (if record exists)
       const inventory = await this.inventoryRepository.findBySku(item.sku);
       if (inventory) {
+        const newTotal = Math.max(0, inventory.totalStock - item.quantity);
         const newAvailable = Math.max(0, inventory.availableStock - item.quantity);
         const newSold = (inventory.soldStock || 0) + item.quantity;
+        const lowThreshold = inventory.lowStockThreshold || 5;
+
+        let status = StockStatus.IN_STOCK;
+        if (newAvailable <= 0) {
+          status = StockStatus.OUT_OF_STOCK;
+        } else if (newAvailable <= lowThreshold) {
+          status = StockStatus.LOW_STOCK;
+        }
+
         await this.inventoryRepository.updateBySku(item.sku, {
+          totalStock: newTotal,
           availableStock: newAvailable,
           soldStock: newSold,
+          status,
         });
       }
+
+      // 2. Deduct from Product collection (variant stock)
+      await this.productsRepository.decrementVariantStock(
+        item.productId,
+        item.variantId,
+        item.sku,
+        item.quantity,
+      );
     }
 
     // Record Coupon usage if applied

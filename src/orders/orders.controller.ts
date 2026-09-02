@@ -174,7 +174,7 @@ export class OrdersController {
     return this.ordersService.getInvoice(orderId, userId);
   }
 
-  @Post('my/:orderId/cancel')
+  @Post(['my/:orderId/cancel', ':orderId/cancel'])
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cancel an order (only PENDING or CONFIRMED orders can be cancelled)' })

@@ -53,6 +53,7 @@ const inventory_repository_js_1 = require("../inventory/repositories/inventory.r
 const products_repository_js_1 = require("../products/repositories/products.repository.js");
 const users_repository_js_1 = require("../users/repositories/users.repository.js");
 const coupons_service_js_1 = require("../coupons/coupons.service.js");
+const inventory_schema_js_1 = require("../inventory/schemas/inventory.schema.js");
 const order_schema_js_1 = require("./schemas/order.schema.js");
 let CheckoutService = class CheckoutService {
     ordersRepository;
@@ -274,13 +275,25 @@ let CheckoutService = class CheckoutService {
         for (const item of summary.items) {
             const inventory = await this.inventoryRepository.findBySku(item.sku);
             if (inventory) {
+                const newTotal = Math.max(0, inventory.totalStock - item.quantity);
                 const newAvailable = Math.max(0, inventory.availableStock - item.quantity);
                 const newSold = (inventory.soldStock || 0) + item.quantity;
+                const lowThreshold = inventory.lowStockThreshold || 5;
+                let status = inventory_schema_js_1.StockStatus.IN_STOCK;
+                if (newAvailable <= 0) {
+                    status = inventory_schema_js_1.StockStatus.OUT_OF_STOCK;
+                }
+                else if (newAvailable <= lowThreshold) {
+                    status = inventory_schema_js_1.StockStatus.LOW_STOCK;
+                }
                 await this.inventoryRepository.updateBySku(item.sku, {
+                    totalStock: newTotal,
                     availableStock: newAvailable,
                     soldStock: newSold,
+                    status,
                 });
             }
+            await this.productsRepository.decrementVariantStock(item.productId, item.variantId, item.sku, item.quantity);
         }
         if (summary.couponInfo?.code) {
             try {
