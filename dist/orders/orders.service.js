@@ -19,7 +19,7 @@ const inventory_schema_js_1 = require("../inventory/schemas/inventory.schema.js"
 const order_schema_js_1 = require("../checkout/schemas/order.schema.js");
 const VALID_TRANSITIONS = {
     [order_schema_js_1.OrderStatus.PENDING]: [order_schema_js_1.OrderStatus.CONFIRMED, order_schema_js_1.OrderStatus.CANCELLED],
-    [order_schema_js_1.OrderStatus.CONFIRMED]: [order_schema_js_1.OrderStatus.PACKED, order_schema_js_1.OrderStatus.CANCELLED],
+    [order_schema_js_1.OrderStatus.CONFIRMED]: [order_schema_js_1.OrderStatus.PACKED, order_schema_js_1.OrderStatus.SHIPPED, order_schema_js_1.OrderStatus.CANCELLED],
     [order_schema_js_1.OrderStatus.PACKED]: [order_schema_js_1.OrderStatus.SHIPPED, order_schema_js_1.OrderStatus.CANCELLED],
     [order_schema_js_1.OrderStatus.SHIPPED]: [order_schema_js_1.OrderStatus.OUT_FOR_DELIVERY, order_schema_js_1.OrderStatus.CANCELLED],
     [order_schema_js_1.OrderStatus.OUT_FOR_DELIVERY]: [order_schema_js_1.OrderStatus.DELIVERED, order_schema_js_1.OrderStatus.CANCELLED],
