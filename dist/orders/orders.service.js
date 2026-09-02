@@ -145,8 +145,8 @@ let OrdersService = class OrdersService {
         const updated = await this.ordersRepository.updateStatus(order._id.toString(), order_schema_js_1.OrderStatus.REFUNDED, notes || 'Refund processed');
         return updated;
     }
-    async getMyOrders(userId, guestId) {
-        return this.ordersRepository.findByUserIdOrGuestId(userId, guestId);
+    async getMyOrders(userId, guestId, userEmail) {
+        return this.ordersRepository.findByUserIdOrGuestId(userId, guestId, userEmail);
     }
     async getMyOrder(orderId, userId) {
         return this.resolveOrder(orderId, userId);

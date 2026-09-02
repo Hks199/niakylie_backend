@@ -115,8 +115,9 @@ export class OrdersController {
     @Headers('x-guest-id') guestIdHeader?: string,
   ) {
     const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub;
+    const userEmail = req.user?.email;
     const guestId = guestIdHeader || req.query?.guestId;
-    return this.ordersService.getMyOrders(userId, guestId);
+    return this.ordersService.getMyOrders(userId, guestId, userEmail);
   }
 
   @Get()
@@ -129,8 +130,9 @@ export class OrdersController {
     @Headers('x-guest-id') guestIdHeader?: string,
   ) {
     const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub;
+    const userEmail = req.user?.email;
     const guestId = guestIdHeader || req.query?.guestId;
-    return this.ordersService.getMyOrders(userId, guestId);
+    return this.ordersService.getMyOrders(userId, guestId, userEmail);
   }
 
   @Get('my/:orderId')

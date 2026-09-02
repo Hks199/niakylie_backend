@@ -43,7 +43,7 @@ describe('AuthController', () => {
         firstName: 'Jane',
         lastName: 'Doe',
       };
-      const expectedResult = { message: 'Verification email sent', user: {} as any, verificationToken: 'tok' };
+      const expectedResult = { message: 'Verification email sent', email: 'test@example.com', isEmailVerified: false };
       service.register.mockResolvedValue(expectedResult);
 
       const result = await controller.register(dto);

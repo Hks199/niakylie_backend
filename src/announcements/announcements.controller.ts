@@ -18,9 +18,7 @@ import { CreateAnnouncementDto } from './dto/create-announcement.dto.js';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto.js';
 import { QueryAnnouncementDto } from './dto/query-announcement.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
-import { RolesGuard } from '../auth/guards/roles.guard.js';
-import { Roles } from '../auth/decorators/roles.decorator.js';
-import { UserRole } from '../users/schemas/user.schema.js';
+import { Roles, RolesGuard, Role } from '../shared/index.js';
 
 @ApiTags('Announcements')
 @Controller('announcements')
@@ -38,7 +36,7 @@ export class AnnouncementsController {
   // ─── ADMIN ENDPOINTS ──────────────────────────────────────
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all announcements with pagination & status filtering (Admin)' })
   async findAll(@Query() queryDto: QueryAnnouncementDto) {
@@ -47,7 +45,7 @@ export class AnnouncementsController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get announcement by ID (Admin)' })
   async findOne(@Param('id') id: string) {
@@ -56,7 +54,7 @@ export class AnnouncementsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create new announcement (Admin)' })
   @ApiResponse({ status: 211, description: 'Announcement created successfully' })
@@ -66,7 +64,7 @@ export class AnnouncementsController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update announcement (Admin)' })
   async update(@Param('id') id: string, @Body() updateDto: UpdateAnnouncementDto) {
@@ -75,7 +73,7 @@ export class AnnouncementsController {
 
   @Patch(':id/toggle')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Toggle announcement active status (Admin)' })
   async toggleStatus(@Param('id') id: string) {
@@ -84,7 +82,7 @@ export class AnnouncementsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete announcement (Admin)' })

@@ -38,22 +38,29 @@ let OrdersRepository = class OrdersRepository {
     async findByUserId(userId) {
         return this.findByUserIdOrGuestId(userId);
     }
-    async findByUserIdOrGuestId(userId, guestId) {
+    async findByUserIdOrGuestId(userId, guestId, userEmail) {
         const filter = { isDeleted: { $ne: true } };
+        const orConditions = [];
         if (userId) {
             if (mongoose_2.Types.ObjectId.isValid(userId)) {
-                filter.$or = [{ userId: new mongoose_2.Types.ObjectId(userId) }, { userId }];
+                orConditions.push({ userId: new mongoose_2.Types.ObjectId(userId) });
+                orConditions.push({ userId: userId });
             }
             else {
-                filter.userId = userId;
+                orConditions.push({ userId: userId });
             }
         }
-        else if (guestId) {
-            filter.guestId = guestId;
+        if (guestId && guestId.trim()) {
+            orConditions.push({ guestId: guestId.trim() });
         }
-        else {
+        if (userEmail && userEmail.trim()) {
+            const emailRegex = new RegExp(`^${userEmail.trim()}$`, 'i');
+            orConditions.push({ 'customerInfo.email': emailRegex });
+        }
+        if (orConditions.length === 0) {
             return [];
         }
+        filter.$or = orConditions;
         return this.orderModel
             .find(filter)
             .sort({ createdAt: -1 })

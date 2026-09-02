@@ -47,13 +47,15 @@ let OrdersController = class OrdersController {
     }
     async getMyOrders(req, guestIdHeader) {
         const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub;
+        const userEmail = req.user?.email;
         const guestId = guestIdHeader || req.query?.guestId;
-        return this.ordersService.getMyOrders(userId, guestId);
+        return this.ordersService.getMyOrders(userId, guestId, userEmail);
     }
     async getOrders(req, guestIdHeader) {
         const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub;
+        const userEmail = req.user?.email;
         const guestId = guestIdHeader || req.query?.guestId;
-        return this.ordersService.getMyOrders(userId, guestId);
+        return this.ordersService.getMyOrders(userId, guestId, userEmail);
     }
     async getMyOrder(orderId, req) {
         const userId = req.user?.id || req.user?._id;

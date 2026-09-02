@@ -40,20 +40,33 @@ export class OrdersRepository {
     return this.findByUserIdOrGuestId(userId);
   }
 
-  async findByUserIdOrGuestId(userId?: string, guestId?: string): Promise<OrderDocument[]> {
+  async findByUserIdOrGuestId(userId?: string, guestId?: string, userEmail?: string): Promise<OrderDocument[]> {
     const filter: Record<string, any> = { isDeleted: { $ne: true } };
+    const orConditions: any[] = [];
 
     if (userId) {
       if (Types.ObjectId.isValid(userId)) {
-        filter.$or = [{ userId: new Types.ObjectId(userId) }, { userId }];
+        orConditions.push({ userId: new Types.ObjectId(userId) });
+        orConditions.push({ userId: userId });
       } else {
-        filter.userId = userId;
+        orConditions.push({ userId: userId });
       }
-    } else if (guestId) {
-      filter.guestId = guestId;
-    } else {
+    }
+
+    if (guestId && guestId.trim()) {
+      orConditions.push({ guestId: guestId.trim() });
+    }
+
+    if (userEmail && userEmail.trim()) {
+      const emailRegex = new RegExp(`^${userEmail.trim()}$`, 'i');
+      orConditions.push({ 'customerInfo.email': emailRegex });
+    }
+
+    if (orConditions.length === 0) {
       return [];
     }
+
+    filter.$or = orConditions;
 
     return this.orderModel
       .find(filter)
