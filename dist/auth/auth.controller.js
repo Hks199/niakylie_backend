@@ -38,6 +38,12 @@ let AuthController = class AuthController {
     async verifyEmail(verifyEmailDto) {
         return this.authService.verifyEmail(verifyEmailDto.token);
     }
+    async sendOtp(email) {
+        return this.authService.sendOtp(email);
+    }
+    async verifyOtp(body) {
+        return this.authService.verifyOtp(body.email, body.otp);
+    }
     async login(loginDto) {
         return this.authService.login(loginDto);
     }
@@ -101,6 +107,27 @@ __decorate([
     __metadata("design:paramtypes", [verify_email_dto_js_1.VerifyEmailDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "verifyEmail", null);
+__decorate([
+    (0, common_1.Post)('send-otp'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Send or resend a 5-minute 6-digit OTP code' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'OTP sent to email address' }),
+    __param(0, (0, common_1.Body)('email')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "sendOtp", null);
+__decorate([
+    (0, common_1.Post)('verify-otp'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Verify 6-digit OTP code, activate account, and issue tokens' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'OTP verified successfully' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Invalid or expired OTP code' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "verifyOtp", null);
 __decorate([
     (0, common_1.Post)('login'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),

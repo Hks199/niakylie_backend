@@ -14,10 +14,20 @@ const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const index_js_1 = require("../../shared/index.js");
 class ResetPasswordDto {
+    email;
     token;
     password;
 }
 exports.ResetPasswordDto = ResetPasswordDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'User email address',
+        required: false,
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], ResetPasswordDto.prototype, "email", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'Security reset token received via forgot password request',

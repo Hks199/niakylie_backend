@@ -14,6 +14,7 @@ const config_1 = require("@nestjs/config");
 const auth_service_js_1 = require("./auth.service.js");
 const auth_controller_js_1 = require("./auth.controller.js");
 const users_module_js_1 = require("../users/users.module.js");
+const mail_module_js_1 = require("../mail/mail.module.js");
 const jwt_strategy_js_1 = require("./strategies/jwt.strategy.js");
 const jwt_refresh_strategy_js_1 = require("./strategies/jwt-refresh.strategy.js");
 const google_strategy_js_1 = require("./strategies/google.strategy.js");
@@ -24,6 +25,7 @@ exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
         imports: [
             users_module_js_1.UsersModule,
+            mail_module_js_1.MailModule,
             passport_1.PassportModule.register({ defaultStrategy: 'jwt' }),
             jwt_1.JwtModule.registerAsync({
                 useFactory: (configService) => ({

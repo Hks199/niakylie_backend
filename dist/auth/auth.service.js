@@ -1,43 +1,10 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
@@ -46,49 +13,115 @@ exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const config_1 = require("@nestjs/config");
-const crypto = __importStar(require("crypto"));
 const users_service_js_1 = require("../users/users.service.js");
 const users_repository_js_1 = require("../users/repositories/users.repository.js");
+const mail_service_js_1 = require("../mail/mail.service.js");
 const index_js_1 = require("../shared/index.js");
 let AuthService = class AuthService {
     usersService;
     usersRepository;
     jwtService;
     configService;
-    constructor(usersService, usersRepository, jwtService, configService) {
+    mailService;
+    constructor(usersService, usersRepository, jwtService, configService, mailService) {
         this.usersService = usersService;
         this.usersRepository = usersRepository;
         this.jwtService = jwtService;
         this.configService = configService;
+        this.mailService = mailService;
+    }
+    generateNumericOtp() {
+        return Math.floor(100000 + Math.random() * 900000).toString();
     }
     async register(registerDto) {
         const { email, password, firstName, lastName } = registerDto;
         const existingUser = await this.usersService.findByEmail(email);
         if (existingUser) {
-            throw new common_1.ConflictException('A user with this email address already exists');
+            if (existingUser.isEmailVerified) {
+                throw new common_1.ConflictException('A user with this email address already exists');
+            }
+            const hashedPassword = await (0, index_js_1.hashPassword)(password);
+            const otpCode = this.generateNumericOtp();
+            const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
+            await this.usersRepository.update(existingUser.id, {
+                $set: {
+                    password: hashedPassword,
+                    firstName,
+                    lastName,
+                    emailVerificationToken: otpCode,
+                    emailVerificationExpires: otpExpires,
+                },
+            });
+            await this.mailService.sendOtpEmail(email, otpCode, firstName);
+            return {
+                message: 'OTP sent to your email address. Valid for 5 minutes.',
+                email,
+                isEmailVerified: false,
+                otp: otpCode,
+            };
         }
         const hashedPassword = await (0, index_js_1.hashPassword)(password);
-        const emailVerificationToken = crypto.randomBytes(32).toString('hex');
-        const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        const otpCode = this.generateNumericOtp();
+        const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
         const user = await this.usersService.create({
             email,
             password: hashedPassword,
             firstName,
             lastName,
-            emailVerificationToken,
-            emailVerificationExpires,
+            emailVerificationToken: otpCode,
+            emailVerificationExpires: otpExpires,
             isEmailVerified: false,
         });
+        await this.mailService.sendOtpEmail(email, otpCode, firstName);
         return {
-            message: 'Registration successful. Please verify your email.',
-            verificationToken: emailVerificationToken,
-            user: {
-                id: user.id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-            },
+            message: 'Registration successful. An OTP has been sent to your email address.',
+            email: user.email,
+            isEmailVerified: false,
+            otp: otpCode,
         };
+    }
+    async sendOtp(email) {
+        const user = await this.usersService.findByEmail(email);
+        if (!user) {
+            throw new common_1.BadRequestException('No account found with this email address');
+        }
+        const otpCode = this.generateNumericOtp();
+        const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
+        await this.usersRepository.update(user.id, {
+            $set: {
+                emailVerificationToken: otpCode,
+                emailVerificationExpires: otpExpires,
+            },
+        });
+        await this.mailService.sendOtpEmail(email, otpCode, user.firstName);
+        return {
+            message: 'OTP sent to your email address. Valid for 5 minutes.',
+            email,
+            otp: otpCode,
+        };
+    }
+    async verifyOtp(email, otp) {
+        const user = await this.usersService.findByEmail(email);
+        if (!user) {
+            throw new common_1.BadRequestException('No account found with this email address');
+        }
+        const trimmedOtp = (otp || '').trim();
+        if (!trimmedOtp) {
+            throw new common_1.BadRequestException('Please enter the 6-digit OTP code');
+        }
+        const userWithToken = await this.usersRepository.findByVerificationToken(trimmedOtp);
+        if (!userWithToken || userWithToken.email.toLowerCase() !== email.toLowerCase().trim()) {
+            throw new common_1.BadRequestException('Invalid OTP code. Please check your code and try again.');
+        }
+        const expires = userWithToken.emailVerificationExpires;
+        if (!expires || new Date(expires) < new Date()) {
+            throw new common_1.BadRequestException('OTP has expired (5-minute limit). Please click Resend OTP.');
+        }
+        const verifiedUser = await this.usersRepository.update(userWithToken.id, {
+            $set: { isEmailVerified: true },
+            $unset: { emailVerificationToken: 1, emailVerificationExpires: 1 },
+        });
+        return this.generateTokens(verifiedUser || userWithToken);
     }
     async verifyEmail(token) {
         const user = await this.usersRepository.findByVerificationToken(token);
@@ -114,6 +147,24 @@ let AuthService = class AuthService {
         if (!user.isActive) {
             throw new common_1.UnauthorizedException('Your account has been deactivated');
         }
+        if (!user.isEmailVerified) {
+            const otpCode = this.generateNumericOtp();
+            const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
+            await this.usersRepository.update(user.id, {
+                $set: {
+                    emailVerificationToken: otpCode,
+                    emailVerificationExpires: otpExpires,
+                },
+            });
+            await this.mailService.sendOtpEmail(user.email, otpCode, user.firstName);
+            throw new common_1.UnauthorizedException({
+                statusCode: 401,
+                message: 'Account is not verified. An OTP has been sent to your email address.',
+                isEmailVerified: false,
+                email: user.email,
+                otp: otpCode,
+            });
+        }
         return this.generateTokens(user);
     }
     async registerAdmin(registerAdminDto) {
@@ -123,27 +174,44 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException('Invalid admin registration secret key');
         }
         const existingUser = await this.usersService.findByEmail(email);
-        if (existingUser) {
+        if (existingUser && existingUser.isEmailVerified) {
             throw new common_1.ConflictException('An account with this email address already exists');
         }
         const hashedPassword = await (0, index_js_1.hashPassword)(password);
-        const user = await this.usersService.create({
-            email,
-            password: hashedPassword,
-            firstName,
-            lastName,
-            roles: [index_js_1.Role.ADMIN],
-            isEmailVerified: true,
-        });
+        const otpCode = this.generateNumericOtp();
+        const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
+        let user;
+        if (existingUser) {
+            const updated = await this.usersRepository.update(existingUser.id, {
+                $set: {
+                    password: hashedPassword,
+                    firstName,
+                    lastName,
+                    roles: [index_js_1.Role.ADMIN],
+                    emailVerificationToken: otpCode,
+                    emailVerificationExpires: otpExpires,
+                },
+            });
+            user = updated || existingUser;
+        }
+        else {
+            user = await this.usersService.create({
+                email,
+                password: hashedPassword,
+                firstName,
+                lastName,
+                roles: [index_js_1.Role.ADMIN],
+                emailVerificationToken: otpCode,
+                emailVerificationExpires: otpExpires,
+                isEmailVerified: false,
+            });
+        }
+        await this.mailService.sendOtpEmail(email, otpCode, firstName);
         return {
-            message: 'Admin account registered successfully',
-            user: {
-                id: user.id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                roles: user.roles,
-            },
+            message: 'Admin registered successfully. An OTP has been sent to your email address.',
+            email: user.email,
+            isEmailVerified: false,
+            otp: otpCode,
         };
     }
     async loginAdmin(loginDto) {
@@ -165,6 +233,24 @@ let AuthService = class AuthService {
                 r.toUpperCase() === 'ADMIN');
         if (!hasAdminRole) {
             throw new common_1.UnauthorizedException('Access Denied: This account does not have Admin privileges');
+        }
+        if (!user.isEmailVerified) {
+            const otpCode = this.generateNumericOtp();
+            const otpExpires = new Date(Date.now() + 5 * 60 * 1000);
+            await this.usersRepository.update(user.id, {
+                $set: {
+                    emailVerificationToken: otpCode,
+                    emailVerificationExpires: otpExpires,
+                },
+            });
+            await this.mailService.sendOtpEmail(user.email, otpCode, user.firstName);
+            throw new common_1.UnauthorizedException({
+                statusCode: 401,
+                message: 'Admin account is not verified. An OTP has been sent to your email address.',
+                isEmailVerified: false,
+                email: user.email,
+                otp: otpCode,
+            });
         }
         return this.generateTokens(user);
     }
@@ -189,35 +275,48 @@ let AuthService = class AuthService {
         return { message: 'Logged out from all devices successfully' };
     }
     async forgotPassword(email) {
-        const user = await this.usersService.findByEmail(email);
-        if (!user) {
-            return { message: 'If the email exists, a password reset link has been generated' };
+        const trimmedEmail = (email || '').trim().toLowerCase();
+        if (!trimmedEmail) {
+            throw new common_1.BadRequestException('Please enter a valid email address.');
         }
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        const resetExpires = new Date(Date.now() + 1 * 60 * 60 * 1000);
+        const user = await this.usersService.findByEmail(trimmedEmail);
+        if (!user) {
+            throw new common_1.BadRequestException('No registered account found with this email address.');
+        }
+        const resetToken = this.generateNumericOtp();
+        const resetExpires = new Date(Date.now() + 5 * 60 * 1000);
         await this.usersRepository.update(user.id, {
             $set: {
                 passwordResetToken: resetToken,
                 passwordResetExpires: resetExpires,
             },
         });
+        await this.mailService.sendOtpEmail(trimmedEmail, resetToken, user.firstName);
         return {
-            message: 'If the email exists, a password reset link has been generated',
-            resetToken,
+            message: 'A 6-digit password reset OTP has been sent to your email address.',
+            email: trimmedEmail,
+            otp: resetToken,
         };
     }
     async resetPassword(resetPasswordDto) {
-        const { token, password } = resetPasswordDto;
-        const user = await this.usersRepository.findByResetToken(token);
+        const { token, password, email } = resetPasswordDto;
+        const trimmedOtp = (token || '').trim();
+        if (!trimmedOtp) {
+            throw new common_1.BadRequestException('Please enter the 6-digit OTP code.');
+        }
+        const user = await this.usersRepository.findByResetToken(trimmedOtp);
         if (!user) {
-            throw new common_1.BadRequestException('Password reset token is invalid or has expired');
+            throw new common_1.BadRequestException('Invalid OTP code or password reset token has expired.');
+        }
+        if (email && user.email.toLowerCase() !== email.trim().toLowerCase()) {
+            throw new common_1.BadRequestException('Invalid OTP code for this email address.');
         }
         const hashedPassword = await (0, index_js_1.hashPassword)(password);
         await this.usersRepository.update(user.id, {
             $set: { password: hashedPassword, refreshTokens: [] },
             $unset: { passwordResetToken: 1, passwordResetExpires: 1 },
         });
-        return { message: 'Password has been reset successfully. You can now login.' };
+        return { message: 'Password has been reset successfully. You can now log in.' };
     }
     async googleLogin(googleUser) {
         let user = await this.usersService.findByGoogleId(googleUser.googleId);
@@ -263,6 +362,7 @@ let AuthService = class AuthService {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 roles: user.roles,
+                isEmailVerified: user.isEmailVerified,
             },
         };
     }
@@ -273,6 +373,7 @@ exports.AuthService = AuthService = __decorate([
     __metadata("design:paramtypes", [users_service_js_1.UsersService,
         users_repository_js_1.UsersRepository,
         jwt_1.JwtService,
-        config_1.ConfigService])
+        config_1.ConfigService,
+        mail_service_js_1.MailService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map
