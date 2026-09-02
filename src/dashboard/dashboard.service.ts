@@ -84,10 +84,8 @@ export class DashboardService {
         this.orderModel.countDocuments({
           ...dateFilter,
           isDeleted: { $ne: true },
-          $or: [
-            { orderStatus: { $ne: OrderStatus.CANCELLED } },
-            { status: { $ne: OrderStatus.CANCELLED } },
-          ],
+          orderStatus: { $ne: OrderStatus.CANCELLED },
+          status: { $ne: OrderStatus.CANCELLED },
         }),
         // Total active customers
         this.userModel.countDocuments({ isActive: true }),

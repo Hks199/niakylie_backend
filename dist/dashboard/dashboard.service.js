@@ -94,10 +94,8 @@ let DashboardService = DashboardService_1 = class DashboardService {
             this.orderModel.countDocuments({
                 ...dateFilter,
                 isDeleted: { $ne: true },
-                $or: [
-                    { orderStatus: { $ne: order_schema_js_1.OrderStatus.CANCELLED } },
-                    { status: { $ne: order_schema_js_1.OrderStatus.CANCELLED } },
-                ],
+                orderStatus: { $ne: order_schema_js_1.OrderStatus.CANCELLED },
+                status: { $ne: order_schema_js_1.OrderStatus.CANCELLED },
             }),
             this.userModel.countDocuments({ isActive: true }),
             this.userModel.countDocuments({ ...dateFilter }),
