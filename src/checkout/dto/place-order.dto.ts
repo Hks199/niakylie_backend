@@ -6,7 +6,7 @@ import {
   ValidateNested,
   IsEmail,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentMethod, ShippingMethod } from '../schemas/order.schema.js';
 import { AddressDto } from './address.dto.js';
@@ -34,11 +34,16 @@ export class CustomerInfoDto {
 }
 
 export class PlaceOrderDto {
-  @ApiProperty({ description: 'Shipping address details' })
+  @ApiPropertyOptional({ description: 'Saved address ID' })
+  @IsOptional()
+  @IsString()
+  addressId?: string;
+
+  @ApiPropertyOptional({ description: 'Shipping address details' })
+  @IsOptional()
   @ValidateNested()
   @Type(() => AddressDto)
-  @IsNotEmpty()
-  shippingAddress!: AddressDto;
+  shippingAddress?: AddressDto;
 
   @ApiPropertyOptional({ description: 'Billing address details (defaults to shipping address if omitted)' })
   @IsOptional()
@@ -53,12 +58,14 @@ export class PlaceOrderDto {
   customerInfo?: CustomerInfoDto;
 
   @ApiProperty({ enum: PaymentMethod, example: PaymentMethod.COD, description: 'Selected payment method' })
+  @Transform(({ value }: { value: any }) => (typeof value === 'string' ? value.toUpperCase() : value))
   @IsEnum(PaymentMethod)
   @IsNotEmpty()
   paymentMethod!: PaymentMethod;
 
   @ApiPropertyOptional({ enum: ShippingMethod, example: ShippingMethod.STANDARD, description: 'Selected shipping method' })
   @IsOptional()
+  @Transform(({ value }: { value: any }) => (typeof value === 'string' ? value.toUpperCase() : value))
   @IsEnum(ShippingMethod)
   shippingMethod?: ShippingMethod;
 
@@ -71,4 +78,34 @@ export class PlaceOrderDto {
   @IsOptional()
   @IsString()
   guestId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  shippingType?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  razorpayOrderId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  razorpayPaymentId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  razorpaySignature?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  stripePaymentIntentId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  items?: any[];
 }
+

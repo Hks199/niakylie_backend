@@ -27,35 +27,91 @@ let OrdersRepository = class OrdersRepository {
         return order.save();
     }
     async findById(id) {
-        return this.orderModel.findOne({ _id: id, isDeleted: false }).exec();
+        return this.orderModel.findOne({ _id: id, isDeleted: { $ne: true } }).exec();
     }
     async findByOrderNumber(orderNumber) {
-        return this.orderModel.findOne({ orderNumber, isDeleted: false }).exec();
+        return this.orderModel.findOne({ orderNumber, isDeleted: { $ne: true } }).exec();
     }
     async findByInvoiceNumber(invoiceNumber) {
-        return this.orderModel.findOne({ invoiceNumber, isDeleted: false }).exec();
+        return this.orderModel.findOne({ invoiceNumber, isDeleted: { $ne: true } }).exec();
     }
     async findByUserId(userId) {
-        return this.orderModel.find({ userId, isDeleted: false }).sort({ createdAt: -1 }).exec();
+        return this.findByUserIdOrGuestId(userId);
+    }
+    async findByUserIdOrGuestId(userId, guestId, userEmail) {
+        const filter = { isDeleted: { $ne: true } };
+        const orConditions = [];
+        if (userId) {
+            if (mongoose_2.Types.ObjectId.isValid(userId)) {
+                orConditions.push({ userId: new mongoose_2.Types.ObjectId(userId) });
+                orConditions.push({ userId: userId });
+            }
+            else {
+                orConditions.push({ userId: userId });
+            }
+        }
+        if (guestId && guestId.trim()) {
+            orConditions.push({ guestId: guestId.trim() });
+        }
+        if (userEmail && userEmail.trim()) {
+            const emailRegex = new RegExp(`^${userEmail.trim()}$`, 'i');
+            orConditions.push({ 'customerInfo.email': emailRegex });
+        }
+        if (orConditions.length === 0) {
+            return [];
+        }
+        filter.$or = orConditions;
+        return this.orderModel
+            .find(filter)
+            .sort({ createdAt: -1 })
+            .exec();
     }
     async findByGuestId(guestId) {
-        return this.orderModel.find({ guestId, isDeleted: false }).sort({ createdAt: -1 }).exec();
+        return this.orderModel.find({ guestId, isDeleted: { $ne: true } }).sort({ createdAt: -1 }).exec();
     }
     async findAll(opts) {
-        const { page = 1, limit = 10, userId, orderStatus, search, startDate, endDate } = opts;
+        const { userId, orderStatus, search, startDate, endDate } = opts;
+        const page = Math.max(1, Number(opts.page) || 1);
+        const limit = Math.max(1, Number(opts.limit) || 10);
         const filter = { isDeleted: false };
         if (userId && mongoose_2.Types.ObjectId.isValid(userId)) {
             filter.userId = new mongoose_2.Types.ObjectId(userId);
         }
         if (orderStatus) {
-            filter.orderStatus = orderStatus;
-        }
-        if (search) {
             filter.$or = [
-                { orderNumber: { $regex: search, $options: 'i' } },
-                { invoiceNumber: { $regex: search, $options: 'i' } },
-                { 'customerInfo.email': { $regex: search, $options: 'i' } },
+                { orderStatus: orderStatus },
+                { status: orderStatus },
             ];
+        }
+        if (search && search.trim()) {
+            const searchRegex = new RegExp(search.trim(), 'i');
+            const searchConditions = [
+                { orderNumber: searchRegex },
+                { orderId: searchRegex },
+                { invoiceNumber: searchRegex },
+                { 'customerInfo.firstName': searchRegex },
+                { 'customerInfo.lastName': searchRegex },
+                { 'customerInfo.email': searchRegex },
+                { 'customerInfo.phone': searchRegex },
+                { 'shippingAddress.street': searchRegex },
+                { 'shippingAddress.city': searchRegex },
+                { 'shippingAddress.phone': searchRegex },
+                { 'items.name': searchRegex },
+                { 'items.sku': searchRegex },
+            ];
+            if (mongoose_2.Types.ObjectId.isValid(search.trim())) {
+                searchConditions.push({ _id: new mongoose_2.Types.ObjectId(search.trim()) });
+            }
+            if (filter.$or) {
+                filter.$and = [
+                    { $or: filter.$or },
+                    { $or: searchConditions },
+                ];
+                delete filter.$or;
+            }
+            else {
+                filter.$or = searchConditions;
+            }
         }
         if (startDate || endDate) {
             filter.createdAt = {};
@@ -69,7 +125,8 @@ let OrdersRepository = class OrdersRepository {
             this.orderModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).exec(),
             this.orderModel.countDocuments(filter).exec(),
         ]);
-        return { data, total, page, limit };
+        const totalPages = Math.ceil(total / limit) || 1;
+        return { data, total, page, limit, totalPages };
     }
     async updateStatus(id, status, note, extraData) {
         const statusLabels = {

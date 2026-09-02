@@ -45,8 +45,13 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ description: 'Filter by active status (true/false)' }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_transformer_1.Transform)(({ value }) => value === 'true' || value === true),
-    (0, class_validator_1.IsBoolean)(),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        if (value === 'true' || value === true)
+            return true;
+        if (value === 'false' || value === false)
+            return false;
+        return undefined;
+    }),
     __metadata("design:type", Boolean)
 ], QueryCouponDto.prototype, "isActive", void 0);
 //# sourceMappingURL=query-coupon.dto.js.map

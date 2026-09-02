@@ -322,4 +322,70 @@ export class ProductsRepository {
       )
       .exec();
   }
+
+  async decrementVariantStock(
+    productIdStr?: string,
+    variantIdStr?: string,
+    skuStr?: string,
+    quantity: number = 1,
+  ): Promise<void> {
+    const qty = Math.max(1, quantity);
+
+    let product = productIdStr && Types.ObjectId.isValid(productIdStr)
+      ? await this.productModel.findOne({ _id: new Types.ObjectId(productIdStr), isDeleted: false })
+      : null;
+
+    if (!product && skuStr) {
+      product = await this.productModel.findOne({ 'variants.sku': skuStr, isDeleted: false });
+    }
+
+    if (!product) return;
+
+    let variant = product.variants.find(
+      (v) => (variantIdStr && v._id?.toString() === variantIdStr) || (skuStr && v.sku === skuStr),
+    );
+
+    if (!variant && product.variants.length > 0) {
+      variant = product.variants[0];
+    }
+
+    if (variant) {
+      const currentStock = variant.stock || 0;
+      const newStock = Math.max(0, currentStock - qty);
+      await this.updateVariant(product._id.toString(), variant._id.toString(), { stock: newStock });
+    }
+  }
+
+  async incrementVariantStock(
+    productIdStr?: string,
+    variantIdStr?: string,
+    skuStr?: string,
+    quantity: number = 1,
+  ): Promise<void> {
+    const qty = Math.max(1, quantity);
+
+    let product = productIdStr && Types.ObjectId.isValid(productIdStr)
+      ? await this.productModel.findOne({ _id: new Types.ObjectId(productIdStr), isDeleted: false })
+      : null;
+
+    if (!product && skuStr) {
+      product = await this.productModel.findOne({ 'variants.sku': skuStr, isDeleted: false });
+    }
+
+    if (!product) return;
+
+    let variant = product.variants.find(
+      (v) => (variantIdStr && v._id?.toString() === variantIdStr) || (skuStr && v.sku === skuStr),
+    );
+
+    if (!variant && product.variants.length > 0) {
+      variant = product.variants[0];
+    }
+
+    if (variant) {
+      const currentStock = variant.stock || 0;
+      const newStock = currentStock + qty;
+      await this.updateVariant(product._id.toString(), variant._id.toString(), { stock: newStock });
+    }
+  }
 }

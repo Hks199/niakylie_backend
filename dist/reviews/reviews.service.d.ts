@@ -15,7 +15,8 @@ export declare class ReviewsService {
     constructor(reviewsRepo: ReviewsRepository, productsRepo: ProductsRepository, ordersRepo: OrdersRepository, usersRepo: UsersRepository);
     private updateProductRatingSummary;
     checkVerifiedPurchase(userId: string, productId: string): Promise<boolean>;
-    createReview(userId: string, dto: CreateReviewDto): Promise<ReviewDocument>;
+    private resolveDeterministicUserId;
+    createReview(userId?: string, guestId?: string | CreateReviewDto, dtoObj?: CreateReviewDto): Promise<ReviewDocument>;
     getProductReviews(productId: string, query: QueryReviewDto): Promise<{
         summary: import("./repositories/reviews.repository.js").RatingStats;
         reviews: ReviewDocument[];

@@ -48,6 +48,23 @@ export class AuthController {
     return this.authService.verifyEmail(verifyEmailDto.token);
   }
 
+  @Post('send-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send or resend a 5-minute 6-digit OTP code' })
+  @ApiResponse({ status: 200, description: 'OTP sent to email address' })
+  async sendOtp(@Body('email') email: string) {
+    return this.authService.sendOtp(email);
+  }
+
+  @Post('verify-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify 6-digit OTP code, activate account, and issue tokens' })
+  @ApiResponse({ status: 200, description: 'OTP verified successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired OTP code' })
+  async verifyOtp(@Body() body: { email: string; otp: string }) {
+    return this.authService.verifyOtp(body.email, body.otp);
+  }
+
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'User login' })

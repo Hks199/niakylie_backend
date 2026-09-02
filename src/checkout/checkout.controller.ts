@@ -8,20 +8,23 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader, ApiParam } from '@nestjs/swagger';
 
 import { CheckoutService } from './checkout.service.js';
 import { CheckoutSummaryDto } from './dto/checkout-summary.dto.js';
 import { PlaceOrderDto } from './dto/place-order.dto.js';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard.js';
 
 @ApiTags('Checkout')
+@UseGuards(OptionalJwtAuthGuard)
 @Controller('checkout')
 export class CheckoutController {
   constructor(private readonly checkoutService: CheckoutService) {}
 
   private extractUserIdAndGuestId(req: any, guestIdHeader?: string): { userId?: string; guestId?: string } {
-    const userId = req.user?.id || req.user?._id;
+    const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub || req.user?.userId;
     const guestId = guestIdHeader || req.body?.guestId || req.query?.guestId;
     return { userId, guestId };
   }

@@ -19,6 +19,8 @@ class CreateReviewDto {
     comment;
     images;
     videos;
+    userId;
+    userName;
 }
 exports.CreateReviewDto = CreateReviewDto;
 __decorate([
@@ -60,4 +62,16 @@ __decorate([
     (0, class_validator_1.IsUrl)({}, { each: true }),
     __metadata("design:type", Array)
 ], CreateReviewDto.prototype, "videos", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '6a8868eb5cd29085db590738', description: 'User Mongo ID' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateReviewDto.prototype, "userId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Harish Sahu', description: 'User Full Name' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateReviewDto.prototype, "userName", void 0);
 //# sourceMappingURL=create-review.dto.js.map

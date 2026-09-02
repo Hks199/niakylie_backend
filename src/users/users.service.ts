@@ -111,6 +111,10 @@ export class UsersService {
 
   // --- Wishlist Operations ---
 
+  async getWishlist(userId: string): Promise<any[]> {
+    return this.usersRepository.getWishlist(userId);
+  }
+
   async addToWishlist(userId: string, productId: string): Promise<UserDocument> {
     const updatedUser = await this.usersRepository.addToWishlist(userId, productId);
     if (!updatedUser) {

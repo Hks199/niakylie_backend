@@ -122,8 +122,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Get current user wishlist' })
   @ApiResponse({ status: 200, description: 'Wishlist items returned successfully' })
   async getWishlist(@CurrentUser() user: User) {
-    const fullUser = await this.usersService.findById((user as any).id);
-    return fullUser.wishlist || [];
+    return this.usersService.getWishlist((user as any).id);
   }
 
   @Post('wishlist/toggle')
@@ -151,7 +150,8 @@ export class UsersController {
   @ApiOperation({ summary: 'Add product to wishlist' })
   @ApiResponse({ status: 201, description: 'Product added to wishlist' })
   async addToWishlist(@CurrentUser() user: User, @Param('productId') productId: string) {
-    return this.usersService.addToWishlist((user as any).id, productId);
+    await this.usersService.addToWishlist((user as any).id, productId);
+    return { isWishlisted: true, message: 'Added to wishlist' };
   }
 
   @Delete('profile/wishlist/:productId')
@@ -159,7 +159,8 @@ export class UsersController {
   @ApiOperation({ summary: 'Remove product from wishlist' })
   @ApiResponse({ status: 200, description: 'Product removed from wishlist' })
   async removeFromWishlist(@CurrentUser() user: User, @Param('productId') productId: string) {
-    return this.usersService.removeFromWishlist((user as any).id, productId);
+    await this.usersService.removeFromWishlist((user as any).id, productId);
+    return { isWishlisted: false, message: 'Removed from wishlist' };
   }
 
   @Get('profile/recently-viewed')

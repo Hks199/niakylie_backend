@@ -98,9 +98,8 @@ describe('AuthService', () => {
 
       jest.spyOn(sharedUtils, 'hashPassword').mockResolvedValue('hashed-pass');
 
-      const result = await service.register(dto);
-      expect(result).toHaveProperty('verificationToken');
-      expect(result.user.email).toBe(dto.email);
+      const result: any = await service.register(dto);
+      expect(result.email).toBe(dto.email);
       expect(usersService.create).toHaveBeenCalled();
     });
   });

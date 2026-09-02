@@ -15,6 +15,7 @@ export declare enum BannerPosition {
 export declare class Banner {
     title: string;
     subtitle?: string;
+    discountBadge?: string;
     type: BannerType;
     position: BannerPosition;
     imageUrl: string;
@@ -47,6 +48,15 @@ export declare const BannerSchema: import("mongoose").Schema<Banner, import("mon
         id: string;
     }>> | undefined;
     subtitle?: import("mongoose").SchemaDefinitionProperty<string | undefined, Banner, Document<unknown, {}, Banner, {
+        id: string;
+    }, import("mongoose").DefaultSchemaOptions> & Omit<Banner & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
+        id: string;
+    }>> | undefined;
+    discountBadge?: import("mongoose").SchemaDefinitionProperty<string | undefined, Banner, Document<unknown, {}, Banner, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<Banner & {
         _id: import("mongoose").Types.ObjectId;

@@ -23,6 +23,7 @@ const update_faq_dto_js_1 = require("./dto/update-faq.dto.js");
 const create_blog_dto_js_1 = require("./dto/create-blog.dto.js");
 const update_blog_dto_js_1 = require("./dto/update-blog.dto.js");
 const query_blog_dto_js_1 = require("./dto/query-blog.dto.js");
+const subscribe_newsletter_dto_js_1 = require("./dto/subscribe-newsletter.dto.js");
 let CmsController = class CmsController {
     cmsService;
     constructor(cmsService) {
@@ -52,6 +53,9 @@ let CmsController = class CmsController {
     async deletePage(id) {
         return this.cmsService.deletePage(id);
     }
+    async getFaqsAdmin() {
+        return this.cmsService.getFaqsAdmin();
+    }
     async createFaq(dto) {
         return this.cmsService.createFaq(dto);
     }
@@ -69,6 +73,15 @@ let CmsController = class CmsController {
     }
     async deleteBlog(id) {
         return this.cmsService.deleteBlog(id);
+    }
+    async subscribe(dto) {
+        return this.cmsService.subscribeNewsletter(dto);
+    }
+    async getSubscribers(query) {
+        return this.cmsService.getSubscribers(query);
+    }
+    async deleteSubscriber(id) {
+        return this.cmsService.deleteSubscriber(id);
     }
 };
 exports.CmsController = CmsController;
@@ -153,6 +166,15 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], CmsController.prototype, "deletePage", null);
 __decorate([
+    (0, common_1.Get)('admin/faqs'),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, swagger_1.ApiOperation)({ summary: '[Admin] Get all FAQ entries' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'All FAQs returned' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], CmsController.prototype, "getFaqsAdmin", null);
+__decorate([
     (0, common_1.Post)('admin/faqs'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, swagger_1.ApiOperation)({ summary: '[Admin] Create new FAQ entry' }),
@@ -218,6 +240,38 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], CmsController.prototype, "deleteBlog", null);
+__decorate([
+    (0, common_1.Post)('subscribe'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Subscribe to newsletter and exclusive offers via Email and/or Mobile Number' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Successfully subscribed' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Invalid email or mobile number provided' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [subscribe_newsletter_dto_js_1.SubscribeNewsletterDto]),
+    __metadata("design:returntype", Promise)
+], CmsController.prototype, "subscribe", null);
+__decorate([
+    (0, common_1.Get)('admin/subscribers'),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, swagger_1.ApiOperation)({ summary: '[Admin] Get list of collected subscriber emails and mobile numbers' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'List of subscribers returned' }),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], CmsController.prototype, "getSubscribers", null);
+__decorate([
+    (0, common_1.Delete)('admin/subscribers/:id'),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, swagger_1.ApiOperation)({ summary: '[Admin] Delete subscriber entry' }),
+    (0, swagger_1.ApiParam)({ name: 'id', example: '60d5ecb8b392d40015f8a001' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Subscriber entry deleted successfully' }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], CmsController.prototype, "deleteSubscriber", null);
 exports.CmsController = CmsController = __decorate([
     (0, swagger_1.ApiTags)('CMS & Content'),
     (0, common_1.Controller)('cms'),

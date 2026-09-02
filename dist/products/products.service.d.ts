@@ -16,7 +16,12 @@ export declare class ProductsService {
     update(id: string, updateDto: UpdateProductDto): Promise<ProductDocument>;
     delete(id: string): Promise<void>;
     findByIdOrSlug(idOrSlug: string): Promise<ProductDocument>;
-    findAll(queryDto: QueryProductDto): Promise<any>;
+    findAll(queryDto: QueryProductDto): Promise<{
+        data: any[];
+        total: number;
+        page: number;
+        limit: number;
+    }>;
     addVariant(productId: string, variantDto: CreateVariantDto): Promise<ProductDocument>;
     updateVariant(productId: string, variantId: string, variantDto: Partial<CreateVariantDto>): Promise<ProductDocument>;
     deleteVariant(productId: string, variantId: string): Promise<ProductDocument>;

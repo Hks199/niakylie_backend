@@ -6,10 +6,10 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import * as crypto from 'crypto';
 
 import { UsersService } from '../users/users.service.js';
 import { UsersRepository } from '../users/repositories/users.repository.js';
+import { MailService } from '../mail/mail.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { RegisterAdminDto } from './dto/register-admin.dto.js';
 import { LoginDto } from './dto/login.dto.js';
@@ -24,47 +24,139 @@ export class AuthService {
     private readonly usersRepository: UsersRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly mailService: MailService,
   ) {}
 
   /**
-   * Registers a new customer and generates an email verification token.
+   * Generates a 6-digit numeric OTP.
+   */
+  private generateNumericOtp(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  /**
+   * Registers a new customer and generates a 5-minute 6-digit OTP email.
    */
   async register(registerDto: RegisterDto) {
     const { email, password, firstName, lastName } = registerDto;
 
     const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
-      throw new ConflictException('A user with this email address already exists');
+      if (existingUser.isEmailVerified) {
+        throw new ConflictException('A user with this email address already exists');
+      }
+
+      // Re-send OTP if user exists but remains unverified
+      const hashedPassword = await hashPassword(password);
+      const otpCode = this.generateNumericOtp();
+      const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiration
+
+      await this.usersRepository.update((existingUser as any).id, {
+        $set: {
+          password: hashedPassword,
+          firstName,
+          lastName,
+          emailVerificationToken: otpCode,
+          emailVerificationExpires: otpExpires,
+        },
+      });
+
+      await this.mailService.sendOtpEmail(email, otpCode, firstName);
+
+      return {
+        message: 'OTP sent to your email address. Valid for 5 minutes.',
+        email,
+        isEmailVerified: false,
+        otp: otpCode, // Provided for dev mode fallback
+      };
     }
 
     const hashedPassword = await hashPassword(password);
-    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
-    const emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const otpCode = this.generateNumericOtp();
+    const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes expiration
 
     const user = await this.usersService.create({
       email,
       password: hashedPassword,
       firstName,
       lastName,
-      emailVerificationToken,
-      emailVerificationExpires,
+      emailVerificationToken: otpCode,
+      emailVerificationExpires: otpExpires,
       isEmailVerified: false,
     });
 
+    await this.mailService.sendOtpEmail(email, otpCode, firstName);
+
     return {
-      message: 'Registration successful. Please verify your email.',
-      verificationToken: emailVerificationToken, // Returned directly in dev mode for validation
-      user: {
-        id: (user as any).id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      },
+      message: 'Registration successful. An OTP has been sent to your email address.',
+      email: user.email,
+      isEmailVerified: false,
     };
   }
 
   /**
-   * Verifies email using verification token.
+   * Generates and sends a fresh 5-minute OTP to the user.
+   */
+  async sendOtp(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('No account found with this email address');
+    }
+
+    const otpCode = this.generateNumericOtp();
+    const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    await this.usersRepository.update((user as any).id, {
+      $set: {
+        emailVerificationToken: otpCode,
+        emailVerificationExpires: otpExpires,
+      },
+    });
+
+    await this.mailService.sendOtpEmail(email, otpCode, user.firstName);
+
+    return {
+      message: 'OTP sent to your email address. Valid for 5 minutes.',
+      email,
+    };
+  }
+
+  /**
+   * Verifies the 6-digit OTP code against the database.
+   */
+  async verifyOtp(email: string, otp: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('No account found with this email address');
+    }
+
+    const trimmedOtp = (otp || '').trim();
+    if (!trimmedOtp) {
+      throw new BadRequestException('Please enter the 6-digit OTP code');
+    }
+
+    // Fetch user with emailVerificationToken & emailVerificationExpires
+    const userWithToken = await this.usersRepository.findByVerificationToken(trimmedOtp);
+    if (!userWithToken || (userWithToken as any).email.toLowerCase() !== email.toLowerCase().trim()) {
+      throw new BadRequestException('Invalid OTP code. Please check your code and try again.');
+    }
+
+    const expires = (userWithToken as any).emailVerificationExpires;
+    if (!expires || new Date(expires) < new Date()) {
+      throw new BadRequestException('OTP has expired (5-minute limit). Please click Resend OTP.');
+    }
+
+    // Mark user verified and clear token
+    const verifiedUser = await this.usersRepository.update((userWithToken as any).id, {
+      $set: { isEmailVerified: true },
+      $unset: { emailVerificationToken: 1, emailVerificationExpires: 1 },
+    });
+
+    return this.generateTokens(verifiedUser || userWithToken);
+  }
+
+  /**
+   * Legacy link verification fallback.
    */
   async verifyEmail(token: string) {
     const user = await this.usersRepository.findByVerificationToken(token);
@@ -81,7 +173,7 @@ export class AuthService {
   }
 
   /**
-   * Logs in a user, generates access & refresh tokens, and saves the refresh token.
+   * Logs in a user, ensuring they are verified before generating tokens.
    */
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
@@ -100,11 +192,33 @@ export class AuthService {
       throw new UnauthorizedException('Your account has been deactivated');
     }
 
+    // Enforce OTP verification requirement
+    if (!user.isEmailVerified) {
+      const otpCode = this.generateNumericOtp();
+      const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+      await this.usersRepository.update((user as any).id, {
+        $set: {
+          emailVerificationToken: otpCode,
+          emailVerificationExpires: otpExpires,
+        },
+      });
+
+      await this.mailService.sendOtpEmail(user.email, otpCode, user.firstName);
+
+      throw new UnauthorizedException({
+        statusCode: 401,
+        message: 'Account is not verified. An OTP has been sent to your email address.',
+        isEmailVerified: false,
+        email: user.email,
+      });
+    }
+
     return this.generateTokens(user);
   }
 
   /**
-   * Registers a new administrator account with Role.ADMIN privileges.
+   * Registers a new administrator account with Role.ADMIN privileges and sends OTP.
    */
   async registerAdmin(registerAdminDto: RegisterAdminDto) {
     const { email, password, firstName, lastName, adminSecretKey } = registerAdminDto;
@@ -115,35 +229,51 @@ export class AuthService {
     }
 
     const existingUser = await this.usersService.findByEmail(email);
-    if (existingUser) {
+    if (existingUser && existingUser.isEmailVerified) {
       throw new ConflictException('An account with this email address already exists');
     }
 
     const hashedPassword = await hashPassword(password);
+    const otpCode = this.generateNumericOtp();
+    const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-    const user = await this.usersService.create({
-      email,
-      password: hashedPassword,
-      firstName,
-      lastName,
-      roles: [Role.ADMIN],
-      isEmailVerified: true,
-    });
+    let user: UserDocument;
+    if (existingUser) {
+      const updated = await this.usersRepository.update((existingUser as any).id, {
+        $set: {
+          password: hashedPassword,
+          firstName,
+          lastName,
+          roles: [Role.ADMIN],
+          emailVerificationToken: otpCode,
+          emailVerificationExpires: otpExpires,
+        },
+      });
+      user = updated || existingUser;
+    } else {
+      user = await this.usersService.create({
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        roles: [Role.ADMIN],
+        emailVerificationToken: otpCode,
+        emailVerificationExpires: otpExpires,
+        isEmailVerified: false,
+      });
+    }
+
+    await this.mailService.sendOtpEmail(email, otpCode, firstName);
 
     return {
-      message: 'Admin account registered successfully',
-      user: {
-        id: (user as any).id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        roles: user.roles,
-      },
+      message: 'Admin registered successfully. An OTP has been sent to your email address.',
+      email: user.email,
+      isEmailVerified: false,
     };
   }
 
   /**
-   * Authenticates an admin account, verifying admin role permissions.
+   * Authenticates an admin account, verifying admin role and email verification.
    */
   async loginAdmin(loginDto: LoginDto) {
     const { email, password } = loginDto;
@@ -175,6 +305,28 @@ export class AuthService {
       throw new UnauthorizedException('Access Denied: This account does not have Admin privileges');
     }
 
+    // Enforce OTP verification requirement for Admin
+    if (!user.isEmailVerified) {
+      const otpCode = this.generateNumericOtp();
+      const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+      await this.usersRepository.update((user as any).id, {
+        $set: {
+          emailVerificationToken: otpCode,
+          emailVerificationExpires: otpExpires,
+        },
+      });
+
+      await this.mailService.sendOtpEmail(user.email, otpCode, user.firstName);
+
+      throw new UnauthorizedException({
+        statusCode: 401,
+        message: 'Admin account is not verified. An OTP has been sent to your email address.',
+        isEmailVerified: false,
+        email: user.email,
+      });
+    }
+
     return this.generateTokens(user);
   }
 
@@ -187,16 +339,12 @@ export class AuthService {
       throw new UnauthorizedException('Access Denied');
     }
 
-    // Retrieve user including refresh tokens
     const userWithTokens = await this.usersRepository.findByEmail(user.email, true);
     if (!userWithTokens || !userWithTokens.refreshTokens.includes(refreshToken)) {
       throw new UnauthorizedException('Refresh token is invalid or has been revoked');
     }
 
-    // Remove the used refresh token (rotation)
     await this.usersRepository.removeRefreshToken((user as any).id, refreshToken);
-
-    // Generate new token pair
     return this.generateTokens(user);
   }
 
@@ -217,17 +365,21 @@ export class AuthService {
   }
 
   /**
-   * Initiates password recovery.
+   * Initiates password recovery — checks registered user email and sends 5-minute OTP.
    */
   async forgotPassword(email: string) {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) {
-      // Avoid revealing if user email exists (security best practice)
-      return { message: 'If the email exists, a password reset link has been generated' };
+    const trimmedEmail = (email || '').trim().toLowerCase();
+    if (!trimmedEmail) {
+      throw new BadRequestException('Please enter a valid email address.');
     }
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetExpires = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
+    const user = await this.usersService.findByEmail(trimmedEmail);
+    if (!user) {
+      throw new BadRequestException('No registered account found with this email address.');
+    }
+
+    const resetToken = this.generateNumericOtp();
+    const resetExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
     await this.usersRepository.update((user as any).id, {
       $set: {
@@ -236,31 +388,42 @@ export class AuthService {
       },
     });
 
+    await this.mailService.sendOtpEmail(trimmedEmail, resetToken, user.firstName);
+
     return {
-      message: 'If the email exists, a password reset link has been generated',
-      resetToken, // Returned directly in dev mode for verification
+      message: 'A 6-digit password reset OTP has been sent to your email address.',
+      email: trimmedEmail,
     };
   }
 
   /**
-   * Verifies reset token and updates password.
+   * Verifies reset token (OTP) and updates user password.
    */
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    const { token, password } = resetPasswordDto;
+    const { token, password, email } = resetPasswordDto;
 
-    const user = await this.usersRepository.findByResetToken(token);
+    const trimmedOtp = (token || '').trim();
+    if (!trimmedOtp) {
+      throw new BadRequestException('Please enter the 6-digit OTP code.');
+    }
+
+    const user = await this.usersRepository.findByResetToken(trimmedOtp);
     if (!user) {
-      throw new BadRequestException('Password reset token is invalid or has expired');
+      throw new BadRequestException('Invalid OTP code or password reset token has expired.');
+    }
+
+    if (email && user.email.toLowerCase() !== email.trim().toLowerCase()) {
+      throw new BadRequestException('Invalid OTP code for this email address.');
     }
 
     const hashedPassword = await hashPassword(password);
 
     await this.usersRepository.update((user as any).id, {
-      $set: { password: hashedPassword, refreshTokens: [] }, // Revoke all sessions on password change
+      $set: { password: hashedPassword, refreshTokens: [] },
       $unset: { passwordResetToken: 1, passwordResetExpires: 1 },
     });
 
-    return { message: 'Password has been reset successfully. You can now login.' };
+    return { message: 'Password has been reset successfully. You can now log in.' };
   }
 
   /**
@@ -275,16 +438,13 @@ export class AuthService {
     let user = await this.usersService.findByGoogleId(googleUser.googleId);
 
     if (!user) {
-      // Check if user exists with the same email
       user = await this.usersService.findByEmail(googleUser.email);
 
       if (user) {
-        // Link Google ID to existing account
         user = await this.usersRepository.update((user as any).id, {
           $set: { googleId: googleUser.googleId, isEmailVerified: true },
         });
       } else {
-        // Create new user
         user = await this.usersService.create({
           googleId: googleUser.googleId,
           email: googleUser.email,
@@ -318,7 +478,6 @@ export class AuthService {
       expiresIn: (this.configService.get<string>('jwt.refreshExpiration') || '7d') as any,
     });
 
-    // Save refresh token to user schema list
     await this.usersRepository.addRefreshToken((user as any).id, refreshToken);
 
     return {
@@ -330,6 +489,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         roles: user.roles,
+        isEmailVerified: user.isEmailVerified,
       },
     };
   }

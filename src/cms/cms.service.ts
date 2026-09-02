@@ -7,6 +7,7 @@ import {
 import { PagesRepository } from './repositories/pages.repository.js';
 import { FaqsRepository } from './repositories/faqs.repository.js';
 import { BlogsRepository } from './repositories/blogs.repository.js';
+import { SubscribersRepository } from './repositories/subscribers.repository.js';
 
 import { CreatePageDto } from './dto/create-page.dto.js';
 import { UpdatePageDto } from './dto/update-page.dto.js';
@@ -15,10 +16,12 @@ import { UpdateFaqDto } from './dto/update-faq.dto.js';
 import { CreateBlogDto } from './dto/create-blog.dto.js';
 import { UpdateBlogDto } from './dto/update-blog.dto.js';
 import { QueryBlogDto } from './dto/query-blog.dto.js';
+import { SubscribeNewsletterDto } from './dto/subscribe-newsletter.dto.js';
 
 import { PageDocument } from './schemas/page.schema.js';
 import { FaqDocument } from './schemas/faq.schema.js';
 import { BlogDocument } from './schemas/blog.schema.js';
+import { SubscriberDocument } from './schemas/subscriber.schema.js';
 
 const DEFAULT_PAGES = [
   {
@@ -58,12 +61,86 @@ const DEFAULT_PAGES = [
   },
 ];
 
+const DEFAULT_FAQS = [
+  {
+    category: 'General',
+    question: 'What makes NiaKylie sarees and ethnic wear authentic?',
+    answer: 'Every NiaKylie garment carries a QR-coded Certificate of Authenticity, verifiable on our platform, guaranteeing genuine handloom or handcrafted origin directly from registered artisan weavers.',
+    displayOrder: 1,
+    isActive: true,
+  },
+  {
+    category: 'General',
+    question: 'How do I choose the correct size for custom garments?',
+    answer: 'Visit our Size Guide available on every product details page for comprehensive bust, waist, and hip measurements. We also offer custom tailoring assistance via WhatsApp support.',
+    displayOrder: 2,
+    isActive: true,
+  },
+  {
+    category: 'Orders',
+    question: 'Can I modify or cancel my order after placing it?',
+    answer: 'Orders can be cancelled or modified within 2 hours of placement. Navigate to My Account → My Orders and select "Cancel Order". After 2 hours, orders enter weaving/fulfillment and cannot be modified.',
+    displayOrder: 1,
+    isActive: true,
+  },
+  {
+    category: 'Orders',
+    question: 'Where can I track my live order status?',
+    answer: 'Log in to your account, visit My Orders, and click "View Details" on any active order to see real-time courier dispatch status and shipment tracking links.',
+    displayOrder: 2,
+    isActive: true,
+  },
+  {
+    category: 'Shipping',
+    question: 'How long does standard shipping take across India?',
+    answer: 'Standard shipping takes 5-7 business days across India and is completely FREE for orders above ₹999. Express delivery (1-2 business days) is available at checkout for ₹149.',
+    displayOrder: 1,
+    isActive: true,
+  },
+  {
+    category: 'Shipping',
+    question: 'Do you offer international worldwide shipping?',
+    answer: 'We currently ship throughout India. International shipping to the USA, UK, UAE, Canada, and Australia is scheduled to launch in Q4 2026.',
+    displayOrder: 2,
+    isActive: true,
+  },
+  {
+    category: 'Returns',
+    question: 'What is your return & exchange policy?',
+    answer: 'We offer a 7-day hassle-free return window for unworn, unaltered products with original tags. Initiate your return from My Account → My Orders.',
+    displayOrder: 1,
+    isActive: true,
+  },
+  {
+    category: 'Returns',
+    question: 'Are sale items or customized blouses eligible for return?',
+    answer: 'Customized stitching (altered measurements) and clearance/sale items are marked as final sale and cannot be returned or exchanged.',
+    displayOrder: 2,
+    isActive: true,
+  },
+  {
+    category: 'Payments',
+    question: 'What payment options do you support?',
+    answer: 'We accept UPI (Google Pay, PhonePe, Paytm), Credit & Debit Cards (Visa, Mastercard, Amex), NetBanking, and Cash on Delivery (COD) up to ₹10,000.',
+    displayOrder: 1,
+    isActive: true,
+  },
+  {
+    category: 'Payments',
+    question: 'Is my online transaction and card data secure?',
+    answer: 'Yes, 100%. NiaKylie never stores your card credentials. All transactions are securely processed through PCI-DSS Level 1 compliant gateways (Razorpay & Stripe) with 256-bit SSL encryption.',
+    displayOrder: 2,
+    isActive: true,
+  },
+];
+
 @Injectable()
 export class CmsService implements OnModuleInit {
   constructor(
     private readonly pagesRepo: PagesRepository,
     private readonly faqsRepo: FaqsRepository,
     private readonly blogsRepo: BlogsRepository,
+    private readonly subscribersRepo: SubscribersRepository,
   ) {}
 
   async onModuleInit() {
@@ -72,6 +149,14 @@ export class CmsService implements OnModuleInit {
       const existing = await this.pagesRepo.findBySlug(page.slug);
       if (!existing) {
         await this.pagesRepo.create({ ...page, isPublished: true });
+      }
+    }
+
+    // Auto-seed default FAQs if none exist
+    const existingFaqs = await this.faqsRepo.findAllAdmin();
+    if (!existingFaqs || existingFaqs.length === 0) {
+      for (const faq of DEFAULT_FAQS) {
+        await this.faqsRepo.create(faq);
       }
     }
   }
@@ -123,6 +208,10 @@ export class CmsService implements OnModuleInit {
 
   async getFaqs(): Promise<Record<string, FaqDocument[]>> {
     return this.faqsRepo.findAllActiveGrouped();
+  }
+
+  async getFaqsAdmin(): Promise<FaqDocument[]> {
+    return this.faqsRepo.findAllAdmin();
   }
 
   async createFaq(dto: CreateFaqDto): Promise<FaqDocument> {
@@ -189,5 +278,41 @@ export class CmsService implements OnModuleInit {
 
     await this.blogsRepo.softDelete(id);
     return { message: 'Blog post deleted successfully' };
+  }
+
+  // ─── SUBSCRIBERS / LEADS ──────────────────────────────────────────────────
+
+  async subscribeNewsletter(dto: SubscribeNewsletterDto): Promise<{ message: string; subscriber: SubscriberDocument }> {
+    const cleanEmail = dto.email?.trim();
+    const cleanPhone = dto.phone?.trim();
+
+    if (!cleanEmail && !cleanPhone) {
+      throw new BadRequestException('Please provide an email address or mobile number');
+    }
+
+    if (cleanPhone && !/^[6-9]\d{9}$/.test(cleanPhone.replace(/[\s\-\+]/g, '').slice(-10))) {
+      throw new BadRequestException('Please enter a valid 10-digit mobile number');
+    }
+
+    const subscriber = await this.subscribersRepo.createOrUpdate({
+      email: cleanEmail,
+      phone: cleanPhone,
+      source: dto.source || 'FOOTER',
+    });
+
+    return {
+      message: 'Thank you for subscribing! We will send exclusive offers and updates.',
+      subscriber,
+    };
+  }
+
+  async getSubscribers(query: { page?: number; limit?: number; search?: string }) {
+    return this.subscribersRepo.findAll(query);
+  }
+
+  async deleteSubscriber(id: string): Promise<{ message: string }> {
+    const deleted = await this.subscribersRepo.deleteById(id);
+    if (!deleted) throw new NotFoundException(`Subscriber '${id}' not found`);
+    return { message: 'Subscriber record removed successfully' };
   }
 }

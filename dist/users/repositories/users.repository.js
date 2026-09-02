@@ -119,6 +119,42 @@ let UsersRepository = class UsersRepository {
             .findByIdAndUpdate(userId, { $pull: { addresses: { _id: new mongoose_2.Types.ObjectId(addressId) } } }, { new: true })
             .exec();
     }
+    async getWishlist(userId) {
+        if (!mongoose_2.Types.ObjectId.isValid(userId))
+            return [];
+        const user = await this.userModel
+            .findById(userId)
+            .populate({
+            path: 'wishlist',
+            match: { isDeleted: { $ne: true } },
+        })
+            .exec();
+        if (!user || !user.wishlist)
+            return [];
+        const rawItems = user.wishlist.filter((item) => item && typeof item === 'object' && item._id);
+        return rawItems.map((item) => {
+            const prod = item.toObject ? item.toObject() : item;
+            const firstVariant = prod.variants && prod.variants.length > 0 ? prod.variants[0] : null;
+            const offerPrice = prod.offerPrice ?? prod.price ?? firstVariant?.offerPrice ?? 0;
+            const mrp = prod.mrp ?? prod.compareAtPrice ?? firstVariant?.mrp ?? offerPrice;
+            const discount = firstVariant?.discount ?? (mrp > 0 ? Math.round(((mrp - offerPrice) / mrp) * 100) : 0);
+            const thumbnail = prod.thumbnail || firstVariant?.images?.[0] || prod.images?.[0] || '';
+            return {
+                ...prod,
+                id: prod._id ? prod._id.toString() : prod.id,
+                title: prod.title || prod.name,
+                name: prod.name || prod.title,
+                price: offerPrice,
+                offerPrice,
+                mrp,
+                compareAtPrice: mrp,
+                originalPrice: mrp,
+                discountPercentage: discount,
+                discount,
+                thumbnail,
+            };
+        });
+    }
     async addToWishlist(userId, productId) {
         if (!mongoose_2.Types.ObjectId.isValid(productId))
             return null;

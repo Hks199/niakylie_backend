@@ -6,6 +6,9 @@ import {
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { OrdersRepository } from '../checkout/repositories/orders.repository.js';
+import { ProductsRepository } from '../products/repositories/products.repository.js';
+import { InventoryRepository } from '../inventory/repositories/inventory.repository.js';
+import { StockStatus } from '../inventory/schemas/inventory.schema.js';
 import { OrderDocument, OrderStatus } from '../checkout/schemas/order.schema.js';
 import { QueryOrderDto } from './dto/query-order.dto.js';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto.js';
@@ -16,7 +19,7 @@ import { CancelOrderDto } from './dto/cancel-order.dto.js';
 // Status transition rules — defines which transitions are valid
 const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
-  [OrderStatus.CONFIRMED]: [OrderStatus.PACKED, OrderStatus.CANCELLED],
+  [OrderStatus.CONFIRMED]: [OrderStatus.PACKED, OrderStatus.SHIPPED, OrderStatus.CANCELLED],
   [OrderStatus.PACKED]: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
   [OrderStatus.SHIPPED]: [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.CANCELLED],
   [OrderStatus.OUT_FOR_DELIVERY]: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
@@ -28,7 +31,11 @@ const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly ordersRepository: OrdersRepository) {}
+  constructor(
+    private readonly ordersRepository: OrdersRepository,
+    private readonly productsRepository: ProductsRepository,
+    private readonly inventoryRepository: InventoryRepository,
+  ) {}
 
   private async resolveOrder(orderIdOrNumber: string, userId?: string): Promise<OrderDocument> {
     let order = await this.ordersRepository.findByOrderNumber(orderIdOrNumber);
@@ -51,7 +58,7 @@ export class OrdersService {
     return this.ordersRepository.findAll({
       page: query.page,
       limit: query.limit,
-      orderStatus: query.orderStatus,
+      orderStatus: query.orderStatus || query.status,
       search: query.search,
       startDate: query.startDate,
       endDate: query.endDate,
@@ -92,6 +99,42 @@ export class OrdersService {
       dto.notes,
       extraData as any,
     );
+
+    if (dto.status === OrderStatus.CANCELLED && order.items && order.items.length > 0) {
+      for (const item of order.items) {
+        const itemSku = item.sku;
+        const itemPId = item.productId?.toString();
+        const itemVId = item.variantId?.toString();
+        const qty = item.quantity || 1;
+
+        if (itemSku) {
+          const inventory = await this.inventoryRepository.findBySku(itemSku);
+          if (inventory) {
+            const newTotal = inventory.totalStock + qty;
+            const newAvailable = inventory.availableStock + qty;
+            const newSold = Math.max(0, (inventory.soldStock || 0) - qty);
+            const lowThreshold = inventory.lowStockThreshold || 5;
+
+            let status = StockStatus.IN_STOCK;
+            if (newAvailable <= 0) {
+              status = StockStatus.OUT_OF_STOCK;
+            } else if (newAvailable <= lowThreshold) {
+              status = StockStatus.LOW_STOCK;
+            }
+
+            await this.inventoryRepository.updateBySku(itemSku, {
+              totalStock: newTotal,
+              availableStock: newAvailable,
+              soldStock: newSold,
+              status,
+            });
+          }
+        }
+
+        await this.productsRepository.incrementVariantStock(itemPId, itemVId, itemSku, qty);
+      }
+    }
+
     return updated!;
   }
 
@@ -140,8 +183,8 @@ export class OrdersService {
 
   // ─── CUSTOMER ─────────────────────────────────────────────────────────────
 
-  async getMyOrders(userId: string): Promise<OrderDocument[]> {
-    return this.ordersRepository.findByUserId(userId);
+  async getMyOrders(userId?: string, guestId?: string, userEmail?: string): Promise<OrderDocument[]> {
+    return this.ordersRepository.findByUserIdOrGuestId(userId, guestId, userEmail);
   }
 
   async getMyOrder(orderId: string, userId: string): Promise<OrderDocument> {
@@ -182,6 +225,43 @@ export class OrdersService {
       `Customer cancellation: ${dto.reason}`,
       { cancellationReason: dto.reason } as any,
     );
+
+    // Restore stock for cancelled order items
+    if (order.items && order.items.length > 0) {
+      for (const item of order.items) {
+        const itemSku = item.sku;
+        const itemPId = item.productId?.toString();
+        const itemVId = item.variantId?.toString();
+        const qty = item.quantity || 1;
+
+        if (itemSku) {
+          const inventory = await this.inventoryRepository.findBySku(itemSku);
+          if (inventory) {
+            const newTotal = inventory.totalStock + qty;
+            const newAvailable = inventory.availableStock + qty;
+            const newSold = Math.max(0, (inventory.soldStock || 0) - qty);
+            const lowThreshold = inventory.lowStockThreshold || 5;
+
+            let status = StockStatus.IN_STOCK;
+            if (newAvailable <= 0) {
+              status = StockStatus.OUT_OF_STOCK;
+            } else if (newAvailable <= lowThreshold) {
+              status = StockStatus.LOW_STOCK;
+            }
+
+            await this.inventoryRepository.updateBySku(itemSku, {
+              totalStock: newTotal,
+              availableStock: newAvailable,
+              soldStock: newSold,
+              status,
+            });
+          }
+        }
+
+        await this.productsRepository.incrementVariantStock(itemPId, itemVId, itemSku, qty);
+      }
+    }
+
     return updated!;
   }
 

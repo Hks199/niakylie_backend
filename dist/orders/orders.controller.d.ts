@@ -12,6 +12,7 @@ export declare class OrdersController {
         total: number;
         page: number;
         limit: number;
+        totalPages: number;
     }>;
     findByIdAdmin(orderId: string): Promise<import("../checkout/schemas/order.schema.js").OrderDocument>;
     updateStatus(orderId: string, dto: UpdateOrderStatusDto): Promise<import("../checkout/schemas/order.schema.js").OrderDocument>;
@@ -20,7 +21,8 @@ export declare class OrdersController {
     markRefunded(orderId: string, body: {
         notes?: string;
     }): Promise<import("../checkout/schemas/order.schema.js").OrderDocument>;
-    getMyOrders(req: any): Promise<import("../checkout/schemas/order.schema.js").OrderDocument[]>;
+    getMyOrders(req: any, guestIdHeader?: string): Promise<import("../checkout/schemas/order.schema.js").OrderDocument[]>;
+    getOrders(req: any, guestIdHeader?: string): Promise<import("../checkout/schemas/order.schema.js").OrderDocument[]>;
     getMyOrder(orderId: string, req: any): Promise<import("../checkout/schemas/order.schema.js").OrderDocument>;
     getOrderTimeline(orderId: string, req: any): Promise<any[]>;
     getOrderTracking(orderId: string, req: any): Promise<{

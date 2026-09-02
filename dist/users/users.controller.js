@@ -52,8 +52,7 @@ let UsersController = class UsersController {
         return this.usersService.deleteAddress(user.id, addressId);
     }
     async getWishlist(user) {
-        const fullUser = await this.usersService.findById(user.id);
-        return fullUser.wishlist || [];
+        return this.usersService.getWishlist(user.id);
     }
     async toggleWishlist(user, dto) {
         const userId = user.id;
@@ -70,10 +69,12 @@ let UsersController = class UsersController {
         }
     }
     async addToWishlist(user, productId) {
-        return this.usersService.addToWishlist(user.id, productId);
+        await this.usersService.addToWishlist(user.id, productId);
+        return { isWishlisted: true, message: 'Added to wishlist' };
     }
     async removeFromWishlist(user, productId) {
-        return this.usersService.removeFromWishlist(user.id, productId);
+        await this.usersService.removeFromWishlist(user.id, productId);
+        return { isWishlisted: false, message: 'Removed from wishlist' };
     }
     async getRecentlyViewed(user) {
         const fullUser = await this.usersService.findById(user.id);

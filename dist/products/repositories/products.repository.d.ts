@@ -20,4 +20,6 @@ export declare class ProductsRepository {
     addVariant(id: string, variant: Partial<ProductVariant>): Promise<ProductDocument | null>;
     updateVariant(productId: string, variantId: string, updateData: Partial<ProductVariant>): Promise<ProductDocument | null>;
     deleteVariant(productId: string, variantId: string): Promise<ProductDocument | null>;
+    decrementVariantStock(productIdStr?: string, variantIdStr?: string, skuStr?: string, quantity?: number): Promise<void>;
+    incrementVariantStock(productIdStr?: string, variantIdStr?: string, skuStr?: string, quantity?: number): Promise<void>;
 }

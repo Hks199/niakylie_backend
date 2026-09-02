@@ -7,7 +7,12 @@ export declare class ProductsController {
     private readonly productsService;
     constructor(productsService: ProductsService);
     create(createDto: CreateProductDto): Promise<import("./schemas/product.schema.js").ProductDocument>;
-    findAll(queryDto: QueryProductDto): Promise<any>;
+    findAll(queryDto: QueryProductDto): Promise<{
+        data: any[];
+        total: number;
+        page: number;
+        limit: number;
+    }>;
     findOne(idOrSlug: string): Promise<import("./schemas/product.schema.js").ProductDocument>;
     update(id: string, updateDto: UpdateProductDto): Promise<import("./schemas/product.schema.js").ProductDocument>;
     remove(id: string): Promise<void>;

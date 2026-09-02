@@ -1,4 +1,6 @@
 import { OrdersRepository } from '../checkout/repositories/orders.repository.js';
+import { ProductsRepository } from '../products/repositories/products.repository.js';
+import { InventoryRepository } from '../inventory/repositories/inventory.repository.js';
 import { OrderDocument, OrderStatus } from '../checkout/schemas/order.schema.js';
 import { QueryOrderDto } from './dto/query-order.dto.js';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto.js';
@@ -7,20 +9,23 @@ import { RequestReturnDto } from './dto/request-return.dto.js';
 import { CancelOrderDto } from './dto/cancel-order.dto.js';
 export declare class OrdersService {
     private readonly ordersRepository;
-    constructor(ordersRepository: OrdersRepository);
+    private readonly productsRepository;
+    private readonly inventoryRepository;
+    constructor(ordersRepository: OrdersRepository, productsRepository: ProductsRepository, inventoryRepository: InventoryRepository);
     private resolveOrder;
     findAll(query: QueryOrderDto): Promise<{
         data: OrderDocument[];
         total: number;
         page: number;
         limit: number;
+        totalPages: number;
     }>;
     findById(orderId: string): Promise<OrderDocument>;
     updateStatus(orderId: string, dto: UpdateOrderStatusDto): Promise<OrderDocument>;
     updateTracking(orderId: string, dto: UpdateTrackingDto): Promise<OrderDocument>;
     approveReturn(orderId: string): Promise<OrderDocument>;
     markRefunded(orderId: string, notes?: string): Promise<OrderDocument>;
-    getMyOrders(userId: string): Promise<OrderDocument[]>;
+    getMyOrders(userId?: string, guestId?: string, userEmail?: string): Promise<OrderDocument[]>;
     getMyOrder(orderId: string, userId: string): Promise<OrderDocument>;
     getOrderTimeline(orderId: string, userId?: string): Promise<any[]>;
     getOrderTracking(orderId: string, userId?: string): Promise<{

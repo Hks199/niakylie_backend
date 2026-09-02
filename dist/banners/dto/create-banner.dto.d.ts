@@ -2,6 +2,7 @@ import { BannerType, BannerPosition } from '../schemas/banner.schema.js';
 export declare class CreateBannerDto {
     title: string;
     subtitle?: string;
+    discountBadge?: string;
     type: BannerType;
     position?: BannerPosition;
     linkUrl?: string;

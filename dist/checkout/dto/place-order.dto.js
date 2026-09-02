@@ -47,6 +47,7 @@ __decorate([
     __metadata("design:type", String)
 ], CustomerInfoDto.prototype, "phone", void 0);
 class PlaceOrderDto {
+    addressId;
     shippingAddress;
     billingAddress;
     customerInfo;
@@ -54,13 +55,25 @@ class PlaceOrderDto {
     shippingMethod;
     couponCode;
     guestId;
+    shippingType;
+    razorpayOrderId;
+    razorpayPaymentId;
+    razorpaySignature;
+    stripePaymentIntentId;
+    items;
 }
 exports.PlaceOrderDto = PlaceOrderDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Shipping address details' }),
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Saved address ID' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], PlaceOrderDto.prototype, "addressId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Shipping address details' }),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.ValidateNested)(),
     (0, class_transformer_1.Type)(() => address_dto_js_1.AddressDto),
-    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", address_dto_js_1.AddressDto)
 ], PlaceOrderDto.prototype, "shippingAddress", void 0);
 __decorate([
@@ -79,6 +92,7 @@ __decorate([
 ], PlaceOrderDto.prototype, "customerInfo", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({ enum: order_schema_js_1.PaymentMethod, example: order_schema_js_1.PaymentMethod.COD, description: 'Selected payment method' }),
+    (0, class_transformer_1.Transform)(({ value }) => (typeof value === 'string' ? value.toUpperCase() : value)),
     (0, class_validator_1.IsEnum)(order_schema_js_1.PaymentMethod),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
@@ -86,6 +100,7 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ enum: order_schema_js_1.ShippingMethod, example: order_schema_js_1.ShippingMethod.STANDARD, description: 'Selected shipping method' }),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (typeof value === 'string' ? value.toUpperCase() : value)),
     (0, class_validator_1.IsEnum)(order_schema_js_1.ShippingMethod),
     __metadata("design:type", String)
 ], PlaceOrderDto.prototype, "shippingMethod", void 0);
@@ -101,4 +116,39 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], PlaceOrderDto.prototype, "guestId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], PlaceOrderDto.prototype, "shippingType", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], PlaceOrderDto.prototype, "razorpayOrderId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], PlaceOrderDto.prototype, "razorpayPaymentId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], PlaceOrderDto.prototype, "razorpaySignature", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], PlaceOrderDto.prototype, "stripePaymentIntentId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], PlaceOrderDto.prototype, "items", void 0);
 //# sourceMappingURL=place-order.dto.js.map

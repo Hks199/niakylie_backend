@@ -12,16 +12,36 @@ export declare class AuthController {
     constructor(authService: AuthService);
     register(registerDto: RegisterDto): Promise<{
         message: string;
-        verificationToken: string;
+        email: string;
+        isEmailVerified: boolean;
+        otp: string;
+    } | {
+        message: string;
+        email: string;
+        isEmailVerified: boolean;
+        otp?: undefined;
+    }>;
+    verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<{
+        message: string;
+    }>;
+    sendOtp(email: string): Promise<{
+        message: string;
+        email: string;
+    }>;
+    verifyOtp(body: {
+        email: string;
+        otp: string;
+    }): Promise<{
+        accessToken: string;
+        refreshToken: string;
         user: {
             id: any;
             email: string;
             firstName: string;
             lastName: string;
+            roles: import("../shared/index.js").Role[];
+            isEmailVerified: boolean;
         };
-    }>;
-    verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<{
-        message: string;
     }>;
     login(loginDto: LoginDto): Promise<{
         accessToken: string;
@@ -32,17 +52,13 @@ export declare class AuthController {
             firstName: string;
             lastName: string;
             roles: import("../shared/index.js").Role[];
+            isEmailVerified: boolean;
         };
     }>;
     registerAdmin(registerAdminDto: RegisterAdminDto): Promise<{
         message: string;
-        user: {
-            id: any;
-            email: string;
-            firstName: string;
-            lastName: string;
-            roles: import("../shared/index.js").Role[];
-        };
+        email: string;
+        isEmailVerified: boolean;
     }>;
     loginAdmin(loginDto: LoginDto): Promise<{
         accessToken: string;
@@ -53,6 +69,7 @@ export declare class AuthController {
             firstName: string;
             lastName: string;
             roles: import("../shared/index.js").Role[];
+            isEmailVerified: boolean;
         };
     }>;
     logoutAdmin(req: Request, user: User): Promise<{
@@ -67,14 +84,12 @@ export declare class AuthController {
             firstName: string;
             lastName: string;
             roles: import("../shared/index.js").Role[];
+            isEmailVerified: boolean;
         };
     }>;
     forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{
         message: string;
-        resetToken?: undefined;
-    } | {
-        message: string;
-        resetToken: string;
+        email: string;
     }>;
     resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{
         message: string;
@@ -95,6 +110,7 @@ export declare class AuthController {
             firstName: string;
             lastName: string;
             roles: import("../shared/index.js").Role[];
+            isEmailVerified: boolean;
         };
     }>;
 }

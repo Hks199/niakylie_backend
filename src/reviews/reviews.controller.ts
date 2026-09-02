@@ -9,6 +9,8 @@ import {
   Param,
   Query,
   Req,
+  Headers,
+  UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -18,6 +20,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiHeader,
 } from '@nestjs/swagger';
 
 import { ReviewsService } from './reviews.service.js';
@@ -25,20 +28,28 @@ import { CreateReviewDto } from './dto/create-review.dto.js';
 import { UpdateReviewDto } from './dto/update-review.dto.js';
 import { QueryReviewDto } from './dto/query-review.dto.js';
 import { ModerateReviewDto } from './dto/moderate-review.dto.js';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard.js';
 
 @ApiTags('Reviews')
+@UseGuards(OptionalJwtAuthGuard)
 @Controller('reviews')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
   @Post()
+  @ApiHeader({ name: 'x-guest-id', required: false, description: 'Guest ID for unauthenticated reviews' })
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Submit a product review with rating, text, images, and videos' })
   @ApiResponse({ status: 201, description: 'Review submitted successfully' })
   @ApiResponse({ status: 400, description: 'User already submitted a review or invalid payload' })
-  async createReview(@Body() dto: CreateReviewDto, @Req() req: any) {
-    const userId = req.user?.id || req.user?._id;
-    return this.reviewsService.createReview(userId, dto);
+  async createReview(
+    @Body() body: any,
+    @Req() req: any,
+    @Headers('x-guest-id') guestIdHeader?: string,
+  ) {
+    const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub || req.user?.userId || body?.userId;
+    const guestId = guestIdHeader || req.query?.guestId || body?.guestId;
+    return this.reviewsService.createReview(userId, guestId, body as CreateReviewDto);
   }
 
   @Get('product/:productId')

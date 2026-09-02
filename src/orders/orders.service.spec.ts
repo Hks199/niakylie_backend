@@ -168,7 +168,7 @@ describe('OrdersService', () => {
 
   describe('getMyOrders', () => {
     it('should return list of customer orders', async () => {
-      ordersRepo.findByUserId.mockResolvedValue([mockOrder] as any);
+      ordersRepo.findByUserIdOrGuestId = jest.fn().mockResolvedValue([mockOrder] as any);
 
       const result = await service.getMyOrders(userId.toString());
       expect(result).toHaveLength(1);
@@ -177,7 +177,7 @@ describe('OrdersService', () => {
 
   describe('findAll (admin)', () => {
     it('should return paginated orders', async () => {
-      ordersRepo.findAll.mockResolvedValue({ data: [mockOrder as any], total: 1, page: 1, limit: 10 });
+      ordersRepo.findAll.mockResolvedValue({ data: [mockOrder as any], total: 1, page: 1, limit: 10, totalPages: 1 });
 
       const result = await service.findAll({ page: 1, limit: 10 });
       expect(result.total).toBe(1);

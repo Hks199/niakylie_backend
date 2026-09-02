@@ -117,15 +117,6 @@ let ProductsService = class ProductsService {
         return product;
     }
     async findAll(queryDto) {
-        if (this.cacheService) {
-            const cacheKey = `products:list:${JSON.stringify(queryDto)}`;
-            const cached = await this.cacheService.get(cacheKey);
-            if (cached)
-                return cached;
-            const result = await this.productsRepository.findAll(queryDto);
-            await this.cacheService.set(cacheKey, result, 300000);
-            return result;
-        }
         return this.productsRepository.findAll(queryDto);
     }
     async addVariant(productId, variantDto) {

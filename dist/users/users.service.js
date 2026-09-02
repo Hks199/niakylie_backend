@@ -94,6 +94,9 @@ let UsersService = class UsersService {
         }
         return updatedUser;
     }
+    async getWishlist(userId) {
+        return this.usersRepository.getWishlist(userId);
+    }
     async addToWishlist(userId, productId) {
         const updatedUser = await this.usersRepository.addToWishlist(userId, productId);
         if (!updatedUser) {

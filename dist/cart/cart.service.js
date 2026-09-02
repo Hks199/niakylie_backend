@@ -39,30 +39,38 @@ let CartService = class CartService {
             }
         }
         const totalDiscount = Math.max(0, totalMrp - subtotal);
-        let couponDiscount = 0;
+        let couponDiscount = cart.couponDiscount || 0;
         if (cart.couponCode) {
             const code = cart.couponCode.toUpperCase().trim();
-            if (code === 'WELCOME10') {
-                couponDiscount = Math.round(subtotal * 0.1);
-            }
-            else if (code === 'FESTIVE20') {
-                couponDiscount = Math.round(subtotal * 0.2);
+            if (code === 'FLAT100' || code === 'OFF100' || code === 'PROMO100') {
+                couponDiscount = Math.min(100, subtotal);
             }
             else if (code === 'FLAT500') {
                 couponDiscount = Math.min(500, subtotal);
             }
-            else {
-                couponDiscount = Math.round(subtotal * 0.05);
+            else if (code === 'WELCOME10') {
+                couponDiscount = Math.round(subtotal * 0.1);
             }
+            else if (code === 'FESTIVE50') {
+                couponDiscount = Math.round(subtotal * 0.5);
+            }
+            else if (code === 'FESTIVE20') {
+                couponDiscount = Math.round(subtotal * 0.2);
+            }
+            else if (code === 'ROYAL1000') {
+                couponDiscount = subtotal >= 4999 ? 1000 : 0;
+            }
+        }
+        else {
+            couponDiscount = 0;
         }
         cart.couponDiscount = couponDiscount;
         cart.subtotal = subtotal;
         cart.totalMrp = totalMrp;
         cart.totalDiscount = totalDiscount;
-        const taxableSubtotal = Math.max(0, subtotal - couponDiscount);
-        cart.tax = Math.round(taxableSubtotal * 0.18);
+        cart.tax = 0;
         cart.shippingFee = subtotal >= 1000 || subtotal === 0 ? 0 : 99;
-        cart.grandTotal = Math.max(0, subtotal - couponDiscount + cart.tax + cart.shippingFee);
+        cart.grandTotal = Math.max(0, subtotal - couponDiscount + cart.shippingFee);
         return cart;
     }
     async getCart(userId, guestId) {
@@ -249,13 +257,10 @@ let CartService = class CartService {
     async clearCart(userId, guestId) {
         const cart = await this.cartRepository.findCart(userId, guestId);
         if (!cart) {
-            throw new common_1.NotFoundException('Cart not found');
+            return null;
         }
-        cart.items = [];
-        cart.couponCode = undefined;
-        cart.couponDiscount = 0;
-        this.recalculateCart(cart);
-        return cart.save();
+        await this.cartRepository.clearCart(userId, guestId);
+        return null;
     }
 };
 exports.CartService = CartService;

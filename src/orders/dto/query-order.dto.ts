@@ -20,8 +20,11 @@ export class QueryOrderDto {
 
   @ApiPropertyOptional({ enum: OrderStatus, example: OrderStatus.SHIPPED })
   @IsOptional()
-  @IsEnum(OrderStatus)
   orderStatus?: OrderStatus;
+
+  @ApiPropertyOptional({ enum: OrderStatus, example: OrderStatus.SHIPPED })
+  @IsOptional()
+  status?: OrderStatus;
 
   @ApiPropertyOptional({ example: 'NK-ORD-20260807', description: 'Search by order number, invoice, or email' })
   @IsOptional()

@@ -3,6 +3,7 @@ export declare class QueryOrderDto {
     page?: number;
     limit?: number;
     orderStatus?: OrderStatus;
+    status?: OrderStatus;
     search?: string;
     startDate?: string;
     endDate?: string;

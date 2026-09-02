@@ -17,6 +17,7 @@ const banner_schema_js_1 = require("../schemas/banner.schema.js");
 class UpdateBannerDto {
     title;
     subtitle;
+    discountBadge;
     type;
     position;
     linkUrl;
@@ -40,6 +41,12 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateBannerDto.prototype, "subtitle", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'DEAL OF THE DAY' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateBannerDto.prototype, "discountBadge", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ enum: banner_schema_js_1.BannerType }),
     (0, class_validator_1.IsOptional)(),

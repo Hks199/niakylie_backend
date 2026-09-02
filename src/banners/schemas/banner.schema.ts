@@ -25,6 +25,9 @@ export class Banner {
   @Prop({ trim: true })
   subtitle?: string;
 
+  @Prop({ trim: true })
+  discountBadge?: string;
+
   @Prop({ required: true, enum: BannerType, index: true })
   type!: BannerType;
 

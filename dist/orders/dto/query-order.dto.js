@@ -18,6 +18,7 @@ class QueryOrderDto {
     page;
     limit;
     orderStatus;
+    status;
     search;
     startDate;
     endDate;
@@ -42,9 +43,13 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ enum: order_schema_js_1.OrderStatus, example: order_schema_js_1.OrderStatus.SHIPPED }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(order_schema_js_1.OrderStatus),
     __metadata("design:type", String)
 ], QueryOrderDto.prototype, "orderStatus", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: order_schema_js_1.OrderStatus, example: order_schema_js_1.OrderStatus.SHIPPED }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], QueryOrderDto.prototype, "status", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ example: 'NK-ORD-20260807', description: 'Search by order number, invoice, or email' }),
     (0, class_validator_1.IsOptional)(),

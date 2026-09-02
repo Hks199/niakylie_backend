@@ -13,10 +13,13 @@ exports.OrdersService = void 0;
 const common_1 = require("@nestjs/common");
 const mongoose_1 = require("mongoose");
 const orders_repository_js_1 = require("../checkout/repositories/orders.repository.js");
+const products_repository_js_1 = require("../products/repositories/products.repository.js");
+const inventory_repository_js_1 = require("../inventory/repositories/inventory.repository.js");
+const inventory_schema_js_1 = require("../inventory/schemas/inventory.schema.js");
 const order_schema_js_1 = require("../checkout/schemas/order.schema.js");
 const VALID_TRANSITIONS = {
     [order_schema_js_1.OrderStatus.PENDING]: [order_schema_js_1.OrderStatus.CONFIRMED, order_schema_js_1.OrderStatus.CANCELLED],
-    [order_schema_js_1.OrderStatus.CONFIRMED]: [order_schema_js_1.OrderStatus.PACKED, order_schema_js_1.OrderStatus.CANCELLED],
+    [order_schema_js_1.OrderStatus.CONFIRMED]: [order_schema_js_1.OrderStatus.PACKED, order_schema_js_1.OrderStatus.SHIPPED, order_schema_js_1.OrderStatus.CANCELLED],
     [order_schema_js_1.OrderStatus.PACKED]: [order_schema_js_1.OrderStatus.SHIPPED, order_schema_js_1.OrderStatus.CANCELLED],
     [order_schema_js_1.OrderStatus.SHIPPED]: [order_schema_js_1.OrderStatus.OUT_FOR_DELIVERY, order_schema_js_1.OrderStatus.CANCELLED],
     [order_schema_js_1.OrderStatus.OUT_FOR_DELIVERY]: [order_schema_js_1.OrderStatus.DELIVERED, order_schema_js_1.OrderStatus.CANCELLED],
@@ -27,8 +30,12 @@ const VALID_TRANSITIONS = {
 };
 let OrdersService = class OrdersService {
     ordersRepository;
-    constructor(ordersRepository) {
+    productsRepository;
+    inventoryRepository;
+    constructor(ordersRepository, productsRepository, inventoryRepository) {
         this.ordersRepository = ordersRepository;
+        this.productsRepository = productsRepository;
+        this.inventoryRepository = inventoryRepository;
     }
     async resolveOrder(orderIdOrNumber, userId) {
         let order = await this.ordersRepository.findByOrderNumber(orderIdOrNumber);
@@ -47,7 +54,7 @@ let OrdersService = class OrdersService {
         return this.ordersRepository.findAll({
             page: query.page,
             limit: query.limit,
-            orderStatus: query.orderStatus,
+            orderStatus: query.orderStatus || query.status,
             search: query.search,
             startDate: query.startDate,
             endDate: query.endDate,
@@ -77,6 +84,37 @@ let OrdersService = class OrdersService {
             extraData['shippingInfo.deliveredAt'] = new Date();
         }
         const updated = await this.ordersRepository.updateStatus(order._id.toString(), dto.status, dto.notes, extraData);
+        if (dto.status === order_schema_js_1.OrderStatus.CANCELLED && order.items && order.items.length > 0) {
+            for (const item of order.items) {
+                const itemSku = item.sku;
+                const itemPId = item.productId?.toString();
+                const itemVId = item.variantId?.toString();
+                const qty = item.quantity || 1;
+                if (itemSku) {
+                    const inventory = await this.inventoryRepository.findBySku(itemSku);
+                    if (inventory) {
+                        const newTotal = inventory.totalStock + qty;
+                        const newAvailable = inventory.availableStock + qty;
+                        const newSold = Math.max(0, (inventory.soldStock || 0) - qty);
+                        const lowThreshold = inventory.lowStockThreshold || 5;
+                        let status = inventory_schema_js_1.StockStatus.IN_STOCK;
+                        if (newAvailable <= 0) {
+                            status = inventory_schema_js_1.StockStatus.OUT_OF_STOCK;
+                        }
+                        else if (newAvailable <= lowThreshold) {
+                            status = inventory_schema_js_1.StockStatus.LOW_STOCK;
+                        }
+                        await this.inventoryRepository.updateBySku(itemSku, {
+                            totalStock: newTotal,
+                            availableStock: newAvailable,
+                            soldStock: newSold,
+                            status,
+                        });
+                    }
+                }
+                await this.productsRepository.incrementVariantStock(itemPId, itemVId, itemSku, qty);
+            }
+        }
         return updated;
     }
     async updateTracking(orderId, dto) {
@@ -107,8 +145,8 @@ let OrdersService = class OrdersService {
         const updated = await this.ordersRepository.updateStatus(order._id.toString(), order_schema_js_1.OrderStatus.REFUNDED, notes || 'Refund processed');
         return updated;
     }
-    async getMyOrders(userId) {
-        return this.ordersRepository.findByUserId(userId);
+    async getMyOrders(userId, guestId, userEmail) {
+        return this.ordersRepository.findByUserIdOrGuestId(userId, guestId, userEmail);
     }
     async getMyOrder(orderId, userId) {
         return this.resolveOrder(orderId, userId);
@@ -134,6 +172,37 @@ let OrdersService = class OrdersService {
             throw new common_1.BadRequestException(`Orders in '${order.orderStatus}' status cannot be cancelled. Only PENDING or CONFIRMED orders can be cancelled.`);
         }
         const updated = await this.ordersRepository.updateStatus(order._id.toString(), order_schema_js_1.OrderStatus.CANCELLED, `Customer cancellation: ${dto.reason}`, { cancellationReason: dto.reason });
+        if (order.items && order.items.length > 0) {
+            for (const item of order.items) {
+                const itemSku = item.sku;
+                const itemPId = item.productId?.toString();
+                const itemVId = item.variantId?.toString();
+                const qty = item.quantity || 1;
+                if (itemSku) {
+                    const inventory = await this.inventoryRepository.findBySku(itemSku);
+                    if (inventory) {
+                        const newTotal = inventory.totalStock + qty;
+                        const newAvailable = inventory.availableStock + qty;
+                        const newSold = Math.max(0, (inventory.soldStock || 0) - qty);
+                        const lowThreshold = inventory.lowStockThreshold || 5;
+                        let status = inventory_schema_js_1.StockStatus.IN_STOCK;
+                        if (newAvailable <= 0) {
+                            status = inventory_schema_js_1.StockStatus.OUT_OF_STOCK;
+                        }
+                        else if (newAvailable <= lowThreshold) {
+                            status = inventory_schema_js_1.StockStatus.LOW_STOCK;
+                        }
+                        await this.inventoryRepository.updateBySku(itemSku, {
+                            totalStock: newTotal,
+                            availableStock: newAvailable,
+                            soldStock: newSold,
+                            status,
+                        });
+                    }
+                }
+                await this.productsRepository.incrementVariantStock(itemPId, itemVId, itemSku, qty);
+            }
+        }
         return updated;
     }
     async requestReturn(dto, userId) {
@@ -249,6 +318,8 @@ let OrdersService = class OrdersService {
 exports.OrdersService = OrdersService;
 exports.OrdersService = OrdersService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [orders_repository_js_1.OrdersRepository])
+    __metadata("design:paramtypes", [orders_repository_js_1.OrdersRepository,
+        products_repository_js_1.ProductsRepository,
+        inventory_repository_js_1.InventoryRepository])
 ], OrdersService);
 //# sourceMappingURL=orders.service.js.map

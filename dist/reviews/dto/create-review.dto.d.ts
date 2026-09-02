@@ -5,4 +5,6 @@ export declare class CreateReviewDto {
     comment: string;
     images?: string[];
     videos?: string[];
+    userId?: string;
+    userName?: string;
 }
