@@ -65,8 +65,10 @@ export class OrdersRepository {
     return this.orderModel.find({ guestId, isDeleted: { $ne: true } }).sort({ createdAt: -1 }).exec();
   }
 
-  async findAll(opts: OrderQueryOptions): Promise<{ data: OrderDocument[]; total: number; page: number; limit: number }> {
-    const { page = 1, limit = 10, userId, orderStatus, search, startDate, endDate } = opts;
+  async findAll(opts: OrderQueryOptions): Promise<{ data: OrderDocument[]; total: number; page: number; limit: number; totalPages: number }> {
+    const { userId, orderStatus, search, startDate, endDate } = opts;
+    const page = Math.max(1, Number(opts.page) || 1);
+    const limit = Math.max(1, Number(opts.limit) || 10);
     const filter: Record<string, any> = { isDeleted: false };
 
     if (userId && Types.ObjectId.isValid(userId)) {
@@ -121,7 +123,8 @@ export class OrdersRepository {
       this.orderModel.countDocuments(filter).exec(),
     ]);
 
-    return { data, total, page, limit };
+    const totalPages = Math.ceil(total / limit) || 1;
+    return { data, total, page, limit, totalPages };
   }
 
   async updateStatus(

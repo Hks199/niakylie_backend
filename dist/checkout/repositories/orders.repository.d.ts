@@ -24,6 +24,7 @@ export declare class OrdersRepository {
         total: number;
         page: number;
         limit: number;
+        totalPages: number;
     }>;
     updateStatus(id: string, status: OrderStatus, note?: string, extraData?: Partial<Order>): Promise<OrderDocument | null>;
     updateTracking(id: string, tracking: {

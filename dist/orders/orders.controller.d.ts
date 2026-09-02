@@ -12,6 +12,7 @@ export declare class OrdersController {
         total: number;
         page: number;
         limit: number;
+        totalPages: number;
     }>;
     findByIdAdmin(orderId: string): Promise<import("../checkout/schemas/order.schema.js").OrderDocument>;
     updateStatus(orderId: string, dto: UpdateOrderStatusDto): Promise<import("../checkout/schemas/order.schema.js").OrderDocument>;

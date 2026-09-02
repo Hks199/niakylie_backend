@@ -18,6 +18,7 @@ export declare class OrdersService {
         total: number;
         page: number;
         limit: number;
+        totalPages: number;
     }>;
     findById(orderId: string): Promise<OrderDocument>;
     updateStatus(orderId: string, dto: UpdateOrderStatusDto): Promise<OrderDocument>;

@@ -63,7 +63,9 @@ let OrdersRepository = class OrdersRepository {
         return this.orderModel.find({ guestId, isDeleted: { $ne: true } }).sort({ createdAt: -1 }).exec();
     }
     async findAll(opts) {
-        const { page = 1, limit = 10, userId, orderStatus, search, startDate, endDate } = opts;
+        const { userId, orderStatus, search, startDate, endDate } = opts;
+        const page = Math.max(1, Number(opts.page) || 1);
+        const limit = Math.max(1, Number(opts.limit) || 10);
         const filter = { isDeleted: false };
         if (userId && mongoose_2.Types.ObjectId.isValid(userId)) {
             filter.userId = new mongoose_2.Types.ObjectId(userId);
@@ -116,7 +118,8 @@ let OrdersRepository = class OrdersRepository {
             this.orderModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).exec(),
             this.orderModel.countDocuments(filter).exec(),
         ]);
-        return { data, total, page, limit };
+        const totalPages = Math.ceil(total / limit) || 1;
+        return { data, total, page, limit, totalPages };
     }
     async updateStatus(id, status, note, extraData) {
         const statusLabels = {
