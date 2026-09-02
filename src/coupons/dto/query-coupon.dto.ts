@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, Min, IsString, IsBoolean } from 'class-validator';
+import { IsOptional, IsInt, Min, IsString } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -29,6 +29,5 @@ export class QueryCouponDto {
     if (value === 'false' || value === false) return false;
     return undefined;
   })
-  @IsBoolean()
   isActive?: boolean;
 }

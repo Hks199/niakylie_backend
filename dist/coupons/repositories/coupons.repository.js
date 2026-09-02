@@ -54,8 +54,8 @@ let CouponsRepository = class CouponsRepository {
     async findAll(queryDto) {
         const { page = 1, limit = 10, search, isActive } = queryDto;
         const filter = { isDeleted: false };
-        if (isActive !== undefined) {
-            filter.isActive = isActive;
+        if (isActive !== undefined && isActive !== null && isActive !== '') {
+            filter.isActive = String(isActive) === 'true';
         }
         if (search) {
             filter.$or = [

@@ -52,7 +52,6 @@ __decorate([
             return false;
         return undefined;
     }),
-    (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], QueryCouponDto.prototype, "isActive", void 0);
 //# sourceMappingURL=query-coupon.dto.js.map

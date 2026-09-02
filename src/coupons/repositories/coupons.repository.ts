@@ -49,8 +49,8 @@ export class CouponsRepository {
     const { page = 1, limit = 10, search, isActive } = queryDto;
     const filter: Record<string, any> = { isDeleted: false };
 
-    if (isActive !== undefined) {
-      filter.isActive = isActive;
+    if (isActive !== undefined && isActive !== null && (isActive as any) !== '') {
+      filter.isActive = String(isActive) === 'true';
     }
 
     if (search) {
