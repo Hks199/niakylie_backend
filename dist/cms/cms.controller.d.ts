@@ -6,6 +6,7 @@ import { UpdateFaqDto } from './dto/update-faq.dto.js';
 import { CreateBlogDto } from './dto/create-blog.dto.js';
 import { UpdateBlogDto } from './dto/update-blog.dto.js';
 import { QueryBlogDto } from './dto/query-blog.dto.js';
+import { SubscribeNewsletterDto } from './dto/subscribe-newsletter.dto.js';
 export declare class CmsController {
     private readonly cmsService;
     constructor(cmsService: CmsService);
@@ -33,6 +34,29 @@ export declare class CmsController {
     createBlog(dto: CreateBlogDto): Promise<import("./schemas/blog.schema.js").BlogDocument>;
     updateBlog(id: string, dto: UpdateBlogDto): Promise<import("./schemas/blog.schema.js").BlogDocument>;
     deleteBlog(id: string): Promise<{
+        message: string;
+    }>;
+    subscribe(dto: SubscribeNewsletterDto): Promise<{
+        message: string;
+        subscriber: import("./schemas/subscriber.schema.js").SubscriberDocument;
+    }>;
+    getSubscribers(query: {
+        page?: number;
+        limit?: number;
+        search?: string;
+    }): Promise<{
+        subscribers: (import("mongoose").Document<unknown, {}, import("./schemas/subscriber.schema.js").SubscriberDocument, {}, import("mongoose").DefaultSchemaOptions> & import("./schemas/subscriber.schema.js").Subscriber & import("mongoose").Document<import("mongoose").Types.ObjectId, any, any, Record<string, any>, {}> & Required<{
+            _id: import("mongoose").Types.ObjectId;
+        }> & {
+            __v: number;
+        } & {
+            id: string;
+        })[];
+        total: number;
+        page: number;
+        limit: number;
+    }>;
+    deleteSubscriber(id: string): Promise<{
         message: string;
     }>;
 }

@@ -7,6 +7,7 @@ import {
 import { PagesRepository } from './repositories/pages.repository.js';
 import { FaqsRepository } from './repositories/faqs.repository.js';
 import { BlogsRepository } from './repositories/blogs.repository.js';
+import { SubscribersRepository } from './repositories/subscribers.repository.js';
 
 import { CreatePageDto } from './dto/create-page.dto.js';
 import { UpdatePageDto } from './dto/update-page.dto.js';
@@ -15,10 +16,12 @@ import { UpdateFaqDto } from './dto/update-faq.dto.js';
 import { CreateBlogDto } from './dto/create-blog.dto.js';
 import { UpdateBlogDto } from './dto/update-blog.dto.js';
 import { QueryBlogDto } from './dto/query-blog.dto.js';
+import { SubscribeNewsletterDto } from './dto/subscribe-newsletter.dto.js';
 
 import { PageDocument } from './schemas/page.schema.js';
 import { FaqDocument } from './schemas/faq.schema.js';
 import { BlogDocument } from './schemas/blog.schema.js';
+import { SubscriberDocument } from './schemas/subscriber.schema.js';
 
 const DEFAULT_PAGES = [
   {
@@ -137,6 +140,7 @@ export class CmsService implements OnModuleInit {
     private readonly pagesRepo: PagesRepository,
     private readonly faqsRepo: FaqsRepository,
     private readonly blogsRepo: BlogsRepository,
+    private readonly subscribersRepo: SubscribersRepository,
   ) {}
 
   async onModuleInit() {
@@ -274,5 +278,41 @@ export class CmsService implements OnModuleInit {
 
     await this.blogsRepo.softDelete(id);
     return { message: 'Blog post deleted successfully' };
+  }
+
+  // ─── SUBSCRIBERS / LEADS ──────────────────────────────────────────────────
+
+  async subscribeNewsletter(dto: SubscribeNewsletterDto): Promise<{ message: string; subscriber: SubscriberDocument }> {
+    const cleanEmail = dto.email?.trim();
+    const cleanPhone = dto.phone?.trim();
+
+    if (!cleanEmail && !cleanPhone) {
+      throw new BadRequestException('Please provide an email address or mobile number');
+    }
+
+    if (cleanPhone && !/^[6-9]\d{9}$/.test(cleanPhone.replace(/[\s\-\+]/g, '').slice(-10))) {
+      throw new BadRequestException('Please enter a valid 10-digit mobile number');
+    }
+
+    const subscriber = await this.subscribersRepo.createOrUpdate({
+      email: cleanEmail,
+      phone: cleanPhone,
+      source: dto.source || 'FOOTER',
+    });
+
+    return {
+      message: 'Thank you for subscribing! We will send exclusive offers and updates.',
+      subscriber,
+    };
+  }
+
+  async getSubscribers(query: { page?: number; limit?: number; search?: string }) {
+    return this.subscribersRepo.findAll(query);
+  }
+
+  async deleteSubscriber(id: string): Promise<{ message: string }> {
+    const deleted = await this.subscribersRepo.deleteById(id);
+    if (!deleted) throw new NotFoundException(`Subscriber '${id}' not found`);
+    return { message: 'Subscriber record removed successfully' };
   }
 }

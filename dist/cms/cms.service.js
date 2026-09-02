@@ -14,6 +14,7 @@ const common_1 = require("@nestjs/common");
 const pages_repository_js_1 = require("./repositories/pages.repository.js");
 const faqs_repository_js_1 = require("./repositories/faqs.repository.js");
 const blogs_repository_js_1 = require("./repositories/blogs.repository.js");
+const subscribers_repository_js_1 = require("./repositories/subscribers.repository.js");
 const DEFAULT_PAGES = [
     {
         title: 'About Us',
@@ -127,10 +128,12 @@ let CmsService = class CmsService {
     pagesRepo;
     faqsRepo;
     blogsRepo;
-    constructor(pagesRepo, faqsRepo, blogsRepo) {
+    subscribersRepo;
+    constructor(pagesRepo, faqsRepo, blogsRepo, subscribersRepo) {
         this.pagesRepo = pagesRepo;
         this.faqsRepo = faqsRepo;
         this.blogsRepo = blogsRepo;
+        this.subscribersRepo = subscribersRepo;
     }
     async onModuleInit() {
         for (const page of DEFAULT_PAGES) {
@@ -242,12 +245,41 @@ let CmsService = class CmsService {
         await this.blogsRepo.softDelete(id);
         return { message: 'Blog post deleted successfully' };
     }
+    async subscribeNewsletter(dto) {
+        const cleanEmail = dto.email?.trim();
+        const cleanPhone = dto.phone?.trim();
+        if (!cleanEmail && !cleanPhone) {
+            throw new common_1.BadRequestException('Please provide an email address or mobile number');
+        }
+        if (cleanPhone && !/^[6-9]\d{9}$/.test(cleanPhone.replace(/[\s\-\+]/g, '').slice(-10))) {
+            throw new common_1.BadRequestException('Please enter a valid 10-digit mobile number');
+        }
+        const subscriber = await this.subscribersRepo.createOrUpdate({
+            email: cleanEmail,
+            phone: cleanPhone,
+            source: dto.source || 'FOOTER',
+        });
+        return {
+            message: 'Thank you for subscribing! We will send exclusive offers and updates.',
+            subscriber,
+        };
+    }
+    async getSubscribers(query) {
+        return this.subscribersRepo.findAll(query);
+    }
+    async deleteSubscriber(id) {
+        const deleted = await this.subscribersRepo.deleteById(id);
+        if (!deleted)
+            throw new common_1.NotFoundException(`Subscriber '${id}' not found`);
+        return { message: 'Subscriber record removed successfully' };
+    }
 };
 exports.CmsService = CmsService;
 exports.CmsService = CmsService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [pages_repository_js_1.PagesRepository,
         faqs_repository_js_1.FaqsRepository,
-        blogs_repository_js_1.BlogsRepository])
+        blogs_repository_js_1.BlogsRepository,
+        subscribers_repository_js_1.SubscribersRepository])
 ], CmsService);
 //# sourceMappingURL=cms.service.js.map

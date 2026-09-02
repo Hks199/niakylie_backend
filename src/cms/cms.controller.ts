@@ -26,6 +26,7 @@ import { UpdateFaqDto } from './dto/update-faq.dto.js';
 import { CreateBlogDto } from './dto/create-blog.dto.js';
 import { UpdateBlogDto } from './dto/update-blog.dto.js';
 import { QueryBlogDto } from './dto/query-blog.dto.js';
+import { SubscribeNewsletterDto } from './dto/subscribe-newsletter.dto.js';
 
 @ApiTags('CMS & Content')
 @Controller('cms')
@@ -167,5 +168,33 @@ export class CmsController {
   @ApiResponse({ status: 200, description: 'Blog post deleted successfully' })
   async deleteBlog(@Param('id') id: string) {
     return this.cmsService.deleteBlog(id);
+  }
+
+  // ─── NEWSLETTER & SUBSCRIBERS ─────────────────────────────────────────────
+
+  @Post('subscribe')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Subscribe to newsletter and exclusive offers via Email and/or Mobile Number' })
+  @ApiResponse({ status: 200, description: 'Successfully subscribed' })
+  @ApiResponse({ status: 400, description: 'Invalid email or mobile number provided' })
+  async subscribe(@Body() dto: SubscribeNewsletterDto) {
+    return this.cmsService.subscribeNewsletter(dto);
+  }
+
+  @Get('admin/subscribers')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '[Admin] Get list of collected subscriber emails and mobile numbers' })
+  @ApiResponse({ status: 200, description: 'List of subscribers returned' })
+  async getSubscribers(@Query() query: { page?: number; limit?: number; search?: string }) {
+    return this.cmsService.getSubscribers(query);
+  }
+
+  @Delete('admin/subscribers/:id')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: '[Admin] Delete subscriber entry' })
+  @ApiParam({ name: 'id', example: '60d5ecb8b392d40015f8a001' })
+  @ApiResponse({ status: 200, description: 'Subscriber entry deleted successfully' })
+  async deleteSubscriber(@Param('id') id: string) {
+    return this.cmsService.deleteSubscriber(id);
   }
 }
