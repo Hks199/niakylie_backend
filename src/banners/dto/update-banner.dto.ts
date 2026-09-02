@@ -22,6 +22,11 @@ export class UpdateBannerDto {
   @IsString()
   subtitle?: string;
 
+  @ApiPropertyOptional({ example: 'DEAL OF THE DAY' })
+  @IsOptional()
+  @IsString()
+  discountBadge?: string;
+
   @ApiPropertyOptional({ enum: BannerType })
   @IsOptional()
   @IsEnum(BannerType)

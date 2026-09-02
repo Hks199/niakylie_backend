@@ -28,6 +28,7 @@ var BannerPosition;
 let Banner = class Banner {
     title;
     subtitle;
+    discountBadge;
     type;
     position;
     imageUrl;
@@ -50,6 +51,10 @@ __decorate([
     (0, mongoose_1.Prop)({ trim: true }),
     __metadata("design:type", String)
 ], Banner.prototype, "subtitle", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ trim: true }),
+    __metadata("design:type", String)
+], Banner.prototype, "discountBadge", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, enum: BannerType, index: true }),
     __metadata("design:type", String)

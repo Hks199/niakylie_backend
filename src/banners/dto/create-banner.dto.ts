@@ -24,6 +24,11 @@ export class CreateBannerDto {
   @IsString()
   subtitle?: string;
 
+  @ApiPropertyOptional({ example: 'DEAL OF THE DAY' })
+  @IsOptional()
+  @IsString()
+  discountBadge?: string;
+
   @ApiProperty({ enum: BannerType, example: BannerType.FESTIVAL, description: 'Banner type: HOMEPAGE, OFFER, FESTIVAL, POPUP' })
   @IsEnum(BannerType)
   @IsNotEmpty()
