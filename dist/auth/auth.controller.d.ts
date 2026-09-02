@@ -15,6 +15,11 @@ export declare class AuthController {
         email: string;
         isEmailVerified: boolean;
         otp: string;
+    } | {
+        message: string;
+        email: string;
+        isEmailVerified: boolean;
+        otp?: undefined;
     }>;
     verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<{
         message: string;
@@ -22,7 +27,6 @@ export declare class AuthController {
     sendOtp(email: string): Promise<{
         message: string;
         email: string;
-        otp: string;
     }>;
     verifyOtp(body: {
         email: string;
@@ -55,7 +59,6 @@ export declare class AuthController {
         message: string;
         email: string;
         isEmailVerified: boolean;
-        otp: string;
     }>;
     loginAdmin(loginDto: LoginDto): Promise<{
         accessToken: string;
@@ -87,7 +90,6 @@ export declare class AuthController {
     forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{
         message: string;
         email: string;
-        otp: string;
     }>;
     resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{
         message: string;

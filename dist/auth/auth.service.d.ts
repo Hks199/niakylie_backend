@@ -21,11 +21,15 @@ export declare class AuthService {
         email: string;
         isEmailVerified: boolean;
         otp: string;
+    } | {
+        message: string;
+        email: string;
+        isEmailVerified: boolean;
+        otp?: undefined;
     }>;
     sendOtp(email: string): Promise<{
         message: string;
         email: string;
-        otp: string;
     }>;
     verifyOtp(email: string, otp: string): Promise<{
         accessToken: string;
@@ -58,7 +62,6 @@ export declare class AuthService {
         message: string;
         email: string;
         isEmailVerified: boolean;
-        otp: string;
     }>;
     loginAdmin(loginDto: LoginDto): Promise<{
         accessToken: string;
@@ -93,7 +96,6 @@ export declare class AuthService {
     forgotPassword(email: string): Promise<{
         message: string;
         email: string;
-        otp: string;
     }>;
     resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{
         message: string;

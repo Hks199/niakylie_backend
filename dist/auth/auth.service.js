@@ -77,7 +77,6 @@ let AuthService = class AuthService {
             message: 'Registration successful. An OTP has been sent to your email address.',
             email: user.email,
             isEmailVerified: false,
-            otp: otpCode,
         };
     }
     async sendOtp(email) {
@@ -97,7 +96,6 @@ let AuthService = class AuthService {
         return {
             message: 'OTP sent to your email address. Valid for 5 minutes.',
             email,
-            otp: otpCode,
         };
     }
     async verifyOtp(email, otp) {
@@ -162,7 +160,6 @@ let AuthService = class AuthService {
                 message: 'Account is not verified. An OTP has been sent to your email address.',
                 isEmailVerified: false,
                 email: user.email,
-                otp: otpCode,
             });
         }
         return this.generateTokens(user);
@@ -211,7 +208,6 @@ let AuthService = class AuthService {
             message: 'Admin registered successfully. An OTP has been sent to your email address.',
             email: user.email,
             isEmailVerified: false,
-            otp: otpCode,
         };
     }
     async loginAdmin(loginDto) {
@@ -249,7 +245,6 @@ let AuthService = class AuthService {
                 message: 'Admin account is not verified. An OTP has been sent to your email address.',
                 isEmailVerified: false,
                 email: user.email,
-                otp: otpCode,
             });
         }
         return this.generateTokens(user);
@@ -295,7 +290,6 @@ let AuthService = class AuthService {
         return {
             message: 'A 6-digit password reset OTP has been sent to your email address.',
             email: trimmedEmail,
-            otp: resetToken,
         };
     }
     async resetPassword(resetPasswordDto) {
