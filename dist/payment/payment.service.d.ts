@@ -26,7 +26,25 @@ export declare class PaymentService {
         clientSecret?: string;
         paymentType: PaymentType;
     }>;
-    verifyRazorpayPayment(dto: VerifyRazorpayDto): Promise<PaymentTransactionDocument>;
+    createRazorpayOrder(dto?: {
+        amount?: number;
+        orderId?: string;
+    }): Promise<{
+        id: string;
+        amount: number;
+        currency: string;
+        keyId: string;
+    }>;
+    createStripeIntent(dto?: {
+        amount?: number;
+        orderId?: string;
+    }): Promise<{
+        clientSecret: string;
+        intentId: string;
+    }>;
+    verifyRazorpayPayment(dto: VerifyRazorpayDto): Promise<PaymentTransactionDocument | {
+        success: boolean;
+    }>;
     verifyStripePayment(dto: VerifyStripeDto): Promise<PaymentTransactionDocument>;
     handleRazorpayWebhook(payload: any, signature?: string): Promise<{
         status: string;

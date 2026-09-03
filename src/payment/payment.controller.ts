@@ -13,6 +13,8 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader, ApiParam 
 
 import { PaymentService } from './payment.service.js';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto.js';
+import { CreateRazorpayOrderDto } from './dto/create-razorpay-order.dto.js';
+import { CreateStripeIntentDto } from './dto/create-stripe-intent.dto.js';
 import { VerifyRazorpayDto } from './dto/verify-razorpay.dto.js';
 import { VerifyStripeDto } from './dto/verify-stripe.dto.js';
 import { ProcessRefundDto } from './dto/process-refund.dto.js';
@@ -22,6 +24,22 @@ import { RetryPaymentDto } from './dto/retry-payment.dto.js';
 @Controller('payments')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
+
+  @Post(['razorpay/create-order', 'create-order'])
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Create a Razorpay order for checkout' })
+  @ApiResponse({ status: 200, description: 'Razorpay order created successfully' })
+  async createRazorpayOrder(@Body() dto: CreateRazorpayOrderDto) {
+    return this.paymentService.createRazorpayOrder(dto);
+  }
+
+  @Post('stripe/create-intent')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Create Stripe PaymentIntent for checkout' })
+  @ApiResponse({ status: 200, description: 'Stripe PaymentIntent created successfully' })
+  async createStripeIntent(@Body() dto: CreateStripeIntentDto) {
+    return this.paymentService.createStripeIntent(dto);
+  }
 
   @Post('create-intent')
   @ApiHeader({ name: 'x-guest-id', required: false, description: 'Guest ID for unauthenticated checkout' })
@@ -40,7 +58,7 @@ export class PaymentController {
     return this.paymentService.createPaymentIntent(userId, dto);
   }
 
-  @Post('verify/razorpay')
+  @Post(['verify/razorpay', 'razorpay/verify', 'verify'])
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify Razorpay HMAC payment signature' })
   @ApiResponse({ status: 200, description: 'Razorpay signature verified successfully' })

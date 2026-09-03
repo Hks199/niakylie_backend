@@ -4,6 +4,7 @@ export declare class RazorpayService {
     private readonly keyId;
     private readonly keySecret;
     constructor(configService: ConfigService);
+    getKeyId(): string;
     createOrder(params: {
         amount: number;
         currency?: string;

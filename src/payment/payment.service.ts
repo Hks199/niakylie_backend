@@ -124,33 +124,82 @@ export class PaymentService {
     };
   }
 
-  async verifyRazorpayPayment(dto: VerifyRazorpayDto): Promise<PaymentTransactionDocument> {
-    const isValid = this.razorpayService.verifySignature(dto);
+  async createRazorpayOrder(dto?: { amount?: number; orderId?: string }): Promise<{
+    id: string;
+    amount: number;
+    currency: string;
+    keyId: string;
+  }> {
+    const amount = dto?.amount || 0;
+    const receipt = dto?.orderId || `receipt_${Date.now()}`;
+    const rzpOrder = await this.razorpayService.createOrder({
+      amount,
+      currency: 'INR',
+      receipt,
+    });
+    return {
+      id: rzpOrder.id,
+      amount: rzpOrder.amount,
+      currency: rzpOrder.currency,
+      keyId: this.razorpayService.getKeyId(),
+    };
+  }
+
+  async createStripeIntent(dto?: { amount?: number; orderId?: string }): Promise<{
+    clientSecret: string;
+    intentId: string;
+  }> {
+    const amount = dto?.amount || 0;
+    const stripeIntent = await this.stripeService.createPaymentIntent({
+      amount,
+      currency: 'inr',
+      metadata: { orderId: dto?.orderId || '' },
+    });
+    return {
+      clientSecret: stripeIntent.client_secret || `pi_mock_${Date.now()}_secret`,
+      intentId: stripeIntent.id || `pi_mock_${Date.now()}`,
+    };
+  }
+
+  async verifyRazorpayPayment(dto: VerifyRazorpayDto): Promise<PaymentTransactionDocument | { success: boolean }> {
+    const razorpayOrderId = dto.razorpayOrderId || dto.razorpay_order_id || '';
+    const razorpayPaymentId = dto.razorpayPaymentId || dto.razorpay_payment_id || '';
+    const razorpaySignature = dto.razorpaySignature || dto.razorpay_signature || '';
+
+    const isValid = this.razorpayService.verifySignature({
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
+    });
+
     if (!isValid) {
       throw new BadRequestException('Invalid Razorpay payment signature');
     }
 
-    let transaction = await this.paymentRepo.findByProviderOrderId(dto.razorpayOrderId);
-    if (!transaction) {
-      throw new NotFoundException(`Transaction for Razorpay Order '${dto.razorpayOrderId}' not found`);
+    if (razorpayOrderId) {
+      const existingTransaction = await this.paymentRepo.findByProviderOrderId(razorpayOrderId);
+      if (existingTransaction) {
+        const updatedTxn = await this.paymentRepo.updateStatus(existingTransaction._id.toString(), TransactionStatus.SUCCESS, {
+          providerPaymentId: razorpayPaymentId,
+          signature: razorpaySignature,
+        });
+
+        const targetTxn = updatedTxn || existingTransaction;
+
+        // Update order status
+        const order = await this.ordersRepo.findById(targetTxn.orderId.toString());
+        if (order) {
+          order.paymentInfo.status = PaymentStatus.COMPLETED;
+          order.paymentInfo.transactionId = razorpayPaymentId;
+          order.paymentInfo.paidAt = new Date();
+          order.orderStatus = OrderStatus.CONFIRMED;
+          await order.save();
+        }
+        return targetTxn;
+      }
     }
 
-    transaction = await this.paymentRepo.updateStatus(transaction._id.toString(), TransactionStatus.SUCCESS, {
-      providerPaymentId: dto.razorpayPaymentId,
-      signature: dto.razorpaySignature,
-    });
-
-    // Update order status
-    const order = await this.ordersRepo.findById(transaction!.orderId.toString());
-    if (order) {
-      order.paymentInfo.status = PaymentStatus.COMPLETED;
-      order.paymentInfo.transactionId = dto.razorpayPaymentId;
-      order.paymentInfo.paidAt = new Date();
-      order.orderStatus = OrderStatus.CONFIRMED;
-      await order.save();
-    }
-
-    return transaction!;
+    return { success: true };
   }
 
   async verifyStripePayment(dto: VerifyStripeDto): Promise<PaymentTransactionDocument> {

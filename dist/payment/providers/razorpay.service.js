@@ -55,6 +55,9 @@ let RazorpayService = class RazorpayService {
         this.keyId = this.configService.get('RAZORPAY_KEY_ID') || 'rzp_test_mockkey123';
         this.keySecret = this.configService.get('RAZORPAY_KEY_SECRET') || 'rzp_secret_mocksecret123';
     }
+    getKeyId() {
+        return this.keyId;
+    }
     async createOrder(params) {
         const amountInPaise = Math.round(params.amount * 100);
         const mockOrderId = `order_rzp_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;

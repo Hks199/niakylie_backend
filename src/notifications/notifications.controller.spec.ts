@@ -62,7 +62,7 @@ describe('NotificationsController', () => {
   describe('getMyNotifications', () => {
     it('should delegate fetching customer notifications to service', async () => {
       service.getUserNotifications.mockResolvedValue({ data: [mockNotification as any], total: 1, unreadCount: 1, page: 1, limit: 10 });
-      const req = { user: { id: 'user123' } };
+      const req = { user: { id: 'user123' } } as any;
 
       const result = await controller.getMyNotifications(req, { page: 1, limit: 10 });
       expect(service.getUserNotifications).toHaveBeenCalledWith('user123', { page: 1, limit: 10 });
@@ -73,7 +73,7 @@ describe('NotificationsController', () => {
   describe('markAsRead', () => {
     it('should delegate mark as read to service', async () => {
       service.markAsRead.mockResolvedValue({ ...mockNotification, isRead: true } as any);
-      const req = { user: { id: 'user123' } };
+      const req = { user: { id: 'user123' } } as any;
 
       const result = await controller.markAsRead('notif123', req);
       expect(service.markAsRead).toHaveBeenCalledWith('notif123', 'user123');

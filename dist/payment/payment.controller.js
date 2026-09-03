@@ -17,6 +17,8 @@ const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const payment_service_js_1 = require("./payment.service.js");
 const create_payment_intent_dto_js_1 = require("./dto/create-payment-intent.dto.js");
+const create_razorpay_order_dto_js_1 = require("./dto/create-razorpay-order.dto.js");
+const create_stripe_intent_dto_js_1 = require("./dto/create-stripe-intent.dto.js");
 const verify_razorpay_dto_js_1 = require("./dto/verify-razorpay.dto.js");
 const verify_stripe_dto_js_1 = require("./dto/verify-stripe.dto.js");
 const process_refund_dto_js_1 = require("./dto/process-refund.dto.js");
@@ -25,6 +27,12 @@ let PaymentController = class PaymentController {
     paymentService;
     constructor(paymentService) {
         this.paymentService = paymentService;
+    }
+    async createRazorpayOrder(dto) {
+        return this.paymentService.createRazorpayOrder(dto);
+    }
+    async createStripeIntent(dto) {
+        return this.paymentService.createStripeIntent(dto);
     }
     async createPaymentIntent(dto, req, guestIdHeader) {
         const userId = req.user?.id || req.user?._id;
@@ -59,6 +67,26 @@ let PaymentController = class PaymentController {
 };
 exports.PaymentController = PaymentController;
 __decorate([
+    (0, common_1.Post)(['razorpay/create-order', 'create-order']),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Create a Razorpay order for checkout' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Razorpay order created successfully' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [create_razorpay_order_dto_js_1.CreateRazorpayOrderDto]),
+    __metadata("design:returntype", Promise)
+], PaymentController.prototype, "createRazorpayOrder", null);
+__decorate([
+    (0, common_1.Post)('stripe/create-intent'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Create Stripe PaymentIntent for checkout' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Stripe PaymentIntent created successfully' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [create_stripe_intent_dto_js_1.CreateStripeIntentDto]),
+    __metadata("design:returntype", Promise)
+], PaymentController.prototype, "createStripeIntent", null);
+__decorate([
     (0, common_1.Post)('create-intent'),
     (0, swagger_1.ApiHeader)({ name: 'x-guest-id', required: false, description: 'Guest ID for unauthenticated checkout' }),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
@@ -74,7 +102,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PaymentController.prototype, "createPaymentIntent", null);
 __decorate([
-    (0, common_1.Post)('verify/razorpay'),
+    (0, common_1.Post)(['verify/razorpay', 'razorpay/verify', 'verify']),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: 'Verify Razorpay HMAC payment signature' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Razorpay signature verified successfully' }),
