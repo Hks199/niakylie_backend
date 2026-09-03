@@ -20,13 +20,23 @@ export class MailService {
       port,
       secure: port === 465,
       auth: user && pass ? { user, pass } : undefined,
-      connectionTimeout: 3000, // 3s max TCP connection timeout
-      greetingTimeout: 3000,   // 3s max SMTP greeting timeout
-      socketTimeout: 4000,     // 4s max socket inactivity timeout
+      connectionTimeout: 10000, // 10s TCP connection timeout
+      greetingTimeout: 10000,   // 10s SMTP greeting timeout
+      socketTimeout: 15000,     // 15s socket inactivity timeout
     });
   }
 
   async sendOtpEmail(to: string, otp: string, firstName?: string): Promise<boolean> {
+    const user = this.configService.get<string>('SMTP_USER');
+    const pass = this.configService.get<string>('SMTP_PASS');
+
+    if (!user || !pass) {
+      this.logger.warn(
+        `SMTP_USER or SMTP_PASS is missing in .env. Real email delivery to ${to} is skipped. (Dev OTP: ${otp})`,
+      );
+      return true;
+    }
+
     const from = this.configService.get<string>('SMTP_FROM') || '"NiaKylie Fashion" <no-reply@niakylie.com>';
     const name = firstName || 'Valued Customer';
 
@@ -160,7 +170,7 @@ export class MailService {
       });
 
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('SMTP Email Sending Timed Out (3.5s limit)')), 3500)
+        setTimeout(() => reject(new Error('SMTP Email Sending Timed Out (15s limit)')), 15000)
       );
 
       await Promise.race([sendPromise, timeoutPromise]);
