@@ -30,6 +30,9 @@ export class CartItem {
   size?: string;
 
   @Prop({ trim: true })
+  name?: string;
+
+  @Prop({ trim: true })
   image?: string;
 
   @Prop({ default: false })
