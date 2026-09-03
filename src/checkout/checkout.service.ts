@@ -365,8 +365,9 @@ export class CheckoutService {
     }
 
     const billingAddress = dto.billingAddress || dto.shippingAddress;
-    const initialPaymentStatus =
-      dto.paymentMethod === PaymentMethod.COD ? PaymentStatus.PENDING : PaymentStatus.PENDING;
+    const isPaid = !!(dto.razorpayPaymentId || dto.stripePaymentIntentId);
+    const initialPaymentStatus = isPaid ? PaymentStatus.COMPLETED : PaymentStatus.PENDING;
+    const transactionId = dto.razorpayPaymentId || dto.stripePaymentIntentId;
 
     const orderData: Partial<any> = {
       orderNumber,
@@ -392,6 +393,8 @@ export class CheckoutService {
       paymentInfo: {
         method: dto.paymentMethod,
         status: initialPaymentStatus,
+        transactionId,
+        paidAt: isPaid ? new Date() : undefined,
       },
       shippingInfo: {
         method: summary.shippingInfo.method,
