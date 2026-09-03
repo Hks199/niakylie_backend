@@ -19,6 +19,9 @@ const notifications_service_js_1 = require("./notifications.service.js");
 const send_notification_dto_js_1 = require("./dto/send-notification.dto.js");
 const broadcast_notification_dto_js_1 = require("./dto/broadcast-notification.dto.js");
 const query_notification_dto_js_1 = require("./dto/query-notification.dto.js");
+const jwt_auth_guard_js_1 = require("../auth/guards/jwt-auth.guard.js");
+const index_js_1 = require("../shared/index.js");
+const user_schema_js_1 = require("../users/schemas/user.schema.js");
 let NotificationsController = class NotificationsController {
     notificationsService;
     constructor(notificationsService) {
@@ -30,30 +33,32 @@ let NotificationsController = class NotificationsController {
     async broadcastNotification(dto) {
         return this.notificationsService.broadcastNotification(dto);
     }
-    async getMyNotifications(req, query) {
-        const userId = req.user?.id || req.user?._id;
+    async getMyNotifications(user, query) {
+        const userId = user.id || user._id;
         return this.notificationsService.getUserNotifications(userId, query);
     }
-    async getUnreadCount(req) {
-        const userId = req.user?.id || req.user?._id;
+    async getUnreadCount(user) {
+        const userId = user.id || user._id;
         return this.notificationsService.getUnreadCount(userId);
     }
-    async markAsRead(id, req) {
-        const userId = req.user?.id || req.user?._id;
+    async markAsRead(id, user) {
+        const userId = user.id || user._id;
         return this.notificationsService.markAsRead(id, userId);
     }
-    async markAllAsRead(req) {
-        const userId = req.user?.id || req.user?._id;
+    async markAllAsRead(user) {
+        const userId = user.id || user._id;
         return this.notificationsService.markAllAsRead(userId);
     }
-    async deleteNotification(id, req) {
-        const userId = req.user?.id || req.user?._id;
+    async deleteNotification(id, user) {
+        const userId = user.id || user._id;
         return this.notificationsService.deleteNotification(id, userId);
     }
 };
 exports.NotificationsController = NotificationsController;
 __decorate([
     (0, common_1.Post)('send'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard, index_js_1.RolesGuard),
+    (0, index_js_1.Roles)(index_js_1.Role.ADMIN, 'admin'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: '[Admin] Send targeted notification to user via Email, In-App, or SMS' }),
@@ -65,6 +70,8 @@ __decorate([
 ], NotificationsController.prototype, "sendNotification", null);
 __decorate([
     (0, common_1.Post)('broadcast'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard, index_js_1.RolesGuard),
+    (0, index_js_1.Roles)(index_js_1.Role.ADMIN, 'admin'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: '[Admin] Broadcast promotional offer or coupon alert to all or selected users' }),
@@ -76,58 +83,64 @@ __decorate([
 ], NotificationsController.prototype, "broadcastNotification", null);
 __decorate([
     (0, common_1.Get)('my'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, swagger_1.ApiOperation)({ summary: 'Get current user in-app notifications with unread counter' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Customer in-app notifications returned' }),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, index_js_1.CurrentUser)()),
     __param(1, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, query_notification_dto_js_1.QueryNotificationDto]),
+    __metadata("design:paramtypes", [user_schema_js_1.User,
+        query_notification_dto_js_1.QueryNotificationDto]),
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "getMyNotifications", null);
 __decorate([
     (0, common_1.Get)('my/unread-count'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, swagger_1.ApiOperation)({ summary: 'Get count of unread in-app notifications' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Unread count returned' }),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, index_js_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [user_schema_js_1.User]),
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "getUnreadCount", null);
 __decorate([
     (0, common_1.Patch)('my/:id/read'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, swagger_1.ApiOperation)({ summary: 'Mark a single notification as read' }),
     (0, swagger_1.ApiParam)({ name: 'id', example: '60d5ecb8b392d40015f8a001' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Notification marked as read' }),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Req)()),
+    __param(1, (0, index_js_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, user_schema_js_1.User]),
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "markAsRead", null);
 __decorate([
     (0, common_1.Patch)('my/read-all'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: 'Mark all unread notifications as read' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'All notifications marked as read' }),
-    __param(0, (0, common_1.Req)()),
+    __param(0, (0, index_js_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [user_schema_js_1.User]),
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "markAllAsRead", null);
 __decorate([
     (0, common_1.Delete)('my/:id'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, swagger_1.ApiOperation)({ summary: 'Delete a notification' }),
     (0, swagger_1.ApiParam)({ name: 'id', example: '60d5ecb8b392d40015f8a001' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Notification deleted' }),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Req)()),
+    __param(1, (0, index_js_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, user_schema_js_1.User]),
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "deleteNotification", null);
 exports.NotificationsController = NotificationsController = __decorate([
