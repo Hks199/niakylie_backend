@@ -18,6 +18,7 @@ const inventory_module_js_1 = require("../inventory/inventory.module.js");
 const products_module_js_1 = require("../products/products.module.js");
 const users_module_js_1 = require("../users/users.module.js");
 const coupons_module_js_1 = require("../coupons/coupons.module.js");
+const notifications_module_js_1 = require("../notifications/notifications.module.js");
 let CheckoutModule = class CheckoutModule {
 };
 exports.CheckoutModule = CheckoutModule;
@@ -30,6 +31,7 @@ exports.CheckoutModule = CheckoutModule = __decorate([
             products_module_js_1.ProductsModule,
             users_module_js_1.UsersModule,
             coupons_module_js_1.CouponsModule,
+            notifications_module_js_1.NotificationsModule,
         ],
         controllers: [checkout_controller_js_1.CheckoutController],
         providers: [checkout_service_js_1.CheckoutService, orders_repository_js_1.OrdersRepository],

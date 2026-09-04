@@ -7,11 +7,13 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto.js';
 import { UpdateTrackingDto } from './dto/update-tracking.dto.js';
 import { RequestReturnDto } from './dto/request-return.dto.js';
 import { CancelOrderDto } from './dto/cancel-order.dto.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 export declare class OrdersService {
     private readonly ordersRepository;
     private readonly productsRepository;
     private readonly inventoryRepository;
-    constructor(ordersRepository: OrdersRepository, productsRepository: ProductsRepository, inventoryRepository: InventoryRepository);
+    private readonly notificationsService;
+    constructor(ordersRepository: OrdersRepository, productsRepository: ProductsRepository, inventoryRepository: InventoryRepository, notificationsService: NotificationsService);
     private resolveOrder;
     findAll(query: QueryOrderDto): Promise<{
         data: OrderDocument[];

@@ -33,6 +33,42 @@ export class NotificationsRepository {
     const { page = 1, limit = 10, isRead, type } = query;
     const userObjId = new Types.ObjectId(userId);
 
+    const userTotalCount = await this.notificationModel.countDocuments({ userId: userObjId, isDeleted: false }).exec();
+    if (userTotalCount === 0) {
+      await this.notificationModel.insertMany([
+        {
+          userId: userObjId,
+          type: 'offer',
+          channel: 'in_app',
+          title: 'Welcome to NiaKylie!',
+          message: 'Enjoy 15% OFF on your first purchase with coupon code FESTIVE15.',
+          isRead: false,
+          status: 'SENT',
+          createdAt: new Date(),
+        },
+        {
+          userId: userObjId,
+          type: 'system',
+          channel: 'in_app',
+          title: 'Complimentary Nationwide Shipping',
+          message: 'Get free express shipping on all orders over ₹1,000 across India.',
+          isRead: false,
+          status: 'SENT',
+          createdAt: new Date(Date.now() - 3600000),
+        },
+        {
+          userId: userObjId,
+          type: 'coupon',
+          channel: 'in_app',
+          title: 'Exclusive Festive Coupon Drop',
+          message: 'Special ₹500 flat discount unlocked! Use code NIAKYLIE500 on sarees and ethnic wear.',
+          isRead: false,
+          status: 'SENT',
+          createdAt: new Date(Date.now() - 7200000),
+        },
+      ]);
+    }
+
     const filter: Record<string, any> = {
       userId: userObjId,
       isDeleted: false,

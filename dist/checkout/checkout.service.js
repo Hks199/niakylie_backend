@@ -53,6 +53,7 @@ const inventory_repository_js_1 = require("../inventory/repositories/inventory.r
 const products_repository_js_1 = require("../products/repositories/products.repository.js");
 const users_repository_js_1 = require("../users/repositories/users.repository.js");
 const coupons_service_js_1 = require("../coupons/coupons.service.js");
+const notifications_service_js_1 = require("../notifications/notifications.service.js");
 const inventory_schema_js_1 = require("../inventory/schemas/inventory.schema.js");
 const order_schema_js_1 = require("./schemas/order.schema.js");
 let CheckoutService = class CheckoutService {
@@ -62,13 +63,15 @@ let CheckoutService = class CheckoutService {
     productsRepository;
     usersRepository;
     couponsService;
-    constructor(ordersRepository, cartRepository, inventoryRepository, productsRepository, usersRepository, couponsService) {
+    notificationsService;
+    constructor(ordersRepository, cartRepository, inventoryRepository, productsRepository, usersRepository, couponsService, notificationsService) {
         this.ordersRepository = ordersRepository;
         this.cartRepository = cartRepository;
         this.inventoryRepository = inventoryRepository;
         this.productsRepository = productsRepository;
         this.usersRepository = usersRepository;
         this.couponsService = couponsService;
+        this.notificationsService = notificationsService;
     }
     generateOrderNumber() {
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -306,7 +309,9 @@ let CheckoutService = class CheckoutService {
             }
         }
         const billingAddress = dto.billingAddress || dto.shippingAddress;
-        const initialPaymentStatus = dto.paymentMethod === order_schema_js_1.PaymentMethod.COD ? order_schema_js_1.PaymentStatus.PENDING : order_schema_js_1.PaymentStatus.PENDING;
+        const isPaid = !!(dto.razorpayPaymentId || dto.stripePaymentIntentId);
+        const initialPaymentStatus = isPaid ? order_schema_js_1.PaymentStatus.COMPLETED : order_schema_js_1.PaymentStatus.PENDING;
+        const transactionId = dto.razorpayPaymentId || dto.stripePaymentIntentId;
         const orderData = {
             orderNumber,
             invoiceNumber,
@@ -331,6 +336,8 @@ let CheckoutService = class CheckoutService {
             paymentInfo: {
                 method: dto.paymentMethod,
                 status: initialPaymentStatus,
+                transactionId,
+                paidAt: isPaid ? new Date() : undefined,
             },
             shippingInfo: {
                 method: summary.shippingInfo.method,
@@ -359,6 +366,15 @@ let CheckoutService = class CheckoutService {
             ],
         };
         const order = await this.ordersRepository.create(orderData);
+        if (order.userId) {
+            await this.notificationsService.sendOrderUpdateNotification({
+                userId: order.userId.toString(),
+                recipientEmail: customerInfo.email,
+                recipientPhone: customerInfo.phone,
+                orderNumber: order.orderNumber,
+                status: order.orderStatus,
+            }).catch(() => { });
+        }
         await this.cartRepository.clearCart(userId, guestId);
         return order;
     }
@@ -670,6 +686,7 @@ exports.CheckoutService = CheckoutService = __decorate([
         inventory_repository_js_1.InventoryRepository,
         products_repository_js_1.ProductsRepository,
         users_repository_js_1.UsersRepository,
-        coupons_service_js_1.CouponsService])
+        coupons_service_js_1.CouponsService,
+        notifications_service_js_1.NotificationsService])
 ], CheckoutService);
 //# sourceMappingURL=checkout.service.js.map

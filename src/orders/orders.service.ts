@@ -16,6 +16,8 @@ import { UpdateTrackingDto } from './dto/update-tracking.dto.js';
 import { RequestReturnDto } from './dto/request-return.dto.js';
 import { CancelOrderDto } from './dto/cancel-order.dto.js';
 
+import { NotificationsService } from '../notifications/notifications.service.js';
+
 // Status transition rules — defines which transitions are valid
 const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
@@ -35,6 +37,7 @@ export class OrdersService {
     private readonly ordersRepository: OrdersRepository,
     private readonly productsRepository: ProductsRepository,
     private readonly inventoryRepository: InventoryRepository,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private async resolveOrder(orderIdOrNumber: string, userId?: string): Promise<OrderDocument> {
@@ -133,6 +136,16 @@ export class OrdersService {
 
         await this.productsRepository.incrementVariantStock(itemPId, itemVId, itemSku, qty);
       }
+    }
+
+    if (updated && order.userId) {
+      await this.notificationsService.sendOrderUpdateNotification({
+        userId: order.userId.toString(),
+        recipientEmail: order.customerInfo.email,
+        recipientPhone: order.customerInfo.phone,
+        orderNumber: order.orderNumber,
+        status: dto.status,
+      }).catch(() => {});
     }
 
     return updated!;

@@ -120,10 +120,12 @@ let CartService = class CartService {
         }
         else {
             const image = variant.images?.[0] || product.images?.[0] || '';
+            const productName = product.name || product.title || 'Fashion Garment';
             cart.items.push({
                 productId: product._id,
                 variantId: variant._id,
                 sku: targetSku,
+                name: productName,
                 quantity: dto.quantity,
                 unitPrice: variant.offerPrice,
                 unitMrp: variant.mrp,
@@ -134,7 +136,8 @@ let CartService = class CartService {
             });
         }
         this.recalculateCart(cart);
-        return cart.save();
+        await cart.save();
+        return this.getCart(userId, guestId);
     }
     async updateItemQuantity(sku, dto, userId) {
         const guestId = dto.guestId;

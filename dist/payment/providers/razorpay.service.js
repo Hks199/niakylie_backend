@@ -60,11 +60,46 @@ let RazorpayService = class RazorpayService {
     }
     async createOrder(params) {
         const amountInPaise = Math.round(params.amount * 100);
+        const currency = params.currency || 'INR';
+        if (this.keyId && this.keySecret && !this.keyId.includes('mockkey')) {
+            try {
+                const authHeader = 'Basic ' + Buffer.from(`${this.keyId}:${this.keySecret}`).toString('base64');
+                const response = await fetch('https://api.razorpay.com/v1/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': authHeader,
+                    },
+                    body: JSON.stringify({
+                        amount: amountInPaise,
+                        currency,
+                        receipt: params.receipt || `rcpt_${Date.now()}`,
+                    }),
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    return {
+                        id: data.id,
+                        amount: data.amount,
+                        currency: data.currency,
+                        receipt: data.receipt || params.receipt,
+                        status: data.status || 'created',
+                    };
+                }
+                else {
+                    const errorData = await response.json().catch(() => null);
+                    console.warn('Razorpay API order creation warning:', errorData);
+                }
+            }
+            catch (err) {
+                console.error('Error calling Razorpay API:', err);
+            }
+        }
         const mockOrderId = `order_rzp_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
         return {
             id: mockOrderId,
             amount: amountInPaise,
-            currency: params.currency || 'INR',
+            currency,
             receipt: params.receipt,
             status: 'created',
         };

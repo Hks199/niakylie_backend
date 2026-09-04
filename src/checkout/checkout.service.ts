@@ -12,6 +12,7 @@ import { InventoryRepository } from '../inventory/repositories/inventory.reposit
 import { ProductsRepository } from '../products/repositories/products.repository.js';
 import { UsersRepository } from '../users/repositories/users.repository.js';
 import { CouponsService } from '../coupons/coupons.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { CheckoutSummaryDto } from './dto/checkout-summary.dto.js';
 import { PlaceOrderDto } from './dto/place-order.dto.js';
 import { StockStatus } from '../inventory/schemas/inventory.schema.js';
@@ -71,6 +72,7 @@ export class CheckoutService {
     private readonly productsRepository: ProductsRepository,
     private readonly usersRepository: UsersRepository,
     private readonly couponsService: CouponsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private generateOrderNumber(): string {
@@ -426,6 +428,17 @@ export class CheckoutService {
     };
 
     const order = await this.ordersRepository.create(orderData);
+
+    // Dispatch in-app notification & email for the placed order
+    if (order.userId) {
+      await this.notificationsService.sendOrderUpdateNotification({
+        userId: order.userId.toString(),
+        recipientEmail: customerInfo.email,
+        recipientPhone: customerInfo.phone,
+        orderNumber: order.orderNumber,
+        status: order.orderStatus,
+      }).catch(() => {});
+    }
 
     // Clear cart after placing order
     await this.cartRepository.clearCart(userId, guestId);

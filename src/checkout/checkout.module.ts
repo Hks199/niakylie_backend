@@ -11,6 +11,7 @@ import { InventoryModule } from '../inventory/inventory.module.js';
 import { ProductsModule } from '../products/products.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { CouponsModule } from '../coupons/coupons.module.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CouponsModule } from '../coupons/coupons.module.js';
     ProductsModule,
     UsersModule,
     CouponsModule,
+    NotificationsModule,
   ],
   controllers: [CheckoutController],
   providers: [CheckoutService, OrdersRepository],

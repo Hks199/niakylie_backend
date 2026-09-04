@@ -17,6 +17,7 @@ const products_repository_js_1 = require("../products/repositories/products.repo
 const inventory_repository_js_1 = require("../inventory/repositories/inventory.repository.js");
 const inventory_schema_js_1 = require("../inventory/schemas/inventory.schema.js");
 const order_schema_js_1 = require("../checkout/schemas/order.schema.js");
+const notifications_service_js_1 = require("../notifications/notifications.service.js");
 const VALID_TRANSITIONS = {
     [order_schema_js_1.OrderStatus.PENDING]: [order_schema_js_1.OrderStatus.CONFIRMED, order_schema_js_1.OrderStatus.CANCELLED],
     [order_schema_js_1.OrderStatus.CONFIRMED]: [order_schema_js_1.OrderStatus.PACKED, order_schema_js_1.OrderStatus.SHIPPED, order_schema_js_1.OrderStatus.CANCELLED],
@@ -32,10 +33,12 @@ let OrdersService = class OrdersService {
     ordersRepository;
     productsRepository;
     inventoryRepository;
-    constructor(ordersRepository, productsRepository, inventoryRepository) {
+    notificationsService;
+    constructor(ordersRepository, productsRepository, inventoryRepository, notificationsService) {
         this.ordersRepository = ordersRepository;
         this.productsRepository = productsRepository;
         this.inventoryRepository = inventoryRepository;
+        this.notificationsService = notificationsService;
     }
     async resolveOrder(orderIdOrNumber, userId) {
         let order = await this.ordersRepository.findByOrderNumber(orderIdOrNumber);
@@ -114,6 +117,15 @@ let OrdersService = class OrdersService {
                 }
                 await this.productsRepository.incrementVariantStock(itemPId, itemVId, itemSku, qty);
             }
+        }
+        if (updated && order.userId) {
+            await this.notificationsService.sendOrderUpdateNotification({
+                userId: order.userId.toString(),
+                recipientEmail: order.customerInfo.email,
+                recipientPhone: order.customerInfo.phone,
+                orderNumber: order.orderNumber,
+                status: dto.status,
+            }).catch(() => { });
         }
         return updated;
     }
@@ -320,6 +332,7 @@ exports.OrdersService = OrdersService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [orders_repository_js_1.OrdersRepository,
         products_repository_js_1.ProductsRepository,
-        inventory_repository_js_1.InventoryRepository])
+        inventory_repository_js_1.InventoryRepository,
+        notifications_service_js_1.NotificationsService])
 ], OrdersService);
 //# sourceMappingURL=orders.service.js.map
