@@ -303,6 +303,7 @@ let OrdersService = class OrdersService {
           <p><span>Subtotal (Excl. Discount):</span><span>₹${order.pricing.totalMrp}</span></p>
           <p><span>Product Discount:</span><span>-₹${order.pricing.totalDiscount}</span></p>
           ${order.pricing.couponDiscount > 0 ? `<p><span>Coupon (${order.pricing.couponCode}):</span><span>-₹${order.pricing.couponDiscount}</span></p>` : ''}
+          ${order.pricing.onlinePaymentDiscount > 0 ? `<p style="color: #059669; font-weight: bold;"><span>Online Payment Extra Discount:</span><span>-₹${order.pricing.onlinePaymentDiscount}</span></p>` : ''}
           <p><span>GST (18%):</span><span>₹${order.pricing.tax}</span></p>
           <p><span>Shipping:</span><span>₹${order.pricing.shippingFee}</span></p>
           <p class="grand-total"><span>Grand Total:</span><span>₹${order.pricing.grandTotal}</span></p>

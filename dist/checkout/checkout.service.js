@@ -203,7 +203,7 @@ let CheckoutService = class CheckoutService {
                 totalMrp,
                 totalDiscount,
                 couponDiscount,
-                onlinePaymentDiscount,
+                onlinePaymentDiscount: activeOnlineDiscount,
                 tax,
                 shippingFee,
                 grandTotal,
@@ -361,12 +361,12 @@ let CheckoutService = class CheckoutService {
                 totalDiscount: summary.pricing.totalDiscount,
                 couponCode: summary.couponInfo?.code,
                 couponDiscount: summary.pricing.couponDiscount,
-                onlinePaymentDiscount: dto.paymentMethod === order_schema_js_1.PaymentMethod.COD ? 0 : summary.pricing.onlinePaymentDiscount,
+                onlinePaymentDiscount: String(dto.paymentMethod).toUpperCase() === 'COD' ? 0 : (summary.pricing.onlinePaymentDiscount || 0),
                 tax: summary.pricing.tax,
                 shippingFee: summary.pricing.shippingFee,
-                grandTotal: dto.paymentMethod === order_schema_js_1.PaymentMethod.COD
+                grandTotal: String(dto.paymentMethod).toUpperCase() === 'COD'
                     ? Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount + summary.pricing.shippingFee)
-                    : Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount - summary.pricing.onlinePaymentDiscount + summary.pricing.shippingFee),
+                    : Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount - (summary.pricing.onlinePaymentDiscount || 0) + summary.pricing.shippingFee),
             },
             orderStatus: order_schema_js_1.OrderStatus.CONFIRMED,
             timeline: [
