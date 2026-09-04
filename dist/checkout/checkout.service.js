@@ -54,6 +54,7 @@ const products_repository_js_1 = require("../products/repositories/products.repo
 const users_repository_js_1 = require("../users/repositories/users.repository.js");
 const coupons_service_js_1 = require("../coupons/coupons.service.js");
 const notifications_service_js_1 = require("../notifications/notifications.service.js");
+const online_payment_discount_service_js_1 = require("../payment/online-payment-discount.service.js");
 const inventory_schema_js_1 = require("../inventory/schemas/inventory.schema.js");
 const order_schema_js_1 = require("./schemas/order.schema.js");
 let CheckoutService = class CheckoutService {
@@ -64,7 +65,8 @@ let CheckoutService = class CheckoutService {
     usersRepository;
     couponsService;
     notificationsService;
-    constructor(ordersRepository, cartRepository, inventoryRepository, productsRepository, usersRepository, couponsService, notificationsService) {
+    onlineDiscountService;
+    constructor(ordersRepository, cartRepository, inventoryRepository, productsRepository, usersRepository, couponsService, notificationsService, onlineDiscountService) {
         this.ordersRepository = ordersRepository;
         this.cartRepository = cartRepository;
         this.inventoryRepository = inventoryRepository;
@@ -72,6 +74,7 @@ let CheckoutService = class CheckoutService {
         this.usersRepository = usersRepository;
         this.couponsService = couponsService;
         this.notificationsService = notificationsService;
+        this.onlineDiscountService = onlineDiscountService;
     }
     generateOrderNumber() {
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -178,8 +181,14 @@ let CheckoutService = class CheckoutService {
             }
         }
         const tax = 0;
-        const taxableSubtotal = Math.max(0, subtotal - couponDiscount);
-        const grandTotal = Math.max(0, taxableSubtotal + shippingFee);
+        const subtotalAfterCoupon = Math.max(0, subtotal - couponDiscount);
+        let onlinePaymentDiscount = 0;
+        if (this.onlineDiscountService) {
+            onlinePaymentDiscount = await this.onlineDiscountService.calculateDiscount(subtotalAfterCoupon);
+        }
+        const isExplicitCod = dto?.paymentMethod === order_schema_js_1.PaymentMethod.COD;
+        const activeOnlineDiscount = isExplicitCod ? 0 : onlinePaymentDiscount;
+        const grandTotal = Math.max(0, subtotalAfterCoupon - activeOnlineDiscount + shippingFee);
         return {
             items: itemsSummary,
             shippingAddress: dto?.shippingAddress,
@@ -194,11 +203,12 @@ let CheckoutService = class CheckoutService {
                 totalMrp,
                 totalDiscount,
                 couponDiscount,
+                onlinePaymentDiscount,
                 tax,
                 shippingFee,
                 grandTotal,
             },
-            availablePaymentMethods: [order_schema_js_1.PaymentMethod.COD, order_schema_js_1.PaymentMethod.RAZORPAY, order_schema_js_1.PaymentMethod.STRIPE],
+            availablePaymentMethods: [order_schema_js_1.PaymentMethod.COD, order_schema_js_1.PaymentMethod.RAZORPAY],
             isCheckoutReady: isAllItemsInStock,
         };
     }
@@ -351,9 +361,12 @@ let CheckoutService = class CheckoutService {
                 totalDiscount: summary.pricing.totalDiscount,
                 couponCode: summary.couponInfo?.code,
                 couponDiscount: summary.pricing.couponDiscount,
+                onlinePaymentDiscount: dto.paymentMethod === order_schema_js_1.PaymentMethod.COD ? 0 : summary.pricing.onlinePaymentDiscount,
                 tax: summary.pricing.tax,
                 shippingFee: summary.pricing.shippingFee,
-                grandTotal: summary.pricing.grandTotal,
+                grandTotal: dto.paymentMethod === order_schema_js_1.PaymentMethod.COD
+                    ? Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount + summary.pricing.shippingFee)
+                    : Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount - summary.pricing.onlinePaymentDiscount + summary.pricing.shippingFee),
             },
             orderStatus: order_schema_js_1.OrderStatus.CONFIRMED,
             timeline: [
@@ -687,6 +700,7 @@ exports.CheckoutService = CheckoutService = __decorate([
         products_repository_js_1.ProductsRepository,
         users_repository_js_1.UsersRepository,
         coupons_service_js_1.CouponsService,
-        notifications_service_js_1.NotificationsService])
+        notifications_service_js_1.NotificationsService,
+        online_payment_discount_service_js_1.OnlinePaymentDiscountService])
 ], CheckoutService);
 //# sourceMappingURL=checkout.service.js.map

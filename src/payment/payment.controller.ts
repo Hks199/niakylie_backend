@@ -2,16 +2,19 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Param,
   Headers,
   Req,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader, ApiParam } from '@nestjs/swagger';
 
 import { PaymentService } from './payment.service.js';
+import { OnlinePaymentDiscountService } from './online-payment-discount.service.js';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto.js';
 import { CreateRazorpayOrderDto } from './dto/create-razorpay-order.dto.js';
 import { CreateStripeIntentDto } from './dto/create-stripe-intent.dto.js';
@@ -19,11 +22,43 @@ import { VerifyRazorpayDto } from './dto/verify-razorpay.dto.js';
 import { VerifyStripeDto } from './dto/verify-stripe.dto.js';
 import { ProcessRefundDto } from './dto/process-refund.dto.js';
 import { RetryPaymentDto } from './dto/retry-payment.dto.js';
+import { UpdateOnlineDiscountDto } from './dto/update-online-discount.dto.js';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
+import { Roles, RolesGuard, Role } from '../shared/index.js';
 
 @ApiTags('Payment')
 @Controller('payments')
 export class PaymentController {
-  constructor(private readonly paymentService: PaymentService) {}
+  constructor(
+    private readonly paymentService: PaymentService,
+    private readonly onlineDiscountService: OnlinePaymentDiscountService,
+  ) {}
+
+  @Get('online-discount')
+  @ApiOperation({ summary: 'Get active online payment discount configuration' })
+  @ApiResponse({ status: 200, description: 'Online discount config retrieved' })
+  async getOnlineDiscountConfig() {
+    return this.onlineDiscountService.getConfig();
+  }
+
+  @Get('online-discount/admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get online payment discount configuration for Admin' })
+  async getAdminOnlineDiscountConfig() {
+    return this.onlineDiscountService.getConfig();
+  }
+
+  @Put('online-discount/admin')
+  @Post('online-discount/admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update online payment discount configuration (Admin)' })
+  async updateOnlineDiscountConfig(@Body() dto: UpdateOnlineDiscountDto) {
+    return this.onlineDiscountService.updateConfig(dto);
+  }
 
   @Post(['razorpay/create-order', 'create-order'])
   @HttpCode(HttpStatus.OK)

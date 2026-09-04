@@ -1,4 +1,5 @@
 import { PaymentService } from './payment.service.js';
+import { OnlinePaymentDiscountService } from './online-payment-discount.service.js';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto.js';
 import { CreateRazorpayOrderDto } from './dto/create-razorpay-order.dto.js';
 import { CreateStripeIntentDto } from './dto/create-stripe-intent.dto.js';
@@ -6,9 +7,14 @@ import { VerifyRazorpayDto } from './dto/verify-razorpay.dto.js';
 import { VerifyStripeDto } from './dto/verify-stripe.dto.js';
 import { ProcessRefundDto } from './dto/process-refund.dto.js';
 import { RetryPaymentDto } from './dto/retry-payment.dto.js';
+import { UpdateOnlineDiscountDto } from './dto/update-online-discount.dto.js';
 export declare class PaymentController {
     private readonly paymentService;
-    constructor(paymentService: PaymentService);
+    private readonly onlineDiscountService;
+    constructor(paymentService: PaymentService, onlineDiscountService: OnlinePaymentDiscountService);
+    getOnlineDiscountConfig(): Promise<import("./schemas/online-payment-discount.schema.js").OnlinePaymentDiscountDocument>;
+    getAdminOnlineDiscountConfig(): Promise<import("./schemas/online-payment-discount.schema.js").OnlinePaymentDiscountDocument>;
+    updateOnlineDiscountConfig(dto: UpdateOnlineDiscountDto): Promise<import("./schemas/online-payment-discount.schema.js").OnlinePaymentDiscountDocument>;
     createRazorpayOrder(dto: CreateRazorpayOrderDto): Promise<{
         id: string;
         amount: number;

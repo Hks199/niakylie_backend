@@ -13,6 +13,7 @@ import { ProductsRepository } from '../products/repositories/products.repository
 import { UsersRepository } from '../users/repositories/users.repository.js';
 import { CouponsService } from '../coupons/coupons.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { OnlinePaymentDiscountService } from '../payment/online-payment-discount.service.js';
 import { CheckoutSummaryDto } from './dto/checkout-summary.dto.js';
 import { PlaceOrderDto } from './dto/place-order.dto.js';
 import { StockStatus } from '../inventory/schemas/inventory.schema.js';
@@ -55,6 +56,7 @@ export interface CheckoutSummaryResponse {
     totalMrp: number;
     totalDiscount: number;
     couponDiscount: number;
+    onlinePaymentDiscount: number;
     tax: number;
     shippingFee: number;
     grandTotal: number;
@@ -73,6 +75,7 @@ export class CheckoutService {
     private readonly usersRepository: UsersRepository,
     private readonly couponsService: CouponsService,
     private readonly notificationsService: NotificationsService,
+    private readonly onlineDiscountService?: OnlinePaymentDiscountService,
   ) { }
 
   private generateOrderNumber(): string {
@@ -207,8 +210,17 @@ export class CheckoutService {
 
     // 0% Tax
     const tax = 0;
-    const taxableSubtotal = Math.max(0, subtotal - couponDiscount);
-    const grandTotal = Math.max(0, taxableSubtotal + shippingFee);
+    const subtotalAfterCoupon = Math.max(0, subtotal - couponDiscount);
+
+    let onlinePaymentDiscount = 0;
+    if (this.onlineDiscountService) {
+      onlinePaymentDiscount = await this.onlineDiscountService.calculateDiscount(subtotalAfterCoupon);
+    }
+
+    const isExplicitCod = (dto as any)?.paymentMethod === PaymentMethod.COD;
+    const activeOnlineDiscount = isExplicitCod ? 0 : onlinePaymentDiscount;
+
+    const grandTotal = Math.max(0, subtotalAfterCoupon - activeOnlineDiscount + shippingFee);
 
     return {
       items: itemsSummary,
@@ -224,11 +236,12 @@ export class CheckoutService {
         totalMrp,
         totalDiscount,
         couponDiscount,
+        onlinePaymentDiscount,
         tax,
         shippingFee,
         grandTotal,
       },
-      availablePaymentMethods: [PaymentMethod.COD, PaymentMethod.RAZORPAY, PaymentMethod.STRIPE],
+      availablePaymentMethods: [PaymentMethod.COD, PaymentMethod.RAZORPAY],
       isCheckoutReady: isAllItemsInStock,
     };
   }
@@ -412,9 +425,12 @@ export class CheckoutService {
         totalDiscount: summary.pricing.totalDiscount,
         couponCode: summary.couponInfo?.code,
         couponDiscount: summary.pricing.couponDiscount,
+        onlinePaymentDiscount: dto.paymentMethod === PaymentMethod.COD ? 0 : summary.pricing.onlinePaymentDiscount,
         tax: summary.pricing.tax,
         shippingFee: summary.pricing.shippingFee,
-        grandTotal: summary.pricing.grandTotal,
+        grandTotal: dto.paymentMethod === PaymentMethod.COD
+          ? Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount + summary.pricing.shippingFee)
+          : Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount - summary.pricing.onlinePaymentDiscount + summary.pricing.shippingFee),
       },
       orderStatus: OrderStatus.CONFIRMED,
       timeline: [

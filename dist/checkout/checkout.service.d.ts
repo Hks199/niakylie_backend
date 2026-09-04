@@ -5,6 +5,7 @@ import { ProductsRepository } from '../products/repositories/products.repository
 import { UsersRepository } from '../users/repositories/users.repository.js';
 import { CouponsService } from '../coupons/coupons.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { OnlinePaymentDiscountService } from '../payment/online-payment-discount.service.js';
 import { CheckoutSummaryDto } from './dto/checkout-summary.dto.js';
 import { PlaceOrderDto } from './dto/place-order.dto.js';
 import { OrderDocument, PaymentMethod, ShippingMethod } from './schemas/order.schema.js';
@@ -39,6 +40,7 @@ export interface CheckoutSummaryResponse {
         totalMrp: number;
         totalDiscount: number;
         couponDiscount: number;
+        onlinePaymentDiscount: number;
         tax: number;
         shippingFee: number;
         grandTotal: number;
@@ -54,7 +56,8 @@ export declare class CheckoutService {
     private readonly usersRepository;
     private readonly couponsService;
     private readonly notificationsService;
-    constructor(ordersRepository: OrdersRepository, cartRepository: CartRepository, inventoryRepository: InventoryRepository, productsRepository: ProductsRepository, usersRepository: UsersRepository, couponsService: CouponsService, notificationsService: NotificationsService);
+    private readonly onlineDiscountService?;
+    constructor(ordersRepository: OrdersRepository, cartRepository: CartRepository, inventoryRepository: InventoryRepository, productsRepository: ProductsRepository, usersRepository: UsersRepository, couponsService: CouponsService, notificationsService: NotificationsService, onlineDiscountService?: OnlinePaymentDiscountService | undefined);
     private generateOrderNumber;
     private generateInvoiceNumber;
     getCheckoutSummary(userId?: string, dto?: CheckoutSummaryDto): Promise<CheckoutSummaryResponse>;

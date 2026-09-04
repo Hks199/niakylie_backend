@@ -19,13 +19,19 @@ const products_module_js_1 = require("../products/products.module.js");
 const users_module_js_1 = require("../users/users.module.js");
 const coupons_module_js_1 = require("../coupons/coupons.module.js");
 const notifications_module_js_1 = require("../notifications/notifications.module.js");
+const online_payment_discount_schema_js_1 = require("../payment/schemas/online-payment-discount.schema.js");
+const online_payment_discount_repository_js_1 = require("../payment/repositories/online-payment-discount.repository.js");
+const online_payment_discount_service_js_1 = require("../payment/online-payment-discount.service.js");
 let CheckoutModule = class CheckoutModule {
 };
 exports.CheckoutModule = CheckoutModule;
 exports.CheckoutModule = CheckoutModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            mongoose_1.MongooseModule.forFeature([{ name: order_schema_js_1.Order.name, schema: order_schema_js_1.OrderSchema }]),
+            mongoose_1.MongooseModule.forFeature([
+                { name: order_schema_js_1.Order.name, schema: order_schema_js_1.OrderSchema },
+                { name: online_payment_discount_schema_js_1.OnlinePaymentDiscount.name, schema: online_payment_discount_schema_js_1.OnlinePaymentDiscountSchema },
+            ]),
             cart_module_js_1.CartModule,
             inventory_module_js_1.InventoryModule,
             products_module_js_1.ProductsModule,
@@ -34,8 +40,13 @@ exports.CheckoutModule = CheckoutModule = __decorate([
             notifications_module_js_1.NotificationsModule,
         ],
         controllers: [checkout_controller_js_1.CheckoutController],
-        providers: [checkout_service_js_1.CheckoutService, orders_repository_js_1.OrdersRepository],
-        exports: [checkout_service_js_1.CheckoutService, orders_repository_js_1.OrdersRepository],
+        providers: [
+            checkout_service_js_1.CheckoutService,
+            orders_repository_js_1.OrdersRepository,
+            online_payment_discount_service_js_1.OnlinePaymentDiscountService,
+            online_payment_discount_repository_js_1.OnlinePaymentDiscountRepository,
+        ],
+        exports: [checkout_service_js_1.CheckoutService, orders_repository_js_1.OrdersRepository, online_payment_discount_service_js_1.OnlinePaymentDiscountService],
     })
 ], CheckoutModule);
 //# sourceMappingURL=checkout.module.js.map

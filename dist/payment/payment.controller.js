@@ -16,6 +16,7 @@ exports.PaymentController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const payment_service_js_1 = require("./payment.service.js");
+const online_payment_discount_service_js_1 = require("./online-payment-discount.service.js");
 const create_payment_intent_dto_js_1 = require("./dto/create-payment-intent.dto.js");
 const create_razorpay_order_dto_js_1 = require("./dto/create-razorpay-order.dto.js");
 const create_stripe_intent_dto_js_1 = require("./dto/create-stripe-intent.dto.js");
@@ -23,10 +24,24 @@ const verify_razorpay_dto_js_1 = require("./dto/verify-razorpay.dto.js");
 const verify_stripe_dto_js_1 = require("./dto/verify-stripe.dto.js");
 const process_refund_dto_js_1 = require("./dto/process-refund.dto.js");
 const retry_payment_dto_js_1 = require("./dto/retry-payment.dto.js");
+const update_online_discount_dto_js_1 = require("./dto/update-online-discount.dto.js");
+const jwt_auth_guard_js_1 = require("../auth/guards/jwt-auth.guard.js");
+const index_js_1 = require("../shared/index.js");
 let PaymentController = class PaymentController {
     paymentService;
-    constructor(paymentService) {
+    onlineDiscountService;
+    constructor(paymentService, onlineDiscountService) {
         this.paymentService = paymentService;
+        this.onlineDiscountService = onlineDiscountService;
+    }
+    async getOnlineDiscountConfig() {
+        return this.onlineDiscountService.getConfig();
+    }
+    async getAdminOnlineDiscountConfig() {
+        return this.onlineDiscountService.getConfig();
+    }
+    async updateOnlineDiscountConfig(dto) {
+        return this.onlineDiscountService.updateConfig(dto);
     }
     async createRazorpayOrder(dto) {
         return this.paymentService.createRazorpayOrder(dto);
@@ -66,6 +81,36 @@ let PaymentController = class PaymentController {
     }
 };
 exports.PaymentController = PaymentController;
+__decorate([
+    (0, common_1.Get)('online-discount'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get active online payment discount configuration' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Online discount config retrieved' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], PaymentController.prototype, "getOnlineDiscountConfig", null);
+__decorate([
+    (0, common_1.Get)('online-discount/admin'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard, index_js_1.RolesGuard),
+    (0, index_js_1.Roles)(index_js_1.Role.ADMIN),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get online payment discount configuration for Admin' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], PaymentController.prototype, "getAdminOnlineDiscountConfig", null);
+__decorate([
+    (0, common_1.Put)('online-discount/admin'),
+    (0, common_1.Post)('online-discount/admin'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard, index_js_1.RolesGuard),
+    (0, index_js_1.Roles)(index_js_1.Role.ADMIN),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, swagger_1.ApiOperation)({ summary: 'Update online payment discount configuration (Admin)' }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [update_online_discount_dto_js_1.UpdateOnlineDiscountDto]),
+    __metadata("design:returntype", Promise)
+], PaymentController.prototype, "updateOnlineDiscountConfig", null);
 __decorate([
     (0, common_1.Post)(['razorpay/create-order', 'create-order']),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
@@ -195,6 +240,7 @@ __decorate([
 exports.PaymentController = PaymentController = __decorate([
     (0, swagger_1.ApiTags)('Payment'),
     (0, common_1.Controller)('payments'),
-    __metadata("design:paramtypes", [payment_service_js_1.PaymentService])
+    __metadata("design:paramtypes", [payment_service_js_1.PaymentService,
+        online_payment_discount_service_js_1.OnlinePaymentDiscountService])
 ], PaymentController);
 //# sourceMappingURL=payment.controller.js.map
