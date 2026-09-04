@@ -200,6 +200,31 @@ let NotificationsService = class NotificationsService {
         }
         return { message: 'Notification deleted successfully' };
     }
+    async sendTestPushNotification(userId) {
+        const user = await this.usersRepo.findById(userId);
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        const title = '🔔 Push Notification Test';
+        const message = `Hello ${user.firstName || 'User'}! This is a live browser push notification test from NIAKYLIE. Push notifications are functioning properly.`;
+        const notification = await this.notificationsRepo.create({
+            userId: new mongoose_1.Types.ObjectId(userId),
+            recipientEmail: user.email,
+            recipientPhone: user.phone,
+            type: notification_schema_js_1.NotificationType.SYSTEM,
+            channel: notification_schema_js_1.NotificationChannel.PUSH,
+            title,
+            message,
+            metadata: { isTestPush: true, sentAt: new Date().toISOString() },
+            status: notification_schema_js_1.NotificationDeliveryStatus.SENT,
+        });
+        return {
+            success: true,
+            message: 'Test push notification generated successfully',
+            notification,
+            pushEnabled: user.notificationPreferences?.push ?? true,
+        };
+    }
 };
 exports.NotificationsService = NotificationsService;
 exports.NotificationsService = NotificationsService = __decorate([

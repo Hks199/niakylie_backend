@@ -10,7 +10,8 @@ export declare enum NotificationType {
 export declare enum NotificationChannel {
     EMAIL = "EMAIL",
     IN_APP = "IN_APP",
-    SMS = "SMS"
+    SMS = "SMS",
+    PUSH = "PUSH"
 }
 export declare enum NotificationDeliveryStatus {
     PENDING = "PENDING",

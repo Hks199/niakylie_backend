@@ -53,6 +53,10 @@ let NotificationsController = class NotificationsController {
         const userId = user.id || user._id;
         return this.notificationsService.deleteNotification(id, userId);
     }
+    async sendTestPush(user) {
+        const userId = user.id || user._id;
+        return this.notificationsService.sendTestPushNotification(userId);
+    }
 };
 exports.NotificationsController = NotificationsController;
 __decorate([
@@ -143,6 +147,18 @@ __decorate([
     __metadata("design:paramtypes", [String, user_schema_js_1.User]),
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "deleteNotification", null);
+__decorate([
+    (0, common_1.Post)('test-push'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Send a test push notification to current user' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Test push notification dispatched' }),
+    __param(0, (0, index_js_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [user_schema_js_1.User]),
+    __metadata("design:returntype", Promise)
+], NotificationsController.prototype, "sendTestPush", null);
 exports.NotificationsController = NotificationsController = __decorate([
     (0, swagger_1.ApiTags)('Notifications'),
     (0, common_1.Controller)('notifications'),

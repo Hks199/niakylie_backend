@@ -109,4 +109,15 @@ export class NotificationsController {
     const userId = (user as any).id || (user as any)._id;
     return this.notificationsService.deleteNotification(id, userId);
   }
+
+  @Post('test-push')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send a test push notification to current user' })
+  @ApiResponse({ status: 200, description: 'Test push notification dispatched' })
+  async sendTestPush(@CurrentUser() user: User) {
+    const userId = (user as any).id || (user as any)._id;
+    return this.notificationsService.sendTestPushNotification(userId);
+  }
 }

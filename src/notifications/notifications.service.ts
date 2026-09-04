@@ -253,4 +253,33 @@ export class NotificationsService {
     }
     return { message: 'Notification deleted successfully' };
   }
+
+  async sendTestPushNotification(userId: string) {
+    const user = await this.usersRepo.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const title = '🔔 Push Notification Test';
+    const message = `Hello ${user.firstName || 'User'}! This is a live browser push notification test from NIAKYLIE. Push notifications are functioning properly.`;
+
+    const notification = await this.notificationsRepo.create({
+      userId: new Types.ObjectId(userId),
+      recipientEmail: user.email,
+      recipientPhone: user.phone,
+      type: NotificationType.SYSTEM,
+      channel: NotificationChannel.PUSH,
+      title,
+      message,
+      metadata: { isTestPush: true, sentAt: new Date().toISOString() },
+      status: NotificationDeliveryStatus.SENT,
+    });
+
+    return {
+      success: true,
+      message: 'Test push notification generated successfully',
+      notification,
+      pushEnabled: user.notificationPreferences?.push ?? true,
+    };
+  }
 }

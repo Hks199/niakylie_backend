@@ -27,4 +27,10 @@ export declare class NotificationsController {
     deleteNotification(id: string, user: User): Promise<{
         message: string;
     }>;
+    sendTestPush(user: User): Promise<{
+        success: boolean;
+        message: string;
+        notification: import("./schemas/notification.schema.js").NotificationDocument;
+        pushEnabled: boolean;
+    }>;
 }

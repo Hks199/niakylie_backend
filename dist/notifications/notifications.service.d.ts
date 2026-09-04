@@ -57,4 +57,10 @@ export declare class NotificationsService {
     deleteNotification(id: string, userId: string): Promise<{
         message: string;
     }>;
+    sendTestPushNotification(userId: string): Promise<{
+        success: boolean;
+        message: string;
+        notification: NotificationDocument;
+        pushEnabled: boolean;
+    }>;
 }
