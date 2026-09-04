@@ -6,12 +6,15 @@ import { SendNotificationDto } from './dto/send-notification.dto.js';
 import { BroadcastNotificationDto } from './dto/broadcast-notification.dto.js';
 import { QueryNotificationDto } from './dto/query-notification.dto.js';
 import { NotificationDocument } from './schemas/notification.schema.js';
+import { NotificationEventsService } from './notification-events.service.js';
 export declare class NotificationsService {
     private readonly notificationsRepo;
     private readonly emailProvider;
     private readonly smsProvider;
     private readonly usersRepo;
-    constructor(notificationsRepo: NotificationsRepository, emailProvider: EmailProvider, smsProvider: SmsProvider, usersRepo: UsersRepository);
+    private readonly eventsService;
+    constructor(notificationsRepo: NotificationsRepository, emailProvider: EmailProvider, smsProvider: SmsProvider, usersRepo: UsersRepository, eventsService: NotificationEventsService);
+    private emitRealtime;
     sendNotification(dto: SendNotificationDto): Promise<NotificationDocument>;
     sendOrderUpdateNotification(params: {
         userId?: string;
@@ -72,5 +75,20 @@ export declare class NotificationsService {
             messageId: string;
         };
         emailEnabled: boolean;
+    }>;
+    sendPriceDropTestNotification(userId: string): Promise<{
+        success: boolean;
+        message: string;
+        notification: NotificationDocument;
+    }>;
+    sendNewCollectionTestNotification(userId: string): Promise<{
+        success: boolean;
+        message: string;
+        notification: NotificationDocument;
+    }>;
+    sendCouponTestNotification(userId: string): Promise<{
+        success: boolean;
+        message: string;
+        notification: NotificationDocument;
     }>;
 }

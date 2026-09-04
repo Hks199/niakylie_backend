@@ -16,6 +16,7 @@ const notifications_controller_js_1 = require("./notifications.controller.js");
 const email_provider_js_1 = require("./providers/email.provider.js");
 const sms_provider_js_1 = require("./providers/sms.provider.js");
 const users_module_js_1 = require("../users/users.module.js");
+const notification_events_service_js_1 = require("./notification-events.service.js");
 let NotificationsModule = class NotificationsModule {
 };
 exports.NotificationsModule = NotificationsModule;
@@ -29,10 +30,11 @@ exports.NotificationsModule = NotificationsModule = __decorate([
         providers: [
             notifications_service_js_1.NotificationsService,
             notifications_repository_js_1.NotificationsRepository,
+            notification_events_service_js_1.NotificationEventsService,
             email_provider_js_1.EmailProvider,
             sms_provider_js_1.SmsProvider,
         ],
-        exports: [notifications_service_js_1.NotificationsService, email_provider_js_1.EmailProvider, sms_provider_js_1.SmsProvider],
+        exports: [notifications_service_js_1.NotificationsService, notification_events_service_js_1.NotificationEventsService, email_provider_js_1.EmailProvider, sms_provider_js_1.SmsProvider],
     })
 ], NotificationsModule);
 //# sourceMappingURL=notifications.module.js.map

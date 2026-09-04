@@ -14,8 +14,10 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationsController = void 0;
 const common_1 = require("@nestjs/common");
+const rxjs_1 = require("rxjs");
 const swagger_1 = require("@nestjs/swagger");
 const notifications_service_js_1 = require("./notifications.service.js");
+const notification_events_service_js_1 = require("./notification-events.service.js");
 const send_notification_dto_js_1 = require("./dto/send-notification.dto.js");
 const broadcast_notification_dto_js_1 = require("./dto/broadcast-notification.dto.js");
 const query_notification_dto_js_1 = require("./dto/query-notification.dto.js");
@@ -24,8 +26,14 @@ const index_js_1 = require("../shared/index.js");
 const user_schema_js_1 = require("../users/schemas/user.schema.js");
 let NotificationsController = class NotificationsController {
     notificationsService;
-    constructor(notificationsService) {
+    eventsService;
+    constructor(notificationsService, eventsService) {
         this.notificationsService = notificationsService;
+        this.eventsService = eventsService;
+    }
+    streamNotifications(user) {
+        const userId = user.id || user._id;
+        return this.eventsService.getNotificationStream(userId);
     }
     async sendNotification(dto) {
         return this.notificationsService.sendNotification(dto);
@@ -61,8 +69,30 @@ let NotificationsController = class NotificationsController {
         const userId = user.id || user._id;
         return this.notificationsService.sendTestEmailNotification(userId);
     }
+    async sendTestPriceDrop(user) {
+        const userId = user.id || user._id;
+        return this.notificationsService.sendPriceDropTestNotification(userId);
+    }
+    async sendTestCollectionDrop(user) {
+        const userId = user.id || user._id;
+        return this.notificationsService.sendNewCollectionTestNotification(userId);
+    }
+    async sendTestCoupon(user) {
+        const userId = user.id || user._id;
+        return this.notificationsService.sendCouponTestNotification(userId);
+    }
 };
 exports.NotificationsController = NotificationsController;
+__decorate([
+    (0, common_1.Sse)('stream'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, swagger_1.ApiOperation)({ summary: 'Real-time Server-Sent Events (SSE) notification stream' }),
+    __param(0, (0, index_js_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [user_schema_js_1.User]),
+    __metadata("design:returntype", rxjs_1.Observable)
+], NotificationsController.prototype, "streamNotifications", null);
 __decorate([
     (0, common_1.Post)('send'),
     (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard, index_js_1.RolesGuard),
@@ -175,9 +205,43 @@ __decorate([
     __metadata("design:paramtypes", [user_schema_js_1.User]),
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "sendTestEmail", null);
+__decorate([
+    (0, common_1.Post)('test-price-drop'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Send a test price drop alert push notification' }),
+    __param(0, (0, index_js_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [user_schema_js_1.User]),
+    __metadata("design:returntype", Promise)
+], NotificationsController.prototype, "sendTestPriceDrop", null);
+__decorate([
+    (0, common_1.Post)('test-collection-drop'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Send a test new collection drop push notification' }),
+    __param(0, (0, index_js_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [user_schema_js_1.User]),
+    __metadata("design:returntype", Promise)
+], NotificationsController.prototype, "sendTestCollectionDrop", null);
+__decorate([
+    (0, common_1.Post)('test-coupon'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: 'Send a test exclusive coupon push notification' }),
+    __param(0, (0, index_js_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [user_schema_js_1.User]),
+    __metadata("design:returntype", Promise)
+], NotificationsController.prototype, "sendTestCoupon", null);
 exports.NotificationsController = NotificationsController = __decorate([
     (0, swagger_1.ApiTags)('Notifications'),
     (0, common_1.Controller)('notifications'),
-    __metadata("design:paramtypes", [notifications_service_js_1.NotificationsService])
+    __metadata("design:paramtypes", [notifications_service_js_1.NotificationsService,
+        notification_events_service_js_1.NotificationEventsService])
 ], NotificationsController);
 //# sourceMappingURL=notifications.controller.js.map

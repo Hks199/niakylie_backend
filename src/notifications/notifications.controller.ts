@@ -10,7 +10,10 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Sse,
+  MessageEvent,
 } from '@nestjs/common';
+import { Observable } from 'rxjs';
 import {
   ApiTags,
   ApiOperation,
@@ -20,6 +23,7 @@ import {
 } from '@nestjs/swagger';
 
 import { NotificationsService } from './notifications.service.js';
+import { NotificationEventsService } from './notification-events.service.js';
 import { SendNotificationDto } from './dto/send-notification.dto.js';
 import { BroadcastNotificationDto } from './dto/broadcast-notification.dto.js';
 import { QueryNotificationDto } from './dto/query-notification.dto.js';
@@ -30,7 +34,19 @@ import { User } from '../users/schemas/user.schema.js';
 @ApiTags('Notifications')
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly eventsService: NotificationEventsService,
+  ) {}
+
+  @Sse('stream')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Real-time Server-Sent Events (SSE) notification stream' })
+  streamNotifications(@CurrentUser() user: User): Observable<MessageEvent> {
+    const userId = (user as any).id || (user as any)._id;
+    return this.eventsService.getNotificationStream(userId) as any;
+  }
 
   @Post('send')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -130,5 +146,35 @@ export class NotificationsController {
   async sendTestEmail(@CurrentUser() user: User) {
     const userId = (user as any).id || (user as any)._id;
     return this.notificationsService.sendTestEmailNotification(userId);
+  }
+
+  @Post('test-price-drop')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send a test price drop alert push notification' })
+  async sendTestPriceDrop(@CurrentUser() user: User) {
+    const userId = (user as any).id || (user as any)._id;
+    return this.notificationsService.sendPriceDropTestNotification(userId);
+  }
+
+  @Post('test-collection-drop')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send a test new collection drop push notification' })
+  async sendTestCollectionDrop(@CurrentUser() user: User) {
+    const userId = (user as any).id || (user as any)._id;
+    return this.notificationsService.sendNewCollectionTestNotification(userId);
+  }
+
+  @Post('test-coupon')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send a test exclusive coupon push notification' })
+  async sendTestCoupon(@CurrentUser() user: User) {
+    const userId = (user as any).id || (user as any)._id;
+    return this.notificationsService.sendCouponTestNotification(userId);
   }
 }
