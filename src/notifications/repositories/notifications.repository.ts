@@ -75,8 +75,14 @@ export class NotificationsRepository {
     };
 
     if (isRead !== undefined) {
-      const boolVal = Boolean(isRead) || String(isRead) === 'true';
-      filter.isRead = boolVal ? { $in: [true, 'true'] } : { $ne: true };
+      const valStr = String(isRead);
+      const isReadTrue = (isRead as any) === true || valStr === 'true' || valStr === '1';
+      const isReadFalse = (isRead as any) === false || valStr === 'false' || valStr === '0';
+      if (isReadTrue) {
+        filter.isRead = { $in: [true, 'true'] };
+      } else if (isReadFalse) {
+        filter.isRead = { $ne: true };
+      }
     }
     if (type && type.trim()) {
       const typeStr = type.trim().toUpperCase();
