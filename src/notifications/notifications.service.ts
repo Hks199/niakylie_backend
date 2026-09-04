@@ -260,7 +260,11 @@ export class NotificationsService {
   }
 
   async getUserNotifications(userId: string, query: QueryNotificationDto) {
-    return this.notificationsRepo.findByUserId(userId, query);
+    const user = await this.usersRepo.findById(userId);
+    const isAdmin = user?.roles?.some((r: any) =>
+      r === Role.ADMIN || r === 'ADMIN' || r === 'admin'
+    ) || false;
+    return this.notificationsRepo.findByUserId(userId, query, isAdmin);
   }
 
   async getUnreadCount(userId: string): Promise<{ unreadCount: number }> {

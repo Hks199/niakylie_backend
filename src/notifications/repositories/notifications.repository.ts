@@ -29,44 +29,83 @@ export class NotificationsRepository {
   async findByUserId(
     userId: string,
     query: QueryNotificationDto,
+    isAdmin = false,
   ): Promise<{ data: NotificationDocument[]; total: number; unreadCount: number; page: number; limit: number }> {
     const { page = 1, limit = 10, isRead, type } = query;
     const userObjId = new Types.ObjectId(userId);
 
     const userTotalCount = await this.notificationModel.countDocuments({ userId: userObjId, isDeleted: false }).exec();
     if (userTotalCount === 0) {
-      await this.notificationModel.insertMany([
-        {
-          userId: userObjId,
-          type: 'offer',
-          channel: 'in_app',
-          title: 'Welcome to NiaKylie!',
-          message: 'Enjoy 15% OFF on your first purchase with coupon code FESTIVE15.',
-          isRead: false,
-          status: 'SENT',
-          createdAt: new Date(),
-        },
-        {
-          userId: userObjId,
-          type: 'system',
-          channel: 'in_app',
-          title: 'Complimentary Nationwide Shipping',
-          message: 'Get free express shipping on all orders over ₹1,000 across India.',
-          isRead: false,
-          status: 'SENT',
-          createdAt: new Date(Date.now() - 3600000),
-        },
-        {
-          userId: userObjId,
-          type: 'coupon',
-          channel: 'in_app',
-          title: 'Exclusive Festive Coupon Drop',
-          message: 'Special ₹500 flat discount unlocked! Use code NIAKYLIE500 on sarees and ethnic wear.',
-          isRead: false,
-          status: 'SENT',
-          createdAt: new Date(Date.now() - 7200000),
-        },
-      ]);
+      if (isAdmin) {
+        await this.notificationModel.insertMany([
+          {
+            userId: userObjId,
+            type: 'ORDER_UPDATE',
+            channel: 'in_app',
+            title: '🛍️ Order Update: #NK-ORD-20260904-7991',
+            message: 'Order #NK-ORD-20260904-7991 for ₹3,499 was confirmed and processed.',
+            isRead: false,
+            status: 'SENT',
+            metadata: { orderNumber: 'NK-ORD-20260904-7991', targetTab: 'orders' },
+            createdAt: new Date(),
+          },
+          {
+            userId: userObjId,
+            type: 'SYSTEM',
+            channel: 'in_app',
+            title: '🚨 Stock Alert: Low Inventory',
+            message: 'Product Handloom Banarasi Saree is running low on stock (2 units remaining).',
+            isRead: false,
+            status: 'SENT',
+            metadata: { targetTab: 'inventory', stockAlert: true },
+            createdAt: new Date(Date.now() - 3600000),
+          },
+          {
+            userId: userObjId,
+            type: 'SYSTEM',
+            channel: 'in_app',
+            title: '⭐ New Customer Review Posted',
+            message: 'Priya S. submitted a 5-star review: "Exquisite fabric quality and ultra fast delivery!"',
+            isRead: false,
+            status: 'SENT',
+            metadata: { reviewId: 'demo', targetTab: 'reviews' },
+            createdAt: new Date(Date.now() - 7200000),
+          },
+        ]);
+      } else {
+        await this.notificationModel.insertMany([
+          {
+            userId: userObjId,
+            type: 'offer',
+            channel: 'in_app',
+            title: 'Welcome to NiaKylie!',
+            message: 'Enjoy 15% OFF on your first purchase with coupon code FESTIVE15.',
+            isRead: false,
+            status: 'SENT',
+            createdAt: new Date(),
+          },
+          {
+            userId: userObjId,
+            type: 'system',
+            channel: 'in_app',
+            title: 'Complimentary Nationwide Shipping',
+            message: 'Get free express shipping on all orders over ₹1,000 across India.',
+            isRead: false,
+            status: 'SENT',
+            createdAt: new Date(Date.now() - 3600000),
+          },
+          {
+            userId: userObjId,
+            type: 'coupon',
+            channel: 'in_app',
+            title: 'Exclusive Festive Coupon Drop',
+            message: 'Special ₹500 flat discount unlocked! Use code NIAKYLIE500 on sarees and ethnic wear.',
+            isRead: false,
+            status: 'SENT',
+            createdAt: new Date(Date.now() - 7200000),
+          },
+        ]);
+      }
     }
 
     const filter: Record<string, any> = {
