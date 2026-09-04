@@ -711,6 +711,13 @@ export class CheckoutService {
                 </div>`
         : ''
       }
+          ${(order.pricing?.onlinePaymentDiscount || 0) > 0
+        ? `<div class="summary-row" style="color: #059669; font-weight: 700;">
+                  <span>Online Payment Extra Discount</span>
+                  <span>-₹${(order.pricing.onlinePaymentDiscount || 0).toLocaleString('en-IN')}</span>
+                </div>`
+        : ''
+      }
           <div class="summary-row">
             <span>Tax (0%)</span>
             <span>₹0</span>
