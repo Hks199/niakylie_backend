@@ -9,6 +9,7 @@ import { ProductReviewsController } from './product-reviews.controller.js';
 import { ProductsModule } from '../products/products.module.js';
 import { CheckoutModule } from '../checkout/checkout.module.js';
 import { UsersModule } from '../users/users.module.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { UsersModule } from '../users/users.module.js';
     ProductsModule,
     CheckoutModule,
     UsersModule,
+    NotificationsModule,
   ],
   controllers: [ReviewsController, ProductReviewsController],
   providers: [ReviewsService, ReviewsRepository],

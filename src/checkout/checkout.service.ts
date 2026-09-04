@@ -13,6 +13,7 @@ import { ProductsRepository } from '../products/repositories/products.repository
 import { UsersRepository } from '../users/repositories/users.repository.js';
 import { CouponsService } from '../coupons/coupons.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { NotificationType } from '../notifications/schemas/notification.schema.js';
 import { OnlinePaymentDiscountService } from '../payment/online-payment-discount.service.js';
 import { CheckoutSummaryDto } from './dto/checkout-summary.dto.js';
 import { PlaceOrderDto } from './dto/place-order.dto.js';
@@ -346,8 +347,28 @@ export class CheckoutService {
         let status = StockStatus.IN_STOCK;
         if (newAvailable <= 0) {
           status = StockStatus.OUT_OF_STOCK;
+          if (this.notificationsService) {
+            this.notificationsService
+              .sendAdminEventNotification({
+                title: '🚨 Stock Alert: Out of Stock!',
+                message: `SKU ${item.sku} (${item.name || 'Product'}) reached 0 available stock level!`,
+                type: NotificationType.SYSTEM,
+                metadata: { sku: item.sku, availableStock: newAvailable, targetTab: 'inventory' },
+              })
+              .catch(() => {});
+          }
         } else if (newAvailable <= lowThreshold) {
           status = StockStatus.LOW_STOCK;
+          if (this.notificationsService) {
+            this.notificationsService
+              .sendAdminEventNotification({
+                title: '⚠️ Stock Alert: Low Stock Warning',
+                message: `SKU ${item.sku} (${item.name || 'Product'}) stock is low (${newAvailable} items left).`,
+                type: NotificationType.SYSTEM,
+                metadata: { sku: item.sku, availableStock: newAvailable, targetTab: 'inventory' },
+              })
+              .catch(() => {});
+          }
         }
 
         await this.inventoryRepository.updateBySku(item.sku, {
@@ -444,6 +465,14 @@ export class CheckoutService {
     };
 
     const order = await this.ordersRepository.create(orderData);
+
+    // Dispatch real-time notification to Admin Control Center
+    this.notificationsService.sendAdminEventNotification({
+      title: '🛍️ New Customer Order Placed',
+      message: `Order #${order.orderNumber} for ₹${(order.pricing?.grandTotal || 0).toLocaleString('en-IN')} placed by ${customerInfo.firstName} ${customerInfo.lastName}.`,
+      type: 'ORDER_UPDATE' as any,
+      metadata: { orderNumber: order.orderNumber, grandTotal: order.pricing?.grandTotal, targetTab: 'orders' },
+    }).catch(() => { });
 
     // Dispatch in-app notification & email for the placed order
     if (order.userId) {

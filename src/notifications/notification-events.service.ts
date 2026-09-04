@@ -40,8 +40,12 @@ export class NotificationEventsService {
   getNotificationStream(userId: string): Observable<SseMessageEvent> {
     return this.notificationSubject.asObservable().pipe(
       filter((event) => {
-        // Event belongs to target user OR is global broadcast (no userId)
-        return !event.userId || event.userId.toString() === userId.toString();
+        // Event belongs to target user OR is global broadcast (no userId) OR is admin event
+        return (
+          !event.userId ||
+          event.userId.toString() === userId.toString() ||
+          Boolean(event.metadata?.isAdminEvent)
+        );
       }),
       map((event) => ({
         data: event,

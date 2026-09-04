@@ -8,6 +8,7 @@ import { NotificationsRepository } from './repositories/notifications.repository
 import { EmailProvider } from './providers/email.provider.js';
 import { SmsProvider } from './providers/sms.provider.js';
 import { UsersRepository } from '../users/repositories/users.repository.js';
+import { Role } from '../shared/index.js';
 
 import { SendNotificationDto } from './dto/send-notification.dto.js';
 import { BroadcastNotificationDto } from './dto/broadcast-notification.dto.js';
@@ -426,5 +427,82 @@ export class NotificationsService {
     this.emitRealtime(notification);
 
     return { success: true, message: 'Exclusive Coupon push notification dispatched', notification };
+  }
+
+  async sendAdminEventNotification(params: {
+    title: string;
+    message: string;
+    type: NotificationType;
+    metadata?: Record<string, any>;
+  }) {
+    try {
+      const { data: users } = await this.usersRepo.findAll({ page: 1, limit: 100 });
+      const adminUsers = users.filter(
+        (u) =>
+          u.roles?.includes(Role.ADMIN as any) ||
+          (u.roles as any)?.includes('ADMIN') ||
+          (u.roles as any)?.includes('admin'),
+      );
+
+      if (adminUsers.length > 0) {
+        for (const admin of adminUsers) {
+          const notif = await this.notificationsRepo.create({
+            userId: admin._id,
+            recipientEmail: admin.email,
+            type: params.type,
+            channel: NotificationChannel.IN_APP,
+            title: params.title,
+            message: params.message,
+            metadata: { ...params.metadata, isAdminEvent: true },
+            status: NotificationDeliveryStatus.SENT,
+          });
+          this.emitRealtime(notif);
+        }
+      } else {
+        this.emitRealtime({
+          title: params.title,
+          message: params.message,
+          type: params.type,
+          channel: NotificationChannel.IN_APP,
+          metadata: { ...params.metadata, isAdminEvent: true },
+          createdAt: new Date().toISOString(),
+        });
+      }
+    } catch (e) {
+      // Fallback realtime dispatch
+      this.emitRealtime({
+        title: params.title,
+        message: params.message,
+        type: params.type,
+        channel: NotificationChannel.IN_APP,
+        metadata: { ...params.metadata, isAdminEvent: true },
+        createdAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  async sendTestAdminEvent(eventType?: string) {
+    let title = '🛍️ Realtime Order: New Order Received!';
+    let message = `Customer order #NK-ORD-${Date.now().toString().slice(-4)} for ₹3,499 was received from user.`;
+    let type = NotificationType.ORDER_UPDATE;
+
+    if (eventType === 'review') {
+      title = '⭐ Realtime Review: New Product Review Received';
+      message = 'Customer Priya S. provided a 5-star review on Handloom Banarasi Saree: "Exquisite quality and fast delivery!"';
+      type = NotificationType.SYSTEM;
+    } else if (eventType === 'stock' || eventType === 'inventory') {
+      title = '🚨 Realtime Stock Alert: Out of Stock!';
+      message = 'Product SKU NK-SAR-880 (Kanjivaram Silk Saree) reached 0 available stock level!';
+      type = NotificationType.SYSTEM;
+    }
+
+    await this.sendAdminEventNotification({
+      title,
+      message,
+      type,
+      metadata: { isTestEvent: true, sentAt: new Date().toISOString() },
+    });
+
+    return { success: true, message: 'Test admin realtime event dispatched successfully.' };
   }
 }

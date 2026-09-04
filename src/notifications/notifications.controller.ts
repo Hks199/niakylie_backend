@@ -177,4 +177,14 @@ export class NotificationsController {
     const userId = (user as any).id || (user as any)._id;
     return this.notificationsService.sendCouponTestNotification(userId);
   }
+
+  @Post('test-admin-event')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, 'admin' as any)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Admin] Trigger live test admin event for notification bell' })
+  async sendTestAdminEvent(@Query('type') type?: string) {
+    return this.notificationsService.sendTestAdminEvent(type);
+  }
 }
