@@ -34,7 +34,7 @@ export class CreateBlogDto {
   @IsUrl()
   coverImage?: string;
 
-  @ApiPropertyOptional({ example: 'NiaKylie Fashion Editorial' })
+  @ApiPropertyOptional({ example: 'Niakylie Women Collection Editorial' })
   @IsOptional()
   @IsString()
   author?: string;

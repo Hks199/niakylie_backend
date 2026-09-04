@@ -20,6 +20,8 @@ import {
   NotificationDeliveryStatus,
 } from './schemas/notification.schema.js';
 
+import { NotificationEventsService } from './notification-events.service.js';
+
 @Injectable()
 export class NotificationsService {
   constructor(
@@ -27,7 +29,26 @@ export class NotificationsService {
     private readonly emailProvider: EmailProvider,
     private readonly smsProvider: SmsProvider,
     private readonly usersRepo: UsersRepository,
+    private readonly eventsService: NotificationEventsService,
   ) {}
+
+  private emitRealtime(notif: any) {
+    if (this.eventsService && notif) {
+      this.eventsService.emitNotification({
+        _id: notif._id?.toString(),
+        id: notif._id?.toString(),
+        userId: notif.userId?.toString(),
+        recipientEmail: notif.recipientEmail,
+        recipientPhone: notif.recipientPhone,
+        type: notif.type,
+        channel: notif.channel,
+        title: notif.title,
+        message: notif.message,
+        metadata: notif.metadata,
+        createdAt: notif.createdAt || new Date().toISOString(),
+      });
+    }
+  }
 
   async sendNotification(dto: SendNotificationDto): Promise<NotificationDocument> {
     let recipientEmail = dto.recipientEmail;
@@ -54,6 +75,8 @@ export class NotificationsService {
       metadata: dto.metadata,
       status: NotificationDeliveryStatus.SENT,
     });
+
+    this.emitRealtime(notification);
 
     // Dispatch Email if Email channel or email provided
     if ((channel === NotificationChannel.EMAIL || recipientEmail) && recipientEmail) {
@@ -99,7 +122,7 @@ export class NotificationsService {
 
     // In-App Notification
     if (params.userId) {
-      await this.notificationsRepo.create({
+      const createdNotif = await this.notificationsRepo.create({
         userId: new Types.ObjectId(params.userId),
         recipientEmail: params.recipientEmail,
         recipientPhone: params.recipientPhone,
@@ -110,6 +133,7 @@ export class NotificationsService {
         metadata: { orderNumber: params.orderNumber, status: params.status, trackingNumber: params.trackingNumber },
         status: NotificationDeliveryStatus.SENT,
       });
+      this.emitRealtime(createdNotif);
     }
 
     // Email Dispatch
@@ -139,16 +163,20 @@ export class NotificationsService {
     offerUrl?: string;
   }) {
     if (params.userId) {
-      await this.notificationsRepo.create({
+      const user = await this.usersRepo.findById(params.userId);
+      const isPushEnabled = user?.notificationPreferences?.push ?? true;
+
+      const createdNotif = await this.notificationsRepo.create({
         userId: new Types.ObjectId(params.userId),
         recipientEmail: params.recipientEmail,
         type: NotificationType.OFFER,
-        channel: NotificationChannel.IN_APP,
+        channel: isPushEnabled ? NotificationChannel.PUSH : NotificationChannel.IN_APP,
         title: params.title,
         message: params.message,
         metadata: { offerUrl: params.offerUrl },
         status: NotificationDeliveryStatus.SENT,
       });
+      this.emitRealtime(createdNotif);
     }
 
     await this.emailProvider.sendOfferEmail({
@@ -171,17 +199,21 @@ export class NotificationsService {
     const message = `Use code ${params.couponCode} at checkout for ${params.discountText}.`;
 
     if (params.userId) {
-      await this.notificationsRepo.create({
+      const user = await this.usersRepo.findById(params.userId);
+      const isPushEnabled = user?.notificationPreferences?.push ?? true;
+
+      const createdNotif = await this.notificationsRepo.create({
         userId: new Types.ObjectId(params.userId),
         recipientEmail: params.recipientEmail,
         recipientPhone: params.recipientPhone,
         type: NotificationType.COUPON,
-        channel: NotificationChannel.IN_APP,
+        channel: isPushEnabled ? NotificationChannel.PUSH : NotificationChannel.IN_APP,
         title,
         message,
         metadata: { couponCode: params.couponCode, validTill: params.validTill },
         status: NotificationDeliveryStatus.SENT,
       });
+      this.emitRealtime(createdNotif);
     }
 
     await this.emailProvider.sendCouponEmail({
@@ -220,6 +252,7 @@ export class NotificationsService {
 
     if (notificationsToCreate.length) {
       await this.notificationsRepo.createMany(notificationsToCreate);
+      notificationsToCreate.forEach((n) => this.emitRealtime(n));
     }
 
     return { sentCount: notificationsToCreate.length };
@@ -252,5 +285,146 @@ export class NotificationsService {
       throw new NotFoundException(`Notification '${id}' not found`);
     }
     return { message: 'Notification deleted successfully' };
+  }
+
+  async sendTestPushNotification(userId: string) {
+    const user = await this.usersRepo.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const title = '🔔 Push Notification Test';
+    const message = `Hello ${user.firstName || 'User'}! This is a live browser push notification test from NIAKYLIE. Push notifications are functioning properly.`;
+
+    const notification = await this.notificationsRepo.create({
+      userId: new Types.ObjectId(userId),
+      recipientEmail: user.email,
+      recipientPhone: user.phone,
+      type: NotificationType.SYSTEM,
+      channel: NotificationChannel.PUSH,
+      title,
+      message,
+      metadata: { isTestPush: true, sentAt: new Date().toISOString() },
+      status: NotificationDeliveryStatus.SENT,
+    });
+    this.emitRealtime(notification);
+
+    return {
+      success: true,
+      message: 'Test push notification generated successfully',
+      notification,
+      pushEnabled: user.notificationPreferences?.push ?? true,
+    };
+  }
+
+  async sendTestEmailNotification(userId: string) {
+    const user = await this.usersRepo.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const title = '✉️ Email Notification Test';
+    const message = `Hello ${user.firstName || 'Valued Customer'}! This is a test email notification from NIAKYLIE. Your email notifications are configured and functioning properly.`;
+
+    // 1. Create in-app system record
+    const notification = await this.notificationsRepo.create({
+      userId: new Types.ObjectId(userId),
+      recipientEmail: user.email,
+      recipientPhone: user.phone,
+      type: NotificationType.SYSTEM,
+      channel: NotificationChannel.EMAIL,
+      title,
+      message,
+      metadata: { isTestEmail: true, sentAt: new Date().toISOString() },
+      status: NotificationDeliveryStatus.SENT,
+    });
+    this.emitRealtime(notification);
+
+    // 2. Dispatch email via EmailProvider
+    const emailResult = await this.emailProvider.sendEmail({
+      to: user.email,
+      subject: 'NIAKYLIE — Email Notification Test',
+      title: 'Email Notifications Status: Active',
+      bodyHtml: `<p>Hello <strong>${user.firstName || 'Customer'}</strong>,</p>
+                 <p>This email confirms that your NIAKYLIE email notification preferences are active.</p>
+                 <p>You will receive order invoices, shipping updates, and exclusive alerts directly at <strong>${user.email}</strong>.</p>`,
+      buttonText: 'View My Notifications',
+      buttonUrl: 'http://localhost:5173/account/notifications',
+    });
+
+    return {
+      success: true,
+      message: `Test email dispatched to ${user.email}`,
+      notification,
+      emailResult,
+      emailEnabled: user.notificationPreferences?.email ?? true,
+    };
+  }
+
+  async sendPriceDropTestNotification(userId: string) {
+    const user = await this.usersRepo.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    const title = '🔥 Price Drop Alert!';
+    const message = 'Great news! An item in your wishlist or cart just dropped in price by 25%. Grab it now before stock sells out!';
+
+    const notification = await this.notificationsRepo.create({
+      userId: new Types.ObjectId(userId),
+      recipientEmail: user.email,
+      type: NotificationType.OFFER,
+      channel: NotificationChannel.PUSH,
+      title,
+      message,
+      metadata: { eventType: 'price_drop', discountPercentage: 25, itemUrl: '/products' },
+      status: NotificationDeliveryStatus.SENT,
+    });
+    this.emitRealtime(notification);
+
+    return { success: true, message: 'Price Drop push notification dispatched', notification };
+  }
+
+  async sendNewCollectionTestNotification(userId: string) {
+    const user = await this.usersRepo.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    const title = '✨ New Collection Drop: Autumn Couture';
+    const message = 'Discover our latest luxury women collection drop! Fresh designs and premium fabrics are now live on NIAKYLIE.';
+
+    const notification = await this.notificationsRepo.create({
+      userId: new Types.ObjectId(userId),
+      recipientEmail: user.email,
+      type: NotificationType.OFFER,
+      channel: NotificationChannel.PUSH,
+      title,
+      message,
+      metadata: { eventType: 'new_collection', collectionName: 'Autumn Couture' },
+      status: NotificationDeliveryStatus.SENT,
+    });
+    this.emitRealtime(notification);
+
+    return { success: true, message: 'New Collection Drop push notification dispatched', notification };
+  }
+
+  async sendCouponTestNotification(userId: string) {
+    const user = await this.usersRepo.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    const title = '🎁 Exclusive Discount Coupon: LUXE20';
+    const message = 'You unlocked an exclusive 20% OFF coupon! Apply code LUXE20 at checkout for instant savings.';
+
+    const notification = await this.notificationsRepo.create({
+      userId: new Types.ObjectId(userId),
+      recipientEmail: user.email,
+      recipientPhone: user.phone,
+      type: NotificationType.COUPON,
+      channel: NotificationChannel.PUSH,
+      title,
+      message,
+      metadata: { eventType: 'coupon', couponCode: 'LUXE20', discount: '20% OFF' },
+      status: NotificationDeliveryStatus.SENT,
+    });
+    this.emitRealtime(notification);
+
+    return { success: true, message: 'Exclusive Coupon push notification dispatched', notification };
   }
 }

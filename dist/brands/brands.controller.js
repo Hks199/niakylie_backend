@@ -15,8 +15,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BrandsController = void 0;
 const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
+const multer_1 = require("multer");
 const swagger_1 = require("@nestjs/swagger");
 const brands_service_js_1 = require("./brands.service.js");
+const s3_service_js_1 = require("../s3/s3.service.js");
 const create_brand_dto_js_1 = require("./dto/create-brand.dto.js");
 const update_brand_dto_js_1 = require("./dto/update-brand.dto.js");
 const query_brand_dto_js_1 = require("./dto/query-brand.dto.js");
@@ -35,12 +37,16 @@ const validateLogoFile = (file) => {
 };
 let BrandsController = class BrandsController {
     brandsService;
-    constructor(brandsService) {
+    s3Service;
+    constructor(brandsService, s3Service) {
         this.brandsService = brandsService;
+        this.s3Service = s3Service;
     }
     async create(createDto, logoFile) {
         validateLogoFile(logoFile);
-        const logoPath = logoFile ? `/uploads/brands/${logoFile.filename}` : undefined;
+        const logoPath = logoFile
+            ? await this.s3Service.uploadBuffer(logoFile.buffer, 'brands', logoFile.originalname, logoFile.mimetype)
+            : undefined;
         return this.brandsService.create(createDto, logoPath);
     }
     async findAll(queryDto) {
@@ -51,7 +57,9 @@ let BrandsController = class BrandsController {
     }
     async update(id, updateDto, logoFile) {
         validateLogoFile(logoFile);
-        const logoPath = logoFile ? `/uploads/brands/${logoFile.filename}` : undefined;
+        const logoPath = logoFile
+            ? await this.s3Service.uploadBuffer(logoFile.buffer, 'brands', logoFile.originalname, logoFile.mimetype)
+            : undefined;
         return this.brandsService.update(id, updateDto, logoPath);
     }
     async remove(id) {
@@ -64,7 +72,7 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard, index_js_1.RolesGuard),
     (0, index_js_1.Roles)(index_js_1.Role.ADMIN),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('logo')),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('logo', { storage: (0, multer_1.memoryStorage)() })),
     (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiOperation)({ summary: 'Create a new brand (Admin only)' }),
     (0, swagger_1.ApiBody)({
@@ -116,7 +124,7 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard, index_js_1.RolesGuard),
     (0, index_js_1.Roles)(index_js_1.Role.ADMIN),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('logo')),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('logo', { storage: (0, multer_1.memoryStorage)() })),
     (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiOperation)({ summary: 'Update brand details (Admin only)' }),
     (0, swagger_1.ApiParam)({ name: 'id', description: 'Brand Mongo ObjectId' }),
@@ -166,6 +174,7 @@ __decorate([
 exports.BrandsController = BrandsController = __decorate([
     (0, swagger_1.ApiTags)('Brands'),
     (0, common_1.Controller)('brands'),
-    __metadata("design:paramtypes", [brands_service_js_1.BrandsService])
+    __metadata("design:paramtypes", [brands_service_js_1.BrandsService,
+        s3_service_js_1.S3Service])
 ], BrandsController);
 //# sourceMappingURL=brands.controller.js.map

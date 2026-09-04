@@ -40,5 +40,8 @@ declare const _default: () => {
         accessKeyId: string;
         secretAccessKey: string;
     };
+    admin: {
+        secretKey: string;
+    };
 };
 export default _default;

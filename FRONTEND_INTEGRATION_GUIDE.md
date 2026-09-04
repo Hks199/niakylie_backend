@@ -196,7 +196,7 @@ export async function handleRazorpayCheckout(orderId: string, totalAmount: numbe
     key: paymentOrder.keyId, // Razorpay Key ID
     amount: paymentOrder.amountInPaisa,
     currency: paymentOrder.currency,
-    name: 'NiaKylie Fashion',
+    name: 'Niakylie Women Collection',
     description: `Payment for Order #${orderId}`,
     order_id: paymentOrder.providerOrderId, // Razorpay Order ID
     handler: async function (response: any) {

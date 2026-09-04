@@ -1,6 +1,6 @@
 # Myntra-Style React + Tailwind CSS Frontend Master Generation Prompts
 
-This document contains step-by-step prompts designed for AI Coding Assistants (such as Antigravity, Claude, ChatGPT, etc.) to build a modern **Myntra-style E-Commerce Frontend** tailored to integrate with the **NiaKylie Fashion Backend API**.
+This document contains step-by-step prompts designed for AI Coding Assistants (such as Antigravity, Claude, ChatGPT, etc.) to build a modern **Myntra-style E-Commerce Frontend** tailored to integrate with the **Niakylie Women Collection Backend API**.
 
 ---
 
@@ -25,7 +25,7 @@ This document contains step-by-step prompts designed for AI Coding Assistants (s
 ### PROMPT 1: Project Setup, Design Tokens & API Client Setup
 
 ```text
-Act as a Principal Frontend Engineer. Initialize a modern React 18 TypeScript application (using Vite or Next.js 14) and configure Tailwind CSS to build an ultra-premium Myntra-style e-commerce frontend for "NiaKylie Fashion".
+Act as a Principal Frontend Engineer. Initialize a modern React 18 TypeScript application (using Vite or Next.js 14) and configure Tailwind CSS to build an ultra-premium Myntra-style e-commerce frontend for "Niakylie Women Collection".
 
 Key Deliverables:
 1. Configure Tailwind CSS with a curated fashion color palette:
@@ -53,7 +53,7 @@ Key Deliverables:
 ### PROMPT 2: Header, Megamenu & Responsive Navigation
 
 ```text
-Build a Myntra-inspired navigation header and footer component system for NiaKylie Fashion using React, Tailwind CSS, and Lucide React icons.
+Build a Myntra-inspired navigation header and footer component system for Niakylie Women Collection using React, Tailwind CSS, and Lucide React icons.
 
 Key Features & Layout Requirements:
 1. Top Announcement Bar: Sliding promotional ticker ("Flat 50% Off Diwali Sale | Free Shipping on orders over ₹999 | Code: FESTIVE50").
@@ -76,7 +76,7 @@ Key Features & Layout Requirements:
 ### PROMPT 3: Homepage & Dynamic Banner Carousel
 
 ```text
-Build a dynamic, high-converting homepage for NiaKylie Fashion using React, Tailwind CSS, and Framer Motion.
+Build a dynamic, high-converting homepage for Niakylie Women Collection using React, Tailwind CSS, and Framer Motion.
 
 Integrate with Backend APIs:
 - Fetch Homepage Banners: `GET /api/v1/banners?type=HOMEPAGE` & `GET /api/v1/banners?type=OFFER`
@@ -99,7 +99,7 @@ Homepage Section Layout:
 ### PROMPT 4: Product Listing Page (PLP) & Advanced Filtering
 
 ```text
-Build a Myntra-style Product Listing Page (PLP) for NiaKylie Fashion with multi-facet sidebar filtering, sorting, and pagination.
+Build a Myntra-style Product Listing Page (PLP) for Niakylie Women Collection with multi-facet sidebar filtering, sorting, and pagination.
 
 Integrate with Backend APIs:
 - `GET /api/v1/products` and `GET /api/v1/search`
@@ -129,7 +129,7 @@ UI Requirements:
 ### PROMPT 5: Product Details Page (PDP) & Variant Selector
 
 ```text
-Build a feature-rich Product Details Page (PDP) for NiaKylie Fashion matching Myntra's design.
+Build a feature-rich Product Details Page (PDP) for Niakylie Women Collection matching Myntra's design.
 
 Integrate with Backend APIs:
 - `GET /api/v1/products/:idOrSlug`
@@ -283,7 +283,7 @@ UI Requirements:
 ### PROMPT 10: Admin Dashboard & Management Panel
 
 ```text
-Build a comprehensive Admin Dashboard Panel (`/admin/*`) for NiaKylie Fashion using React, Tailwind CSS, and Recharts.
+Build a comprehensive Admin Dashboard Panel (`/admin/*`) for Niakylie Women Collection using React, Tailwind CSS, and Recharts.
 
 Integrate with Backend APIs:
 - Summary KPIs: `GET /api/v1/admin/dashboard/summary`

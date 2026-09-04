@@ -53,6 +53,8 @@ const inventory_repository_js_1 = require("../inventory/repositories/inventory.r
 const products_repository_js_1 = require("../products/repositories/products.repository.js");
 const users_repository_js_1 = require("../users/repositories/users.repository.js");
 const coupons_service_js_1 = require("../coupons/coupons.service.js");
+const notifications_service_js_1 = require("../notifications/notifications.service.js");
+const online_payment_discount_service_js_1 = require("../payment/online-payment-discount.service.js");
 const inventory_schema_js_1 = require("../inventory/schemas/inventory.schema.js");
 const order_schema_js_1 = require("./schemas/order.schema.js");
 let CheckoutService = class CheckoutService {
@@ -62,13 +64,17 @@ let CheckoutService = class CheckoutService {
     productsRepository;
     usersRepository;
     couponsService;
-    constructor(ordersRepository, cartRepository, inventoryRepository, productsRepository, usersRepository, couponsService) {
+    notificationsService;
+    onlineDiscountService;
+    constructor(ordersRepository, cartRepository, inventoryRepository, productsRepository, usersRepository, couponsService, notificationsService, onlineDiscountService) {
         this.ordersRepository = ordersRepository;
         this.cartRepository = cartRepository;
         this.inventoryRepository = inventoryRepository;
         this.productsRepository = productsRepository;
         this.usersRepository = usersRepository;
         this.couponsService = couponsService;
+        this.notificationsService = notificationsService;
+        this.onlineDiscountService = onlineDiscountService;
     }
     generateOrderNumber() {
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -132,7 +138,7 @@ let CheckoutService = class CheckoutService {
                 unitMrp: item.unitMrp,
                 color: item.color,
                 size: item.size,
-                image: item.image,
+                image: item.image || product?.images?.[0] || product?.thumbnail || '',
                 itemTotal,
                 availableStock,
                 isStockAvailable,
@@ -175,8 +181,14 @@ let CheckoutService = class CheckoutService {
             }
         }
         const tax = 0;
-        const taxableSubtotal = Math.max(0, subtotal - couponDiscount);
-        const grandTotal = Math.max(0, taxableSubtotal + shippingFee);
+        const subtotalAfterCoupon = Math.max(0, subtotal - couponDiscount);
+        let onlinePaymentDiscount = 0;
+        if (this.onlineDiscountService) {
+            onlinePaymentDiscount = await this.onlineDiscountService.calculateDiscount(subtotalAfterCoupon);
+        }
+        const isExplicitCod = dto?.paymentMethod === order_schema_js_1.PaymentMethod.COD;
+        const activeOnlineDiscount = isExplicitCod ? 0 : onlinePaymentDiscount;
+        const grandTotal = Math.max(0, subtotalAfterCoupon - activeOnlineDiscount + shippingFee);
         return {
             items: itemsSummary,
             shippingAddress: dto?.shippingAddress,
@@ -191,11 +203,12 @@ let CheckoutService = class CheckoutService {
                 totalMrp,
                 totalDiscount,
                 couponDiscount,
+                onlinePaymentDiscount: activeOnlineDiscount,
                 tax,
                 shippingFee,
                 grandTotal,
             },
-            availablePaymentMethods: [order_schema_js_1.PaymentMethod.COD, order_schema_js_1.PaymentMethod.RAZORPAY, order_schema_js_1.PaymentMethod.STRIPE],
+            availablePaymentMethods: [order_schema_js_1.PaymentMethod.COD, order_schema_js_1.PaymentMethod.RAZORPAY],
             isCheckoutReady: isAllItemsInStock,
         };
     }
@@ -306,7 +319,9 @@ let CheckoutService = class CheckoutService {
             }
         }
         const billingAddress = dto.billingAddress || dto.shippingAddress;
-        const initialPaymentStatus = dto.paymentMethod === order_schema_js_1.PaymentMethod.COD ? order_schema_js_1.PaymentStatus.PENDING : order_schema_js_1.PaymentStatus.PENDING;
+        const isPaid = !!(dto.razorpayPaymentId || dto.stripePaymentIntentId);
+        const initialPaymentStatus = isPaid ? order_schema_js_1.PaymentStatus.COMPLETED : order_schema_js_1.PaymentStatus.PENDING;
+        const transactionId = dto.razorpayPaymentId || dto.stripePaymentIntentId;
         const orderData = {
             orderNumber,
             invoiceNumber,
@@ -331,6 +346,8 @@ let CheckoutService = class CheckoutService {
             paymentInfo: {
                 method: dto.paymentMethod,
                 status: initialPaymentStatus,
+                transactionId,
+                paidAt: isPaid ? new Date() : undefined,
             },
             shippingInfo: {
                 method: summary.shippingInfo.method,
@@ -344,9 +361,12 @@ let CheckoutService = class CheckoutService {
                 totalDiscount: summary.pricing.totalDiscount,
                 couponCode: summary.couponInfo?.code,
                 couponDiscount: summary.pricing.couponDiscount,
+                onlinePaymentDiscount: String(dto.paymentMethod).toUpperCase() === 'COD' ? 0 : (summary.pricing.onlinePaymentDiscount || 0),
                 tax: summary.pricing.tax,
                 shippingFee: summary.pricing.shippingFee,
-                grandTotal: summary.pricing.grandTotal,
+                grandTotal: String(dto.paymentMethod).toUpperCase() === 'COD'
+                    ? Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount + summary.pricing.shippingFee)
+                    : Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount - (summary.pricing.onlinePaymentDiscount || 0) + summary.pricing.shippingFee),
             },
             orderStatus: order_schema_js_1.OrderStatus.CONFIRMED,
             timeline: [
@@ -359,6 +379,15 @@ let CheckoutService = class CheckoutService {
             ],
         };
         const order = await this.ordersRepository.create(orderData);
+        if (order.userId) {
+            this.notificationsService.sendOrderUpdateNotification({
+                userId: order.userId.toString(),
+                recipientEmail: customerInfo.email,
+                recipientPhone: customerInfo.phone,
+                orderNumber: order.orderNumber,
+                status: order.orderStatus,
+            }).catch(() => { });
+        }
         await this.cartRepository.clearCart(userId, guestId);
         return order;
     }
@@ -403,7 +432,7 @@ let CheckoutService = class CheckoutService {
       <tr>
         <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #64748b;">${item.sku || 'NK-SKU'}</td>
         <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #0f172a;">
-          <strong>${item.name || 'NiaKylie Fashion Item'}</strong>
+          <strong>${item.name || 'Niakylie Women Collection Item'}</strong>
           ${item.color || item.size ? `<br><span style="font-size: 11px; color: #94a3b8;">Variant: ${[item.color, item.size].filter(Boolean).join(' / ')}</span>` : ''}
         </td>
         <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: bold; color: #0f172a;">${item.quantity || 1}</td>
@@ -599,6 +628,12 @@ let CheckoutService = class CheckoutService {
                   <span>-₹${(order.pricing.couponDiscount || 0).toLocaleString('en-IN')}</span>
                 </div>`
             : ''}
+          ${(order.pricing?.onlinePaymentDiscount || 0) > 0
+            ? `<div class="summary-row" style="color: #059669; font-weight: 700;">
+                  <span>Online Payment Extra Discount</span>
+                  <span>-₹${(order.pricing.onlinePaymentDiscount || 0).toLocaleString('en-IN')}</span>
+                </div>`
+            : ''}
           <div class="summary-row">
             <span>Tax (0%)</span>
             <span>₹0</span>
@@ -614,7 +649,7 @@ let CheckoutService = class CheckoutService {
         </div>
 
         <div class="footer">
-          <p style="margin: 0 0 4px 0; font-weight: 700; color: #475569;">Thank you for shopping with NiaKylie Fashion! ✨</p>
+          <p style="margin: 0 0 4px 0; font-weight: 700; color: #475569;">Thank you for shopping with Niakylie Women Collection! ✨</p>
           <p style="margin: 0; font-size: 11px;">For support or returns, email support@niakylie.com or call +91 98765 43210.</p>
         </div>
 
@@ -670,6 +705,8 @@ exports.CheckoutService = CheckoutService = __decorate([
         inventory_repository_js_1.InventoryRepository,
         products_repository_js_1.ProductsRepository,
         users_repository_js_1.UsersRepository,
-        coupons_service_js_1.CouponsService])
+        coupons_service_js_1.CouponsService,
+        notifications_service_js_1.NotificationsService,
+        online_payment_discount_service_js_1.OnlinePaymentDiscountService])
 ], CheckoutService);
 //# sourceMappingURL=checkout.service.js.map

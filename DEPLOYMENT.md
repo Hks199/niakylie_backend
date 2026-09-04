@@ -1,6 +1,6 @@
 # NiaKylie E-Commerce Backend - Production Deployment Guide
 
-This guide outlines the production deployment process for the **NiaKylie Fashion Backend API**.
+This guide outlines the production deployment process for the **Niakylie Women Collection Backend API**.
 
 ---
 

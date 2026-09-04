@@ -13,7 +13,6 @@ exports.QueryNotificationDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 const swagger_1 = require("@nestjs/swagger");
-const notification_schema_js_1 = require("../schemas/notification.schema.js");
 class QueryNotificationDto {
     page;
     limit;
@@ -40,14 +39,19 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ example: false, description: 'Filter by read status (true for read, false for unread)' }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_transformer_1.Transform)(({ value }) => value === 'true' || value === true),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        if (value === 'true' || value === true)
+            return true;
+        if (value === 'false' || value === false)
+            return false;
+        return undefined;
+    }),
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], QueryNotificationDto.prototype, "isRead", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ enum: notification_schema_js_1.NotificationType, example: notification_schema_js_1.NotificationType.ORDER_UPDATE }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'ORDER_UPDATE' }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(notification_schema_js_1.NotificationType),
     __metadata("design:type", String)
 ], QueryNotificationDto.prototype, "type", void 0);
 //# sourceMappingURL=query-notification.dto.js.map

@@ -20,20 +20,30 @@ export class MailService {
       port,
       secure: port === 465,
       auth: user && pass ? { user, pass } : undefined,
-      connectionTimeout: 3000, // 3s max TCP connection timeout
-      greetingTimeout: 3000,   // 3s max SMTP greeting timeout
-      socketTimeout: 4000,     // 4s max socket inactivity timeout
+      connectionTimeout: 10000, // 10s TCP connection timeout
+      greetingTimeout: 10000,   // 10s SMTP greeting timeout
+      socketTimeout: 15000,     // 15s socket inactivity timeout
     });
   }
 
   async sendOtpEmail(to: string, otp: string, firstName?: string): Promise<boolean> {
-    const from = this.configService.get<string>('SMTP_FROM') || '"NiaKylie Fashion" <no-reply@niakylie.com>';
+    const user = this.configService.get<string>('SMTP_USER');
+    const pass = this.configService.get<string>('SMTP_PASS');
+
+    if (!user || !pass) {
+      this.logger.warn(
+        `SMTP_USER or SMTP_PASS is missing in .env. Real email delivery to ${to} is skipped. (Dev OTP: ${otp})`,
+      );
+      return true;
+    }
+
+    const from = this.configService.get<string>('SMTP_FROM') || '"Niakylie Women Collection" <no-reply@niakylie.com>';
     const name = firstName || 'Valued Customer';
 
     // Locate NiaKylie brand logo image from backend uploads directory
     const explicitLogoPath = 'D:\\niakylie_backend\\public\\uploads\\niakylie_logo.png';
     const fallbackLogoPath = path.resolve(process.cwd(), 'public', 'uploads', 'niakylie_logo.png');
-    
+
     let logoPath = '';
     if (fs.existsSync(explicitLogoPath)) {
       logoPath = explicitLogoPath;
@@ -61,18 +71,17 @@ export class MailService {
           <!-- Header Banner -->
           <tr>
             <td style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #881337 100%); padding: 36px 24px 28px 24px; text-align: center;">
-              ${
-                hasLogo
-                  ? `
+              ${hasLogo
+        ? `
                 <div style="background-color: rgba(255, 255, 255, 0.96); display: inline-block; padding: 14px 28px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border: 1px solid rgba(212, 175, 55, 0.5); margin-bottom: 12px;">
                   <img src="cid:niakylie-logo" alt="NiaKylie Couture" style="max-width: 180px; width: 100%; height: auto; display: block; margin: 0 auto;" />
                 </div>
               `
-                  : `
+        : `
                 <h1 style="color: #d4af37; font-size: 32px; margin: 0; font-weight: 800; letter-spacing: 2px;">NIAKYLIE</h1>
                 <p style="color: #e2e8f0; font-size: 11px; margin-top: 4px; text-transform: uppercase; letter-spacing: 2px;">Women Collection</p>
               `
-              }
+      }
               <div style="height: 2px; width: 60px; background: linear-gradient(90deg, transparent, #d4af37, transparent); margin: 12px auto 0 auto;"></div>
             </td>
           </tr>
@@ -89,7 +98,7 @@ export class MailService {
               </p>
               
               <p style="color: #64748b; font-size: 13px; line-height: 1.6; margin: 0 0 24px 0; text-align: center;">
-                Thank you for choosing <strong>NiaKylie Fashion</strong>. Please use the 6-digit One-Time Passcode (OTP) below to verify your email address and secure your account:
+                Thank you for choosing <strong>Niakylie Women Collection</strong>. Please use the 6-digit One-Time Passcode (OTP) below to verify your email address and secure your account:
               </p>
 
               <!-- 6-Digit OTP Display Box -->
@@ -142,12 +151,12 @@ export class MailService {
 
     const attachments = hasLogo
       ? [
-          {
-            filename: 'niakylie_logo.png',
-            path: logoPath,
-            cid: 'niakylie-logo',
-          },
-        ]
+        {
+          filename: 'niakylie_logo.png',
+          path: logoPath,
+          cid: 'niakylie-logo',
+        },
+      ]
       : [];
 
     try {
@@ -160,7 +169,7 @@ export class MailService {
       });
 
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('SMTP Email Sending Timed Out (3.5s limit)')), 3500)
+        setTimeout(() => reject(new Error('SMTP Email Sending Timed Out (15s limit)')), 15000)
       );
 
       await Promise.race([sendPromise, timeoutPromise]);

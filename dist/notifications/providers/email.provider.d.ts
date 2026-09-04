@@ -11,6 +11,7 @@ export declare class EmailProvider {
     private readonly configService;
     private readonly logger;
     private readonly fromEmail;
+    private readonly transporter;
     constructor(configService: ConfigService);
     generateHtmlTemplate(options: EmailOptions): string;
     sendEmail(options: EmailOptions): Promise<{

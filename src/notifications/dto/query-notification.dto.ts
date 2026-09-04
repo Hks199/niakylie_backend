@@ -20,12 +20,15 @@ export class QueryNotificationDto {
 
   @ApiPropertyOptional({ example: false, description: 'Filter by read status (true for read, false for unread)' })
   @IsOptional()
-  @Transform(({ value }) => value === 'true' || value === true)
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return undefined;
+  })
   @IsBoolean()
   isRead?: boolean;
 
-  @ApiPropertyOptional({ enum: NotificationType, example: NotificationType.ORDER_UPDATE })
+  @ApiPropertyOptional({ example: 'ORDER_UPDATE' })
   @IsOptional()
-  @IsEnum(NotificationType)
-  type?: NotificationType;
+  type?: string;
 }

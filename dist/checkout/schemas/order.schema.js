@@ -216,6 +216,7 @@ let OrderPricing = class OrderPricing {
     totalDiscount;
     couponCode;
     couponDiscount;
+    onlinePaymentDiscount;
     tax;
     shippingFee;
     grandTotal;
@@ -241,6 +242,10 @@ __decorate([
     (0, mongoose_1.Prop)({ default: 0, min: 0 }),
     __metadata("design:type", Number)
 ], OrderPricing.prototype, "couponDiscount", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: 0, min: 0 }),
+    __metadata("design:type", Number)
+], OrderPricing.prototype, "onlinePaymentDiscount", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true, min: 0 }),
     __metadata("design:type", Number)

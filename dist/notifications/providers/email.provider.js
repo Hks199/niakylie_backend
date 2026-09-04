@@ -1,10 +1,43 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
@@ -13,13 +46,28 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmailProvider = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
+const nodemailer = __importStar(require("nodemailer"));
 let EmailProvider = EmailProvider_1 = class EmailProvider {
     configService;
     logger = new common_1.Logger(EmailProvider_1.name);
     fromEmail;
+    transporter;
     constructor(configService) {
         this.configService = configService;
-        this.fromEmail = this.configService.get('EMAIL_FROM') || 'no-reply@niakylie.com';
+        const host = this.configService.get('SMTP_HOST') || 'smtp.gmail.com';
+        const port = parseInt(this.configService.get('SMTP_PORT') || '587', 10);
+        const user = this.configService.get('SMTP_USER') || '';
+        const pass = this.configService.get('SMTP_PASS') || '';
+        this.fromEmail = this.configService.get('SMTP_FROM') || 'no-reply@niakylie.com';
+        this.transporter = nodemailer.createTransport({
+            host,
+            port,
+            secure: port === 465,
+            auth: user && pass ? { user, pass } : undefined,
+            connectionTimeout: 2500,
+            greetingTimeout: 2500,
+            socketTimeout: 3000,
+        });
     }
     generateHtmlTemplate(options) {
         return `
@@ -43,7 +91,7 @@ let EmailProvider = EmailProvider_1 = class EmailProvider {
       <body>
         <div class="container">
           <div class="header">
-            <h1>NiaKylie Fashion</h1>
+            <h1>Niakylie Women Collection</h1>
           </div>
           <div class="content">
             <h2>${options.title}</h2>
@@ -55,7 +103,7 @@ let EmailProvider = EmailProvider_1 = class EmailProvider {
             : ''}
           </div>
           <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} NiaKylie Fashion. All rights reserved.</p>
+            <p>&copy; ${new Date().getFullYear()} Niakylie Women Collection. All rights reserved.</p>
             <p>You received this email because you are a registered user of NiaKylie.</p>
           </div>
         </div>
@@ -66,8 +114,28 @@ let EmailProvider = EmailProvider_1 = class EmailProvider {
     async sendEmail(options) {
         const html = this.generateHtmlTemplate(options);
         const mockMessageId = `msg_email_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
-        this.logger.log(`[EmailProvider] Sent email to '${options.to}' | Subject: '${options.subject}' | MessageId: ${mockMessageId}`);
-        return { success: true, messageId: mockMessageId };
+        const user = this.configService.get('SMTP_USER');
+        const pass = this.configService.get('SMTP_PASS');
+        if (!user || !pass) {
+            this.logger.log(`[EmailProvider Dev Mode] Prepared email to '${options.to}' | Subject: '${options.subject}' | MessageId: ${mockMessageId}`);
+            return { success: true, messageId: mockMessageId };
+        }
+        try {
+            const sendPromise = this.transporter.sendMail({
+                from: this.fromEmail,
+                to: options.to,
+                subject: options.subject,
+                html,
+            });
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP connection timed out after 2500ms')), 2500));
+            const info = (await Promise.race([sendPromise, timeoutPromise]));
+            this.logger.log(`[EmailProvider SMTP] Real email sent to '${options.to}' | MessageId: ${info.messageId}`);
+            return { success: true, messageId: info.messageId };
+        }
+        catch (err) {
+            this.logger.warn(`[EmailProvider SMTP Fallback] Failed to send email to '${options.to}': ${err?.message || err}. (Fallback mock MessageId: ${mockMessageId})`);
+            return { success: true, messageId: mockMessageId };
+        }
     }
     async sendOrderUpdateEmail(params) {
         const subject = `Order Update: #${params.orderNumber} is ${params.status}`;

@@ -57,7 +57,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateBlogDto.prototype, "coverImage", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ example: 'NiaKylie Fashion Editorial' }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Niakylie Women Collection Editorial' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)

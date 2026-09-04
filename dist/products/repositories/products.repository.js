@@ -65,54 +65,110 @@ let ProductsRepository = class ProductsRepository {
             }
         }
         const skip = (page - 1) * limit;
-        let resolvedCategoryId = undefined;
-        if (categoryId && mongoose_2.Types.ObjectId.isValid(categoryId)) {
-            resolvedCategoryId = new mongoose_2.Types.ObjectId(categoryId);
-        }
-        else if (category) {
-            if (mongoose_2.Types.ObjectId.isValid(category)) {
-                resolvedCategoryId = new mongoose_2.Types.ObjectId(category);
-            }
-            else {
-                const foundCat = await this.productModel.db.collection('categories').findOne({
-                    $or: [
-                        { slug: category.toLowerCase().trim() },
-                        { name: new RegExp(`^${category.trim()}$`, 'i') },
-                    ],
-                    isDeleted: { $ne: true },
-                });
-                if (foundCat) {
-                    resolvedCategoryId = foundCat._id;
+        let categoryIdFilter = undefined;
+        const catInput = categoryId || category;
+        if (catInput) {
+            const catArr = catInput.split(',').map((s) => s.trim()).filter(Boolean);
+            const allResolvedIds = [];
+            for (const item of catArr) {
+                if (mongoose_2.Types.ObjectId.isValid(item)) {
+                    const objId = new mongoose_2.Types.ObjectId(item);
+                    allResolvedIds.push(objId, objId.toString());
+                    const childCats = await this.productModel.db.collection('categories').find({
+                        $or: [
+                            { parentId: objId },
+                            { parentId: objId.toString() },
+                            { 'ancestors._id': objId },
+                            { 'ancestors._id': objId.toString() },
+                        ],
+                        isDeleted: { $ne: true },
+                    }).toArray();
+                    for (const c of childCats) {
+                        allResolvedIds.push(c._id, c._id.toString(), c.slug, c.name);
+                    }
+                }
+                else {
+                    const cleanCatStr = item.toLowerCase().trim();
+                    const singularStr = cleanCatStr.replace(/s$/, '');
+                    const pluralStr = `${singularStr}s`;
+                    const foundCats = await this.productModel.db.collection('categories').find({
+                        $or: [
+                            { slug: cleanCatStr },
+                            { slug: singularStr },
+                            { slug: pluralStr },
+                            { name: new RegExp(`^${cleanCatStr}$`, 'i') },
+                            { name: new RegExp(`^${singularStr}$`, 'i') },
+                            { name: new RegExp(`^${pluralStr}$`, 'i') },
+                        ],
+                        isDeleted: { $ne: true },
+                    }).toArray();
+                    const rootIds = foundCats.map((c) => c._id);
+                    const rootIdStrs = rootIds.map((id) => id.toString());
+                    const catSlugsAndNames = [
+                        cleanCatStr,
+                        singularStr,
+                        pluralStr,
+                        ...foundCats.flatMap((c) => [c.slug, c.name]),
+                    ];
+                    for (const c of foundCats) {
+                        allResolvedIds.push(c._id, c._id.toString(), c.slug, c.name);
+                    }
+                    const childCats = await this.productModel.db.collection('categories').find({
+                        $or: [
+                            { parentId: { $in: [...rootIds, ...rootIdStrs] } },
+                            { 'ancestors._id': { $in: [...rootIds, ...rootIdStrs] } },
+                            { 'ancestors.slug': { $in: catSlugsAndNames } },
+                            { slug: new RegExp(singularStr, 'i') },
+                            { name: new RegExp(singularStr, 'i') },
+                        ],
+                        isDeleted: { $ne: true },
+                    }).toArray();
+                    for (const c of childCats) {
+                        allResolvedIds.push(c._id, c._id.toString(), c.slug, c.name);
+                    }
                 }
             }
-        }
-        let resolvedBrandId = undefined;
-        if (brandId && mongoose_2.Types.ObjectId.isValid(brandId)) {
-            resolvedBrandId = new mongoose_2.Types.ObjectId(brandId);
-        }
-        else if (brand) {
-            if (mongoose_2.Types.ObjectId.isValid(brand)) {
-                resolvedBrandId = new mongoose_2.Types.ObjectId(brand);
+            if (allResolvedIds.length > 0) {
+                categoryIdFilter = { $in: Array.from(new Set(allResolvedIds)) };
             }
-            else {
-                const foundBrand = await this.productModel.db.collection('brands').findOne({
-                    $or: [
-                        { slug: brand.toLowerCase().trim() },
-                        { name: new RegExp(`^${brand.trim()}$`, 'i') },
-                    ],
-                });
-                if (foundBrand) {
-                    resolvedBrandId = foundBrand._id;
+        }
+        let brandIdFilter = undefined;
+        const brandInput = brandId || brand;
+        if (brandInput) {
+            const brandArr = brandInput.split(',').map((s) => s.trim()).filter(Boolean);
+            const allBrandIds = [];
+            for (const b of brandArr) {
+                if (mongoose_2.Types.ObjectId.isValid(b)) {
+                    const objId = new mongoose_2.Types.ObjectId(b);
+                    allBrandIds.push(objId, objId.toString());
                 }
+                else {
+                    const foundBrands = await this.productModel.db.collection('brands').find({
+                        $or: [
+                            { slug: b.toLowerCase().trim() },
+                            { name: new RegExp(`^${b.trim()}$`, 'i') },
+                        ],
+                    }).toArray();
+                    for (const fb of foundBrands) {
+                        allBrandIds.push(fb._id, fb._id.toString(), fb.name, fb.slug);
+                    }
+                }
+            }
+            if (allBrandIds.length > 0) {
+                brandIdFilter = { $in: Array.from(new Set(allBrandIds)) };
             }
         }
         const baseMatch = { isDeleted: false };
         if (status !== undefined)
             baseMatch.status = status;
-        if (resolvedCategoryId)
-            baseMatch.categoryId = resolvedCategoryId;
-        if (resolvedBrandId)
-            baseMatch.brandId = resolvedBrandId;
+        if (categoryIdFilter) {
+            baseMatch.$or = [
+                { categoryId: categoryIdFilter },
+                { category: categoryIdFilter },
+            ];
+        }
+        if (brandIdFilter)
+            baseMatch.brandId = brandIdFilter;
         if (material)
             baseMatch.material = { $regex: material, $options: 'i' };
         if (pattern)
@@ -130,18 +186,28 @@ let ProductsRepository = class ProductsRepository {
         if (rating !== undefined)
             baseMatch.averageRating = { $gte: rating };
         if (search) {
-            baseMatch.$or = [
+            const searchOr = [
                 { name: { $regex: search, $options: 'i' } },
                 { description: { $regex: search, $options: 'i' } },
                 { tags: { $regex: search, $options: 'i' } },
                 { material: { $regex: search, $options: 'i' } },
             ];
+            if (baseMatch.$or) {
+                const catOr = baseMatch.$or;
+                delete baseMatch.$or;
+                baseMatch.$and = [{ $or: catOr }, { $or: searchOr }];
+            }
+            else {
+                baseMatch.$or = searchOr;
+            }
         }
         const variantMatch = { 'variants.isActive': true };
         if (minPrice !== undefined)
             variantMatch['variants.offerPrice'] = { ...(variantMatch['variants.offerPrice'] || {}), $gte: minPrice };
         if (maxPrice !== undefined)
             variantMatch['variants.offerPrice'] = { ...(variantMatch['variants.offerPrice'] || {}), $lte: maxPrice };
+        if (discount !== undefined)
+            variantMatch['variants.discount'] = { $gte: discount };
         const colorInput = colors || color;
         if (colorInput) {
             const colorArr = colorInput.split(',').map((c) => c.trim()).filter(Boolean);
@@ -155,7 +221,7 @@ let ProductsRepository = class ProductsRepository {
                 variantMatch['variants.size'] = { $in: sizeArr };
             }
         }
-        const hasVariantFilter = Object.keys(variantMatch).length > 1 || minPrice !== undefined || maxPrice !== undefined;
+        const hasVariantFilter = Object.keys(variantMatch).length > 1 || minPrice !== undefined || maxPrice !== undefined || discount !== undefined;
         const sortMap = {
             price: 'minOfferPrice',
             name: 'name',

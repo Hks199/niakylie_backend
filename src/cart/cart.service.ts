@@ -137,10 +137,12 @@ export class CartService {
       cart.items[existingIndex].quantity = newQty;
     } else {
       const image = variant.images?.[0] || product.images?.[0] || '';
+      const productName = product.name || (product as any).title || 'Fashion Garment';
       cart.items.push({
         productId: product._id as Types.ObjectId,
         variantId: variant._id as Types.ObjectId,
         sku: targetSku,
+        name: productName,
         quantity: dto.quantity,
         unitPrice: variant.offerPrice,
         unitMrp: variant.mrp,
@@ -152,7 +154,8 @@ export class CartService {
     }
 
     this.recalculateCart(cart);
-    return cart.save();
+    await cart.save();
+    return this.getCart(userId, guestId);
   }
 
   async updateItemQuantity(

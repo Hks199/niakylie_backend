@@ -25,6 +25,7 @@ var NotificationChannel;
     NotificationChannel["EMAIL"] = "EMAIL";
     NotificationChannel["IN_APP"] = "IN_APP";
     NotificationChannel["SMS"] = "SMS";
+    NotificationChannel["PUSH"] = "PUSH";
 })(NotificationChannel || (exports.NotificationChannel = NotificationChannel = {}));
 var NotificationDeliveryStatus;
 (function (NotificationDeliveryStatus) {

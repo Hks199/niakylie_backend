@@ -9,6 +9,8 @@ import { EmailProvider } from './providers/email.provider.js';
 import { SmsProvider } from './providers/sms.provider.js';
 import { UsersModule } from '../users/users.module.js';
 
+import { NotificationEventsService } from './notification-events.service.js';
+
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Notification.name, schema: NotificationSchema }]),
@@ -18,9 +20,10 @@ import { UsersModule } from '../users/users.module.js';
   providers: [
     NotificationsService,
     NotificationsRepository,
+    NotificationEventsService,
     EmailProvider,
     SmsProvider,
   ],
-  exports: [NotificationsService, EmailProvider, SmsProvider],
+  exports: [NotificationsService, NotificationEventsService, EmailProvider, SmsProvider],
 })
 export class NotificationsModule {}

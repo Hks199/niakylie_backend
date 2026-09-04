@@ -9,6 +9,7 @@ export declare class CartItem {
     unitMrp: number;
     color?: string;
     size?: string;
+    name?: string;
     image?: string;
     isSavedForLater: boolean;
 }
@@ -85,6 +86,15 @@ export declare const CartItemSchema: MongooseSchema<CartItem, import("mongoose")
         id: string;
     }>> | undefined;
     size?: import("mongoose").SchemaDefinitionProperty<string | undefined, CartItem, Document<unknown, {}, CartItem, {
+        id: string;
+    }, import("mongoose").DefaultSchemaOptions> & Omit<CartItem & {
+        _id: Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
+        id: string;
+    }>> | undefined;
+    name?: import("mongoose").SchemaDefinitionProperty<string | undefined, CartItem, Document<unknown, {}, CartItem, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<CartItem & {
         _id: Types.ObjectId;

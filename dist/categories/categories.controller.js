@@ -16,7 +16,9 @@ exports.CategoriesController = void 0;
 const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
 const swagger_1 = require("@nestjs/swagger");
+const multer_1 = require("multer");
 const categories_service_js_1 = require("./categories.service.js");
+const s3_service_js_1 = require("../s3/s3.service.js");
 const create_category_dto_js_1 = require("./dto/create-category.dto.js");
 const update_category_dto_js_1 = require("./dto/update-category.dto.js");
 const query_category_dto_js_1 = require("./dto/query-category.dto.js");
@@ -35,16 +37,22 @@ const validateCategoryFile = (file) => {
 };
 let CategoriesController = class CategoriesController {
     categoriesService;
-    constructor(categoriesService) {
+    s3Service;
+    constructor(categoriesService, s3Service) {
         this.categoriesService = categoriesService;
+        this.s3Service = s3Service;
     }
     async create(createDto, files) {
         const imageFile = files?.image?.[0];
         const bannerFile = files?.banner?.[0];
         validateCategoryFile(imageFile);
         validateCategoryFile(bannerFile);
-        const imagePath = imageFile ? `/uploads/categories/${imageFile.filename}` : undefined;
-        const bannerPath = bannerFile ? `/uploads/categories/${bannerFile.filename}` : undefined;
+        const imagePath = imageFile
+            ? await this.s3Service.uploadBuffer(imageFile.buffer, 'categories', imageFile.originalname, imageFile.mimetype)
+            : undefined;
+        const bannerPath = bannerFile
+            ? await this.s3Service.uploadBuffer(bannerFile.buffer, 'categories/banners', bannerFile.originalname, bannerFile.mimetype)
+            : undefined;
         return this.categoriesService.create(createDto, imagePath, bannerPath);
     }
     async findAll(queryDto) {
@@ -61,8 +69,12 @@ let CategoriesController = class CategoriesController {
         const bannerFile = files?.banner?.[0];
         validateCategoryFile(imageFile);
         validateCategoryFile(bannerFile);
-        const imagePath = imageFile ? `/uploads/categories/${imageFile.filename}` : undefined;
-        const bannerPath = bannerFile ? `/uploads/categories/${bannerFile.filename}` : undefined;
+        const imagePath = imageFile
+            ? await this.s3Service.uploadBuffer(imageFile.buffer, 'categories', imageFile.originalname, imageFile.mimetype)
+            : undefined;
+        const bannerPath = bannerFile
+            ? await this.s3Service.uploadBuffer(bannerFile.buffer, 'categories/banners', bannerFile.originalname, bannerFile.mimetype)
+            : undefined;
         return this.categoriesService.update(id, updateDto, imagePath, bannerPath);
     }
     async remove(id) {
@@ -81,7 +93,7 @@ __decorate([
     (0, common_1.UseInterceptors)((0, platform_express_1.FileFieldsInterceptor)([
         { name: 'image', maxCount: 1 },
         { name: 'banner', maxCount: 1 },
-    ])),
+    ], { storage: (0, multer_1.memoryStorage)() })),
     (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiOperation)({ summary: 'Create a new category with optional thumbnail & banner files (Admin only)' }),
     (0, swagger_1.ApiBody)({
@@ -155,7 +167,7 @@ __decorate([
     (0, common_1.UseInterceptors)((0, platform_express_1.FileFieldsInterceptor)([
         { name: 'image', maxCount: 1 },
         { name: 'banner', maxCount: 1 },
-    ])),
+    ], { storage: (0, multer_1.memoryStorage)() })),
     (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiOperation)({ summary: 'Update category details and re-calculate ancestor tree if parentId changes (Admin only)' }),
     (0, swagger_1.ApiParam)({ name: 'id', description: 'Category Mongo ObjectId' }),
@@ -225,6 +237,7 @@ __decorate([
 exports.CategoriesController = CategoriesController = __decorate([
     (0, swagger_1.ApiTags)('Categories'),
     (0, common_1.Controller)('categories'),
-    __metadata("design:paramtypes", [categories_service_js_1.CategoriesService])
+    __metadata("design:paramtypes", [categories_service_js_1.CategoriesService,
+        s3_service_js_1.S3Service])
 ], CategoriesController);
 //# sourceMappingURL=categories.controller.js.map

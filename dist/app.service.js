@@ -11,7 +11,7 @@ const common_1 = require("@nestjs/common");
 let AppService = class AppService {
     getAppInfo() {
         return {
-            name: 'NiaKylie Fashion API',
+            name: 'Niakylie Women Collection API',
             version: '1.0.0',
             description: "Women's Fashion E-Commerce Platform API",
             status: 'running',

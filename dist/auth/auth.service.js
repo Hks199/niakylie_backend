@@ -166,7 +166,8 @@ let AuthService = class AuthService {
     }
     async registerAdmin(registerAdminDto) {
         const { email, password, firstName, lastName, adminSecretKey } = registerAdminDto;
-        const configuredSecret = this.configService.get('ADMIN_SECRET_KEY');
+        const configuredSecret = this.configService.get('ADMIN_SECRET_KEY') ||
+            this.configService.get('admin.secretKey');
         if (configuredSecret && adminSecretKey !== configuredSecret) {
             throw new common_1.UnauthorizedException('Invalid admin registration secret key');
         }

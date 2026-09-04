@@ -21,6 +21,7 @@ let CartItem = class CartItem {
     unitMrp;
     color;
     size;
+    name;
     image;
     isSavedForLater;
 };
@@ -57,6 +58,10 @@ __decorate([
     (0, mongoose_1.Prop)({ trim: true }),
     __metadata("design:type", String)
 ], CartItem.prototype, "size", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ trim: true }),
+    __metadata("design:type", String)
+], CartItem.prototype, "name", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ trim: true }),
     __metadata("design:type", String)

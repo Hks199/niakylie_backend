@@ -360,6 +360,7 @@ export declare class OrderPricing {
     totalDiscount: number;
     couponCode?: string;
     couponDiscount: number;
+    onlinePaymentDiscount: number;
     tax: number;
     shippingFee: number;
     grandTotal: number;
@@ -410,6 +411,15 @@ export declare const OrderPricingSchema: MongooseSchema<OrderPricing, import("mo
         id: string;
     }>> | undefined;
     couponDiscount?: import("mongoose").SchemaDefinitionProperty<number, OrderPricing, Document<unknown, {}, OrderPricing, {
+        id: string;
+    }, import("mongoose").DefaultSchemaOptions> & Omit<OrderPricing & {
+        _id: Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
+        id: string;
+    }>> | undefined;
+    onlinePaymentDiscount?: import("mongoose").SchemaDefinitionProperty<number, OrderPricing, Document<unknown, {}, OrderPricing, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<OrderPricing & {
         _id: Types.ObjectId;

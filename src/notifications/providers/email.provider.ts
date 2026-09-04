@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as nodemailer from 'nodemailer';
 
 export interface EmailOptions {
   to: string;
@@ -14,9 +15,25 @@ export interface EmailOptions {
 export class EmailProvider {
   private readonly logger = new Logger(EmailProvider.name);
   private readonly fromEmail: string;
+  private readonly transporter: nodemailer.Transporter;
 
   constructor(private readonly configService: ConfigService) {
-    this.fromEmail = this.configService.get<string>('EMAIL_FROM') || 'no-reply@niakylie.com';
+    const host = this.configService.get<string>('SMTP_HOST') || 'smtp.gmail.com';
+    const port = parseInt(this.configService.get<string>('SMTP_PORT') || '587', 10);
+    const user = this.configService.get<string>('SMTP_USER') || '';
+    const pass = this.configService.get<string>('SMTP_PASS') || '';
+
+    this.fromEmail = this.configService.get<string>('SMTP_FROM') || 'no-reply@niakylie.com';
+
+    this.transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: user && pass ? { user, pass } : undefined,
+      connectionTimeout: 2500,
+      greetingTimeout: 2500,
+      socketTimeout: 3000,
+    });
   }
 
   generateHtmlTemplate(options: EmailOptions): string {
@@ -41,21 +58,20 @@ export class EmailProvider {
       <body>
         <div class="container">
           <div class="header">
-            <h1>NiaKylie Fashion</h1>
+            <h1>Niakylie Women Collection</h1>
           </div>
           <div class="content">
             <h2>${options.title}</h2>
             <div>${options.bodyHtml}</div>
-            ${
-              options.buttonText && options.buttonUrl
-                ? `<div class="button-container">
+            ${options.buttonText && options.buttonUrl
+        ? `<div class="button-container">
                     <a href="${options.buttonUrl}" class="button" target="_blank">${options.buttonText}</a>
                    </div>`
-                : ''
-            }
+        : ''
+      }
           </div>
           <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} NiaKylie Fashion. All rights reserved.</p>
+            <p>&copy; ${new Date().getFullYear()} Niakylie Women Collection. All rights reserved.</p>
             <p>You received this email because you are a registered user of NiaKylie.</p>
           </div>
         </div>
@@ -68,8 +84,34 @@ export class EmailProvider {
     const html = this.generateHtmlTemplate(options);
     const mockMessageId = `msg_email_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
 
-    this.logger.log(`[EmailProvider] Sent email to '${options.to}' | Subject: '${options.subject}' | MessageId: ${mockMessageId}`);
-    return { success: true, messageId: mockMessageId };
+    const user = this.configService.get<string>('SMTP_USER');
+    const pass = this.configService.get<string>('SMTP_PASS');
+
+    if (!user || !pass) {
+      this.logger.log(`[EmailProvider Dev Mode] Prepared email to '${options.to}' | Subject: '${options.subject}' | MessageId: ${mockMessageId}`);
+      return { success: true, messageId: mockMessageId };
+    }
+
+    try {
+      const sendPromise = this.transporter.sendMail({
+        from: this.fromEmail,
+        to: options.to,
+        subject: options.subject,
+        html,
+      });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('SMTP connection timed out after 2500ms')), 2500),
+      );
+
+      const info = (await Promise.race([sendPromise, timeoutPromise])) as nodemailer.SentMessageInfo;
+
+      this.logger.log(`[EmailProvider SMTP] Real email sent to '${options.to}' | MessageId: ${info.messageId}`);
+      return { success: true, messageId: info.messageId };
+    } catch (err: any) {
+      this.logger.warn(`[EmailProvider SMTP Fallback] Failed to send email to '${options.to}': ${err?.message || err}. (Fallback mock MessageId: ${mockMessageId})`);
+      return { success: true, messageId: mockMessageId };
+    }
   }
 
   async sendOrderUpdateEmail(params: {

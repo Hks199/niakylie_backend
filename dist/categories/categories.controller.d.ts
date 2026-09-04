@@ -1,10 +1,12 @@
 import { CategoriesService } from './categories.service.js';
+import { S3Service } from '../s3/s3.service.js';
 import { CreateCategoryDto } from './dto/create-category.dto.js';
 import { UpdateCategoryDto } from './dto/update-category.dto.js';
 import { QueryCategoryDto } from './dto/query-category.dto.js';
 export declare class CategoriesController {
     private readonly categoriesService;
-    constructor(categoriesService: CategoriesService);
+    private readonly s3Service;
+    constructor(categoriesService: CategoriesService, s3Service: S3Service);
     create(createDto: CreateCategoryDto, files: {
         image?: Express.Multer.File[];
         banner?: Express.Multer.File[];

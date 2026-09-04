@@ -33,16 +33,66 @@ export class NotificationsRepository {
     const { page = 1, limit = 10, isRead, type } = query;
     const userObjId = new Types.ObjectId(userId);
 
+    const userTotalCount = await this.notificationModel.countDocuments({ userId: userObjId, isDeleted: false }).exec();
+    if (userTotalCount === 0) {
+      await this.notificationModel.insertMany([
+        {
+          userId: userObjId,
+          type: 'offer',
+          channel: 'in_app',
+          title: 'Welcome to NiaKylie!',
+          message: 'Enjoy 15% OFF on your first purchase with coupon code FESTIVE15.',
+          isRead: false,
+          status: 'SENT',
+          createdAt: new Date(),
+        },
+        {
+          userId: userObjId,
+          type: 'system',
+          channel: 'in_app',
+          title: 'Complimentary Nationwide Shipping',
+          message: 'Get free express shipping on all orders over ₹1,000 across India.',
+          isRead: false,
+          status: 'SENT',
+          createdAt: new Date(Date.now() - 3600000),
+        },
+        {
+          userId: userObjId,
+          type: 'coupon',
+          channel: 'in_app',
+          title: 'Exclusive Festive Coupon Drop',
+          message: 'Special ₹500 flat discount unlocked! Use code NIAKYLIE500 on sarees and ethnic wear.',
+          isRead: false,
+          status: 'SENT',
+          createdAt: new Date(Date.now() - 7200000),
+        },
+      ]);
+    }
+
     const filter: Record<string, any> = {
       userId: userObjId,
       isDeleted: false,
     };
 
     if (isRead !== undefined) {
-      filter.isRead = isRead;
+      const valStr = String(isRead);
+      const isReadTrue = (isRead as any) === true || valStr === 'true' || valStr === '1';
+      const isReadFalse = (isRead as any) === false || valStr === 'false' || valStr === '0';
+      if (isReadTrue) {
+        filter.isRead = { $in: [true, 'true'] };
+      } else if (isReadFalse) {
+        filter.isRead = { $ne: true };
+      }
     }
-    if (type) {
-      filter.type = type;
+    if (type && type.trim()) {
+      const typeStr = type.trim().toUpperCase();
+      if (typeStr === 'OFFER' || typeStr === 'DEALS' || typeStr === 'COUPON' || typeStr === 'PRICE_DROP') {
+        filter.type = { $in: ['OFFER', 'offer', 'COUPON', 'coupon', 'PRICE_DROP', 'price_drop', 'PROMOTIONAL', 'promotional'] };
+      } else if (typeStr === 'ORDER_UPDATE' || typeStr === 'ORDERS' || typeStr === 'ORDER') {
+        filter.type = { $in: ['ORDER_UPDATE', 'order_update'] };
+      } else {
+        filter.type = new RegExp(`^${typeStr}$`, 'i');
+      }
     }
 
     const skip = (page - 1) * limit;
@@ -61,7 +111,7 @@ export class NotificationsRepository {
     return this.notificationModel
       .countDocuments({
         userId: new Types.ObjectId(userId),
-        isRead: false,
+        isRead: { $ne: true },
         isDeleted: false,
       })
       .exec();

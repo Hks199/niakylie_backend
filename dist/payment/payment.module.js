@@ -11,10 +11,13 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const config_1 = require("@nestjs/config");
 const payment_transaction_schema_js_1 = require("./schemas/payment-transaction.schema.js");
+const online_payment_discount_schema_js_1 = require("./schemas/online-payment-discount.schema.js");
 const payment_transactions_repository_js_1 = require("./repositories/payment-transactions.repository.js");
+const online_payment_discount_repository_js_1 = require("./repositories/online-payment-discount.repository.js");
 const razorpay_service_js_1 = require("./providers/razorpay.service.js");
 const stripe_service_js_1 = require("./providers/stripe.service.js");
 const payment_service_js_1 = require("./payment.service.js");
+const online_payment_discount_service_js_1 = require("./online-payment-discount.service.js");
 const payment_controller_js_1 = require("./payment.controller.js");
 const checkout_module_js_1 = require("../checkout/checkout.module.js");
 let PaymentModule = class PaymentModule {
@@ -25,6 +28,7 @@ exports.PaymentModule = PaymentModule = __decorate([
         imports: [
             mongoose_1.MongooseModule.forFeature([
                 { name: payment_transaction_schema_js_1.PaymentTransaction.name, schema: payment_transaction_schema_js_1.PaymentTransactionSchema },
+                { name: online_payment_discount_schema_js_1.OnlinePaymentDiscount.name, schema: online_payment_discount_schema_js_1.OnlinePaymentDiscountSchema },
             ]),
             config_1.ConfigModule,
             checkout_module_js_1.CheckoutModule,
@@ -33,10 +37,19 @@ exports.PaymentModule = PaymentModule = __decorate([
         providers: [
             payment_service_js_1.PaymentService,
             payment_transactions_repository_js_1.PaymentTransactionsRepository,
+            online_payment_discount_service_js_1.OnlinePaymentDiscountService,
+            online_payment_discount_repository_js_1.OnlinePaymentDiscountRepository,
             razorpay_service_js_1.RazorpayService,
             stripe_service_js_1.StripeService,
         ],
-        exports: [payment_service_js_1.PaymentService, payment_transactions_repository_js_1.PaymentTransactionsRepository, razorpay_service_js_1.RazorpayService, stripe_service_js_1.StripeService],
+        exports: [
+            payment_service_js_1.PaymentService,
+            payment_transactions_repository_js_1.PaymentTransactionsRepository,
+            online_payment_discount_service_js_1.OnlinePaymentDiscountService,
+            online_payment_discount_repository_js_1.OnlinePaymentDiscountRepository,
+            razorpay_service_js_1.RazorpayService,
+            stripe_service_js_1.StripeService,
+        ],
     })
 ], PaymentModule);
 //# sourceMappingURL=payment.module.js.map

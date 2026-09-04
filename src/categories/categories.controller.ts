@@ -27,7 +27,9 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 
+import { memoryStorage } from 'multer';
 import { CategoriesService } from './categories.service.js';
+import { S3Service } from '../s3/s3.service.js';
 import { CreateCategoryDto } from './dto/create-category.dto.js';
 import { UpdateCategoryDto } from './dto/update-category.dto.js';
 import { QueryCategoryDto } from './dto/query-category.dto.js';
@@ -50,17 +52,23 @@ const validateCategoryFile = (file?: Express.Multer.File) => {
 @ApiTags('Categories')
 @Controller('categories')
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) {}
+  constructor(
+    private readonly categoriesService: CategoriesService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, 'admin' as any)
   @ApiBearerAuth('JWT-auth')
   @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'image', maxCount: 1 },
-      { name: 'banner', maxCount: 1 },
-    ]),
+    FileFieldsInterceptor(
+      [
+        { name: 'image', maxCount: 1 },
+        { name: 'banner', maxCount: 1 },
+      ],
+      { storage: memoryStorage() },
+    ),
   )
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Create a new category with optional thumbnail & banner files (Admin only)' })
@@ -101,8 +109,12 @@ export class CategoriesController {
     validateCategoryFile(imageFile);
     validateCategoryFile(bannerFile);
 
-    const imagePath = imageFile ? `/uploads/categories/${imageFile.filename}` : undefined;
-    const bannerPath = bannerFile ? `/uploads/categories/${bannerFile.filename}` : undefined;
+    const imagePath = imageFile
+      ? await this.s3Service.uploadBuffer(imageFile.buffer, 'categories', imageFile.originalname, imageFile.mimetype)
+      : undefined;
+    const bannerPath = bannerFile
+      ? await this.s3Service.uploadBuffer(bannerFile.buffer, 'categories/banners', bannerFile.originalname, bannerFile.mimetype)
+      : undefined;
 
     return this.categoriesService.create(createDto, imagePath, bannerPath);
   }
@@ -141,10 +153,13 @@ export class CategoriesController {
   @Roles(Role.ADMIN, 'admin' as any)
   @ApiBearerAuth('JWT-auth')
   @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'image', maxCount: 1 },
-      { name: 'banner', maxCount: 1 },
-    ]),
+    FileFieldsInterceptor(
+      [
+        { name: 'image', maxCount: 1 },
+        { name: 'banner', maxCount: 1 },
+      ],
+      { storage: memoryStorage() },
+    ),
   )
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update category details and re-calculate ancestor tree if parentId changes (Admin only)' })
@@ -187,8 +202,12 @@ export class CategoriesController {
     validateCategoryFile(imageFile);
     validateCategoryFile(bannerFile);
 
-    const imagePath = imageFile ? `/uploads/categories/${imageFile.filename}` : undefined;
-    const bannerPath = bannerFile ? `/uploads/categories/${bannerFile.filename}` : undefined;
+    const imagePath = imageFile
+      ? await this.s3Service.uploadBuffer(imageFile.buffer, 'categories', imageFile.originalname, imageFile.mimetype)
+      : undefined;
+    const bannerPath = bannerFile
+      ? await this.s3Service.uploadBuffer(bannerFile.buffer, 'categories/banners', bannerFile.originalname, bannerFile.mimetype)
+      : undefined;
 
     return this.categoriesService.update(id, updateDto, imagePath, bannerPath);
   }

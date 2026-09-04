@@ -15,8 +15,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
+const multer_1 = require("multer");
 const swagger_1 = require("@nestjs/swagger");
 const users_service_js_1 = require("./users.service.js");
+const s3_service_js_1 = require("../s3/s3.service.js");
 const update_profile_dto_js_1 = require("./dto/update-profile.dto.js");
 const address_dto_js_1 = require("./dto/address.dto.js");
 const notification_preference_dto_js_1 = require("./dto/notification-preference.dto.js");
@@ -25,8 +27,10 @@ const index_js_1 = require("../shared/index.js");
 const user_schema_js_1 = require("./schemas/user.schema.js");
 let UsersController = class UsersController {
     usersService;
-    constructor(usersService) {
+    s3Service;
+    constructor(usersService, s3Service) {
         this.usersService = usersService;
+        this.s3Service = s3Service;
     }
     async getProfile(user) {
         return user;
@@ -35,7 +39,7 @@ let UsersController = class UsersController {
         return this.usersService.updateProfile(user.id, updateDto);
     }
     async uploadAvatar(user, file) {
-        const filePath = `/uploads/avatars/${file.filename}`;
+        const filePath = await this.s3Service.uploadBuffer(file.buffer, 'avatars', file.originalname, file.mimetype);
         return this.usersService.updateAvatar(user.id, filePath);
     }
     async getAddresses(user) {
@@ -113,7 +117,7 @@ __decorate([
 ], UsersController.prototype, "updateProfile", null);
 __decorate([
     (0, common_1.Patch)('profile/avatar'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('avatar')),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('avatar', { storage: (0, multer_1.memoryStorage)() })),
     (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiOperation)({ summary: 'Upload avatar image' }),
     (0, swagger_1.ApiBody)({
@@ -267,6 +271,7 @@ exports.UsersController = UsersController = __decorate([
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard),
     (0, common_1.Controller)('users'),
-    __metadata("design:paramtypes", [users_service_js_1.UsersService])
+    __metadata("design:paramtypes", [users_service_js_1.UsersService,
+        s3_service_js_1.S3Service])
 ], UsersController);
 //# sourceMappingURL=users.controller.js.map

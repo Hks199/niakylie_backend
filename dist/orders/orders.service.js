@@ -17,6 +17,7 @@ const products_repository_js_1 = require("../products/repositories/products.repo
 const inventory_repository_js_1 = require("../inventory/repositories/inventory.repository.js");
 const inventory_schema_js_1 = require("../inventory/schemas/inventory.schema.js");
 const order_schema_js_1 = require("../checkout/schemas/order.schema.js");
+const notifications_service_js_1 = require("../notifications/notifications.service.js");
 const VALID_TRANSITIONS = {
     [order_schema_js_1.OrderStatus.PENDING]: [order_schema_js_1.OrderStatus.CONFIRMED, order_schema_js_1.OrderStatus.CANCELLED],
     [order_schema_js_1.OrderStatus.CONFIRMED]: [order_schema_js_1.OrderStatus.PACKED, order_schema_js_1.OrderStatus.SHIPPED, order_schema_js_1.OrderStatus.CANCELLED],
@@ -32,10 +33,12 @@ let OrdersService = class OrdersService {
     ordersRepository;
     productsRepository;
     inventoryRepository;
-    constructor(ordersRepository, productsRepository, inventoryRepository) {
+    notificationsService;
+    constructor(ordersRepository, productsRepository, inventoryRepository, notificationsService) {
         this.ordersRepository = ordersRepository;
         this.productsRepository = productsRepository;
         this.inventoryRepository = inventoryRepository;
+        this.notificationsService = notificationsService;
     }
     async resolveOrder(orderIdOrNumber, userId) {
         let order = await this.ordersRepository.findByOrderNumber(orderIdOrNumber);
@@ -114,6 +117,15 @@ let OrdersService = class OrdersService {
                 }
                 await this.productsRepository.incrementVariantStock(itemPId, itemVId, itemSku, qty);
             }
+        }
+        if (updated && order.userId) {
+            this.notificationsService.sendOrderUpdateNotification({
+                userId: order.userId.toString(),
+                recipientEmail: order.customerInfo.email,
+                recipientPhone: order.customerInfo.phone,
+                orderNumber: order.orderNumber,
+                status: dto.status,
+            }).catch(() => { });
         }
         return updated;
     }
@@ -241,7 +253,7 @@ let OrdersService = class OrdersService {
       <body>
         <div class="header">
           <div>
-            <div class="brand">NiaKylie Fashion</div>
+            <div class="brand">Niakylie Women Collection</div>
             <p style="color:#888;margin:0">Your fashion destination</p>
           </div>
           <div style="text-align:right">
@@ -291,12 +303,13 @@ let OrdersService = class OrdersService {
           <p><span>Subtotal (Excl. Discount):</span><span>₹${order.pricing.totalMrp}</span></p>
           <p><span>Product Discount:</span><span>-₹${order.pricing.totalDiscount}</span></p>
           ${order.pricing.couponDiscount > 0 ? `<p><span>Coupon (${order.pricing.couponCode}):</span><span>-₹${order.pricing.couponDiscount}</span></p>` : ''}
+          ${order.pricing.onlinePaymentDiscount > 0 ? `<p style="color: #059669; font-weight: bold;"><span>Online Payment Extra Discount:</span><span>-₹${order.pricing.onlinePaymentDiscount}</span></p>` : ''}
           <p><span>GST (18%):</span><span>₹${order.pricing.tax}</span></p>
           <p><span>Shipping:</span><span>₹${order.pricing.shippingFee}</span></p>
           <p class="grand-total"><span>Grand Total:</span><span>₹${order.pricing.grandTotal}</span></p>
         </div>
         <div style="clear:both;margin-top:40px;color:#888;font-size:12px;border-top:1px solid #eee;padding-top:10px;">
-          Thank you for shopping at NiaKylie Fashion! For any queries, contact support@niakylie.com
+          Thank you for shopping at Niakylie Women Collection! For any queries, contact support@niakylie.com
         </div>
       </body>
       </html>`;
@@ -320,6 +333,7 @@ exports.OrdersService = OrdersService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [orders_repository_js_1.OrdersRepository,
         products_repository_js_1.ProductsRepository,
-        inventory_repository_js_1.InventoryRepository])
+        inventory_repository_js_1.InventoryRepository,
+        notifications_service_js_1.NotificationsService])
 ], OrdersService);
 //# sourceMappingURL=orders.service.js.map

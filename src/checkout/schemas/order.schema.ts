@@ -150,6 +150,9 @@ export class OrderPricing {
   @Prop({ default: 0, min: 0 })
   couponDiscount!: number;
 
+  @Prop({ default: 0, min: 0 })
+  onlinePaymentDiscount!: number;
+
   @Prop({ required: true, min: 0 })
   tax!: number;
 

@@ -27,7 +27,7 @@ exports.default = () => ({
         limit: parseInt(process.env.THROTTLE_LIMIT || '100', 10),
     },
     swagger: {
-        title: process.env.SWAGGER_TITLE || 'NiaKylie Fashion API',
+        title: process.env.SWAGGER_TITLE || 'Niakylie Women Collection API',
         description: process.env.SWAGGER_DESCRIPTION ||
             "Women's Fashion E-Commerce Platform API",
         version: process.env.SWAGGER_VERSION || '1.0',
@@ -42,6 +42,9 @@ exports.default = () => ({
         bucket: process.env.AWS_S3_BUCKET || '',
         accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+    },
+    admin: {
+        secretKey: process.env.ADMIN_SECRET_KEY || 'NIAKYLIE_ADMIN_SECRET_2026',
     },
 });
 //# sourceMappingURL=configuration.js.map

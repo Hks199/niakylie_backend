@@ -12,6 +12,8 @@ import { InventoryRepository } from '../inventory/repositories/inventory.reposit
 import { ProductsRepository } from '../products/repositories/products.repository.js';
 import { UsersRepository } from '../users/repositories/users.repository.js';
 import { CouponsService } from '../coupons/coupons.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
+import { OnlinePaymentDiscountService } from '../payment/online-payment-discount.service.js';
 import { CheckoutSummaryDto } from './dto/checkout-summary.dto.js';
 import { PlaceOrderDto } from './dto/place-order.dto.js';
 import { StockStatus } from '../inventory/schemas/inventory.schema.js';
@@ -54,6 +56,7 @@ export interface CheckoutSummaryResponse {
     totalMrp: number;
     totalDiscount: number;
     couponDiscount: number;
+    onlinePaymentDiscount: number;
     tax: number;
     shippingFee: number;
     grandTotal: number;
@@ -71,7 +74,9 @@ export class CheckoutService {
     private readonly productsRepository: ProductsRepository,
     private readonly usersRepository: UsersRepository,
     private readonly couponsService: CouponsService,
-  ) {}
+    private readonly notificationsService: NotificationsService,
+    private readonly onlineDiscountService?: OnlinePaymentDiscountService,
+  ) { }
 
   private generateOrderNumber(): string {
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -153,7 +158,7 @@ export class CheckoutService {
         unitMrp: item.unitMrp,
         color: item.color,
         size: item.size,
-        image: item.image,
+        image: item.image || product?.images?.[0] || (product as any)?.thumbnail || '',
         itemTotal,
         availableStock,
         isStockAvailable,
@@ -205,8 +210,17 @@ export class CheckoutService {
 
     // 0% Tax
     const tax = 0;
-    const taxableSubtotal = Math.max(0, subtotal - couponDiscount);
-    const grandTotal = Math.max(0, taxableSubtotal + shippingFee);
+    const subtotalAfterCoupon = Math.max(0, subtotal - couponDiscount);
+
+    let onlinePaymentDiscount = 0;
+    if (this.onlineDiscountService) {
+      onlinePaymentDiscount = await this.onlineDiscountService.calculateDiscount(subtotalAfterCoupon);
+    }
+
+    const isExplicitCod = (dto as any)?.paymentMethod === PaymentMethod.COD;
+    const activeOnlineDiscount = isExplicitCod ? 0 : onlinePaymentDiscount;
+
+    const grandTotal = Math.max(0, subtotalAfterCoupon - activeOnlineDiscount + shippingFee);
 
     return {
       items: itemsSummary,
@@ -222,11 +236,12 @@ export class CheckoutService {
         totalMrp,
         totalDiscount,
         couponDiscount,
+        onlinePaymentDiscount: activeOnlineDiscount,
         tax,
         shippingFee,
         grandTotal,
       },
-      availablePaymentMethods: [PaymentMethod.COD, PaymentMethod.RAZORPAY, PaymentMethod.STRIPE],
+      availablePaymentMethods: [PaymentMethod.COD, PaymentMethod.RAZORPAY],
       isCheckoutReady: isAllItemsInStock,
     };
   }
@@ -365,8 +380,9 @@ export class CheckoutService {
     }
 
     const billingAddress = dto.billingAddress || dto.shippingAddress;
-    const initialPaymentStatus =
-      dto.paymentMethod === PaymentMethod.COD ? PaymentStatus.PENDING : PaymentStatus.PENDING;
+    const isPaid = !!(dto.razorpayPaymentId || dto.stripePaymentIntentId);
+    const initialPaymentStatus = isPaid ? PaymentStatus.COMPLETED : PaymentStatus.PENDING;
+    const transactionId = dto.razorpayPaymentId || dto.stripePaymentIntentId;
 
     const orderData: Partial<any> = {
       orderNumber,
@@ -392,6 +408,8 @@ export class CheckoutService {
       paymentInfo: {
         method: dto.paymentMethod,
         status: initialPaymentStatus,
+        transactionId,
+        paidAt: isPaid ? new Date() : undefined,
       },
       shippingInfo: {
         method: summary.shippingInfo.method,
@@ -407,9 +425,12 @@ export class CheckoutService {
         totalDiscount: summary.pricing.totalDiscount,
         couponCode: summary.couponInfo?.code,
         couponDiscount: summary.pricing.couponDiscount,
+        onlinePaymentDiscount: String(dto.paymentMethod).toUpperCase() === 'COD' ? 0 : (summary.pricing.onlinePaymentDiscount || 0),
         tax: summary.pricing.tax,
         shippingFee: summary.pricing.shippingFee,
-        grandTotal: summary.pricing.grandTotal,
+        grandTotal: String(dto.paymentMethod).toUpperCase() === 'COD'
+          ? Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount + summary.pricing.shippingFee)
+          : Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount - (summary.pricing.onlinePaymentDiscount || 0) + summary.pricing.shippingFee),
       },
       orderStatus: OrderStatus.CONFIRMED,
       timeline: [
@@ -423,6 +444,17 @@ export class CheckoutService {
     };
 
     const order = await this.ordersRepository.create(orderData);
+
+    // Dispatch in-app notification & email for the placed order
+    if (order.userId) {
+      this.notificationsService.sendOrderUpdateNotification({
+        userId: order.userId.toString(),
+        recipientEmail: customerInfo.email,
+        recipientPhone: customerInfo.phone,
+        orderNumber: order.orderNumber,
+        status: order.orderStatus,
+      }).catch(() => { });
+    }
 
     // Clear cart after placing order
     await this.cartRepository.clearCart(userId, guestId);
@@ -454,7 +486,7 @@ export class CheckoutService {
     try {
       const primaryPath = path.resolve(process.cwd(), '../niakylie_frontend/public/asset/niakylie_logo.png');
       const fallbackPath = 'D:/niakylie_frontend/public/asset/niakylie_logo.png';
-      
+
       let targetPath = '';
       if (fs.existsSync(primaryPath)) {
         targetPath = primaryPath;
@@ -480,7 +512,7 @@ export class CheckoutService {
       <tr>
         <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #64748b;">${item.sku || 'NK-SKU'}</td>
         <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #0f172a;">
-          <strong>${item.name || 'NiaKylie Fashion Item'}</strong>
+          <strong>${item.name || 'Niakylie Women Collection Item'}</strong>
           ${item.color || item.size ? `<br><span style="font-size: 11px; color: #94a3b8;">Variant: ${[item.color, item.size].filter(Boolean).join(' / ')}</span>` : ''}
         </td>
         <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: bold; color: #0f172a;">${item.quantity || 1}</td>
@@ -672,14 +704,20 @@ export class CheckoutService {
             <span>Subtotal</span>
             <span>₹${(order.pricing?.subtotal || 0).toLocaleString('en-IN')}</span>
           </div>
-          ${
-            (order.pricing?.couponDiscount || 0) > 0
-              ? `<div class="summary-row" style="color: #16a34a;">
+          ${(order.pricing?.couponDiscount || 0) > 0
+        ? `<div class="summary-row" style="color: #16a34a;">
                   <span>Coupon Discount</span>
                   <span>-₹${(order.pricing.couponDiscount || 0).toLocaleString('en-IN')}</span>
                 </div>`
-              : ''
-          }
+        : ''
+      }
+          ${(order.pricing?.onlinePaymentDiscount || 0) > 0
+        ? `<div class="summary-row" style="color: #059669; font-weight: 700;">
+                  <span>Online Payment Extra Discount</span>
+                  <span>-₹${(order.pricing.onlinePaymentDiscount || 0).toLocaleString('en-IN')}</span>
+                </div>`
+        : ''
+      }
           <div class="summary-row">
             <span>Tax (0%)</span>
             <span>₹0</span>
@@ -695,7 +733,7 @@ export class CheckoutService {
         </div>
 
         <div class="footer">
-          <p style="margin: 0 0 4px 0; font-weight: 700; color: #475569;">Thank you for shopping with NiaKylie Fashion! ✨</p>
+          <p style="margin: 0 0 4px 0; font-weight: 700; color: #475569;">Thank you for shopping with Niakylie Women Collection! ✨</p>
           <p style="margin: 0; font-size: 11px;">For support or returns, email support@niakylie.com or call +91 98765 43210.</p>
         </div>
 
