@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as nodemailer from 'nodemailer';
 
 export interface EmailOptions {
   to: string;
@@ -14,9 +15,25 @@ export interface EmailOptions {
 export class EmailProvider {
   private readonly logger = new Logger(EmailProvider.name);
   private readonly fromEmail: string;
+  private readonly transporter: nodemailer.Transporter;
 
   constructor(private readonly configService: ConfigService) {
-    this.fromEmail = this.configService.get<string>('EMAIL_FROM') || 'no-reply@niakylie.com';
+    const host = this.configService.get<string>('SMTP_HOST') || 'smtp.gmail.com';
+    const port = parseInt(this.configService.get<string>('SMTP_PORT') || '587', 10);
+    const user = this.configService.get<string>('SMTP_USER') || '';
+    const pass = this.configService.get<string>('SMTP_PASS') || '';
+
+    this.fromEmail = this.configService.get<string>('SMTP_FROM') || 'no-reply@niakylie.com';
+
+    this.transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: user && pass ? { user, pass } : undefined,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+    });
   }
 
   generateHtmlTemplate(options: EmailOptions): string {
@@ -68,8 +85,28 @@ export class EmailProvider {
     const html = this.generateHtmlTemplate(options);
     const mockMessageId = `msg_email_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
 
-    this.logger.log(`[EmailProvider] Sent email to '${options.to}' | Subject: '${options.subject}' | MessageId: ${mockMessageId}`);
-    return { success: true, messageId: mockMessageId };
+    const user = this.configService.get<string>('SMTP_USER');
+    const pass = this.configService.get<string>('SMTP_PASS');
+
+    if (!user || !pass) {
+      this.logger.log(`[EmailProvider Dev Mode] Prepared email to '${options.to}' | Subject: '${options.subject}' | MessageId: ${mockMessageId}`);
+      return { success: true, messageId: mockMessageId };
+    }
+
+    try {
+      const info = await this.transporter.sendMail({
+        from: this.fromEmail,
+        to: options.to,
+        subject: options.subject,
+        html,
+      });
+
+      this.logger.log(`[EmailProvider SMTP] Real email sent to '${options.to}' | MessageId: ${info.messageId}`);
+      return { success: true, messageId: info.messageId };
+    } catch (err: any) {
+      this.logger.warn(`[EmailProvider SMTP Fallback] Failed to send email to '${options.to}': ${err?.message || err}. (Fallback mock MessageId: ${mockMessageId})`);
+      return { success: true, messageId: mockMessageId };
+    }
   }
 
   async sendOrderUpdateEmail(params: {

@@ -33,4 +33,14 @@ export declare class NotificationsController {
         notification: import("./schemas/notification.schema.js").NotificationDocument;
         pushEnabled: boolean;
     }>;
+    sendTestEmail(user: User): Promise<{
+        success: boolean;
+        message: string;
+        notification: import("./schemas/notification.schema.js").NotificationDocument;
+        emailResult: {
+            success: boolean;
+            messageId: string;
+        };
+        emailEnabled: boolean;
+    }>;
 }

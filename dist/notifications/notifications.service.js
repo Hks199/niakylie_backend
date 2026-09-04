@@ -225,6 +225,42 @@ let NotificationsService = class NotificationsService {
             pushEnabled: user.notificationPreferences?.push ?? true,
         };
     }
+    async sendTestEmailNotification(userId) {
+        const user = await this.usersRepo.findById(userId);
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        const title = '✉️ Email Notification Test';
+        const message = `Hello ${user.firstName || 'Valued Customer'}! This is a test email notification from NIAKYLIE. Your email notifications are configured and functioning properly.`;
+        const notification = await this.notificationsRepo.create({
+            userId: new mongoose_1.Types.ObjectId(userId),
+            recipientEmail: user.email,
+            recipientPhone: user.phone,
+            type: notification_schema_js_1.NotificationType.SYSTEM,
+            channel: notification_schema_js_1.NotificationChannel.EMAIL,
+            title,
+            message,
+            metadata: { isTestEmail: true, sentAt: new Date().toISOString() },
+            status: notification_schema_js_1.NotificationDeliveryStatus.SENT,
+        });
+        const emailResult = await this.emailProvider.sendEmail({
+            to: user.email,
+            subject: 'NIAKYLIE — Email Notification Test',
+            title: 'Email Notifications Status: Active',
+            bodyHtml: `<p>Hello <strong>${user.firstName || 'Customer'}</strong>,</p>
+                 <p>This email confirms that your NIAKYLIE email notification preferences are active.</p>
+                 <p>You will receive order invoices, shipping updates, and exclusive alerts directly at <strong>${user.email}</strong>.</p>`,
+            buttonText: 'View My Notifications',
+            buttonUrl: 'http://localhost:5173/account/notifications',
+        });
+        return {
+            success: true,
+            message: `Test email dispatched to ${user.email}`,
+            notification,
+            emailResult,
+            emailEnabled: user.notificationPreferences?.email ?? true,
+        };
+    }
 };
 exports.NotificationsService = NotificationsService;
 exports.NotificationsService = NotificationsService = __decorate([

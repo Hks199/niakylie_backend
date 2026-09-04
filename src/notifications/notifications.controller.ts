@@ -120,4 +120,15 @@ export class NotificationsController {
     const userId = (user as any).id || (user as any)._id;
     return this.notificationsService.sendTestPushNotification(userId);
   }
+
+  @Post('test-email')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Send a test email notification to current user' })
+  @ApiResponse({ status: 200, description: 'Test email notification dispatched' })
+  async sendTestEmail(@CurrentUser() user: User) {
+    const userId = (user as any).id || (user as any)._id;
+    return this.notificationsService.sendTestEmailNotification(userId);
+  }
 }

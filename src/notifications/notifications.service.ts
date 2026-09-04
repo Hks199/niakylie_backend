@@ -282,4 +282,47 @@ export class NotificationsService {
       pushEnabled: user.notificationPreferences?.push ?? true,
     };
   }
+
+  async sendTestEmailNotification(userId: string) {
+    const user = await this.usersRepo.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const title = '✉️ Email Notification Test';
+    const message = `Hello ${user.firstName || 'Valued Customer'}! This is a test email notification from NIAKYLIE. Your email notifications are configured and functioning properly.`;
+
+    // 1. Create in-app system record
+    const notification = await this.notificationsRepo.create({
+      userId: new Types.ObjectId(userId),
+      recipientEmail: user.email,
+      recipientPhone: user.phone,
+      type: NotificationType.SYSTEM,
+      channel: NotificationChannel.EMAIL,
+      title,
+      message,
+      metadata: { isTestEmail: true, sentAt: new Date().toISOString() },
+      status: NotificationDeliveryStatus.SENT,
+    });
+
+    // 2. Dispatch email via EmailProvider
+    const emailResult = await this.emailProvider.sendEmail({
+      to: user.email,
+      subject: 'NIAKYLIE — Email Notification Test',
+      title: 'Email Notifications Status: Active',
+      bodyHtml: `<p>Hello <strong>${user.firstName || 'Customer'}</strong>,</p>
+                 <p>This email confirms that your NIAKYLIE email notification preferences are active.</p>
+                 <p>You will receive order invoices, shipping updates, and exclusive alerts directly at <strong>${user.email}</strong>.</p>`,
+      buttonText: 'View My Notifications',
+      buttonUrl: 'http://localhost:5173/account/notifications',
+    });
+
+    return {
+      success: true,
+      message: `Test email dispatched to ${user.email}`,
+      notification,
+      emailResult,
+      emailEnabled: user.notificationPreferences?.email ?? true,
+    };
+  }
 }

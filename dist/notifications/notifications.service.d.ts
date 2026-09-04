@@ -63,4 +63,14 @@ export declare class NotificationsService {
         notification: NotificationDocument;
         pushEnabled: boolean;
     }>;
+    sendTestEmailNotification(userId: string): Promise<{
+        success: boolean;
+        message: string;
+        notification: NotificationDocument;
+        emailResult: {
+            success: boolean;
+            messageId: string;
+        };
+        emailEnabled: boolean;
+    }>;
 }
