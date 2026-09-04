@@ -59,7 +59,7 @@ exports.envValidationSchema = Joi.object({
     JWT_REFRESH_EXPIRATION: Joi.string().default('7d'),
     THROTTLE_TTL: Joi.number().default(60000),
     THROTTLE_LIMIT: Joi.number().default(100),
-    SWAGGER_TITLE: Joi.string().default('NiaKylie Fashion API'),
+    SWAGGER_TITLE: Joi.string().default('Niakylie Women Collection API'),
     SWAGGER_DESCRIPTION: Joi.string().default("Women's Fashion E-Commerce Platform API"),
     SWAGGER_VERSION: Joi.string().default('1.0'),
     GOOGLE_CLIENT_ID: Joi.string().default('google-client-id-placeholder'),

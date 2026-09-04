@@ -27,7 +27,7 @@ exports.default = () => ({
         limit: parseInt(process.env.THROTTLE_LIMIT || '100', 10),
     },
     swagger: {
-        title: process.env.SWAGGER_TITLE || 'NiaKylie Fashion API',
+        title: process.env.SWAGGER_TITLE || 'Niakylie Women Collection API',
         description: process.env.SWAGGER_DESCRIPTION ||
             "Women's Fashion E-Commerce Platform API",
         version: process.env.SWAGGER_VERSION || '1.0',

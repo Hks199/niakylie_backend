@@ -73,7 +73,7 @@ export class CheckoutService {
     private readonly usersRepository: UsersRepository,
     private readonly couponsService: CouponsService,
     private readonly notificationsService: NotificationsService,
-  ) {}
+  ) { }
 
   private generateOrderNumber(): string {
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -155,7 +155,7 @@ export class CheckoutService {
         unitMrp: item.unitMrp,
         color: item.color,
         size: item.size,
-        image: item.image,
+        image: item.image || product?.images?.[0] || (product as any)?.thumbnail || '',
         itemTotal,
         availableStock,
         isStockAvailable,
@@ -437,7 +437,7 @@ export class CheckoutService {
         recipientPhone: customerInfo.phone,
         orderNumber: order.orderNumber,
         status: order.orderStatus,
-      }).catch(() => {});
+      }).catch(() => { });
     }
 
     // Clear cart after placing order
@@ -470,7 +470,7 @@ export class CheckoutService {
     try {
       const primaryPath = path.resolve(process.cwd(), '../niakylie_frontend/public/asset/niakylie_logo.png');
       const fallbackPath = 'D:/niakylie_frontend/public/asset/niakylie_logo.png';
-      
+
       let targetPath = '';
       if (fs.existsSync(primaryPath)) {
         targetPath = primaryPath;
@@ -496,7 +496,7 @@ export class CheckoutService {
       <tr>
         <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #64748b;">${item.sku || 'NK-SKU'}</td>
         <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #0f172a;">
-          <strong>${item.name || 'NiaKylie Fashion Item'}</strong>
+          <strong>${item.name || 'Niakylie Women Collection Item'}</strong>
           ${item.color || item.size ? `<br><span style="font-size: 11px; color: #94a3b8;">Variant: ${[item.color, item.size].filter(Boolean).join(' / ')}</span>` : ''}
         </td>
         <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: bold; color: #0f172a;">${item.quantity || 1}</td>
@@ -688,14 +688,13 @@ export class CheckoutService {
             <span>Subtotal</span>
             <span>₹${(order.pricing?.subtotal || 0).toLocaleString('en-IN')}</span>
           </div>
-          ${
-            (order.pricing?.couponDiscount || 0) > 0
-              ? `<div class="summary-row" style="color: #16a34a;">
+          ${(order.pricing?.couponDiscount || 0) > 0
+        ? `<div class="summary-row" style="color: #16a34a;">
                   <span>Coupon Discount</span>
                   <span>-₹${(order.pricing.couponDiscount || 0).toLocaleString('en-IN')}</span>
                 </div>`
-              : ''
-          }
+        : ''
+      }
           <div class="summary-row">
             <span>Tax (0%)</span>
             <span>₹0</span>
@@ -711,7 +710,7 @@ export class CheckoutService {
         </div>
 
         <div class="footer">
-          <p style="margin: 0 0 4px 0; font-weight: 700; color: #475569;">Thank you for shopping with NiaKylie Fashion! ✨</p>
+          <p style="margin: 0 0 4px 0; font-weight: 700; color: #475569;">Thank you for shopping with Niakylie Women Collection! ✨</p>
           <p style="margin: 0; font-size: 11px;">For support or returns, email support@niakylie.com or call +91 98765 43210.</p>
         </div>
 

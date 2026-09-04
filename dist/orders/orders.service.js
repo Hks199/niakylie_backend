@@ -253,7 +253,7 @@ let OrdersService = class OrdersService {
       <body>
         <div class="header">
           <div>
-            <div class="brand">NiaKylie Fashion</div>
+            <div class="brand">Niakylie Women Collection</div>
             <p style="color:#888;margin:0">Your fashion destination</p>
           </div>
           <div style="text-align:right">
@@ -308,7 +308,7 @@ let OrdersService = class OrdersService {
           <p class="grand-total"><span>Grand Total:</span><span>₹${order.pricing.grandTotal}</span></p>
         </div>
         <div style="clear:both;margin-top:40px;color:#888;font-size:12px;border-top:1px solid #eee;padding-top:10px;">
-          Thank you for shopping at NiaKylie Fashion! For any queries, contact support@niakylie.com
+          Thank you for shopping at Niakylie Women Collection! For any queries, contact support@niakylie.com
         </div>
       </body>
       </html>`;

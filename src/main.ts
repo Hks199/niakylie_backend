@@ -88,7 +88,7 @@ async function bootstrap(): Promise<void> {
 
   // Swagger documentation
   const swaggerTitle =
-    configService.get<string>('swagger.title') ?? 'NiaKylie Fashion API';
+    configService.get<string>('swagger.title') ?? 'Niakylie Women Collection API';
   const swaggerDescription =
     configService.get<string>('swagger.description') ??
     "Women's Fashion E-Commerce Platform API";

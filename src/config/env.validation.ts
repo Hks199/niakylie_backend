@@ -35,7 +35,7 @@ export const envValidationSchema = Joi.object({
   THROTTLE_LIMIT: Joi.number().default(100),
 
   // Swagger
-  SWAGGER_TITLE: Joi.string().default('NiaKylie Fashion API'),
+  SWAGGER_TITLE: Joi.string().default('Niakylie Women Collection API'),
   SWAGGER_DESCRIPTION: Joi.string().default(
     "Women's Fashion E-Commerce Platform API",
   ),

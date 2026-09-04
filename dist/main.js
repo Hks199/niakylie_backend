@@ -60,7 +60,7 @@ async function bootstrap() {
     }));
     app.useGlobalFilters(new index_js_1.AllExceptionsFilter(), new index_js_1.HttpExceptionFilter());
     app.useGlobalInterceptors(new index_js_1.LoggingInterceptor(), new index_js_1.TimeoutInterceptor(), new index_js_1.TransformResponseInterceptor());
-    const swaggerTitle = configService.get('swagger.title') ?? 'NiaKylie Fashion API';
+    const swaggerTitle = configService.get('swagger.title') ?? 'Niakylie Women Collection API';
     const swaggerDescription = configService.get('swagger.description') ??
         "Women's Fashion E-Commerce Platform API";
     const swaggerVersion = configService.get('swagger.version') ?? '1.0';

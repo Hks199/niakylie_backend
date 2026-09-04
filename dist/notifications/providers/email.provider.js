@@ -91,7 +91,7 @@ let EmailProvider = EmailProvider_1 = class EmailProvider {
       <body>
         <div class="container">
           <div class="header">
-            <h1>NiaKylie Fashion</h1>
+            <h1>Niakylie Women Collection</h1>
           </div>
           <div class="content">
             <h2>${options.title}</h2>
@@ -103,7 +103,7 @@ let EmailProvider = EmailProvider_1 = class EmailProvider {
             : ''}
           </div>
           <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} NiaKylie Fashion. All rights reserved.</p>
+            <p>&copy; ${new Date().getFullYear()} Niakylie Women Collection. All rights reserved.</p>
             <p>You received this email because you are a registered user of NiaKylie.</p>
           </div>
         </div>

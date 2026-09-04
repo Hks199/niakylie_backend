@@ -419,7 +419,7 @@ let CheckoutService = class CheckoutService {
       <tr>
         <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #64748b;">${item.sku || 'NK-SKU'}</td>
         <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; color: #0f172a;">
-          <strong>${item.name || 'NiaKylie Fashion Item'}</strong>
+          <strong>${item.name || 'Niakylie Women Collection Item'}</strong>
           ${item.color || item.size ? `<br><span style="font-size: 11px; color: #94a3b8;">Variant: ${[item.color, item.size].filter(Boolean).join(' / ')}</span>` : ''}
         </td>
         <td style="padding: 12px; border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: bold; color: #0f172a;">${item.quantity || 1}</td>
@@ -630,7 +630,7 @@ let CheckoutService = class CheckoutService {
         </div>
 
         <div class="footer">
-          <p style="margin: 0 0 4px 0; font-weight: 700; color: #475569;">Thank you for shopping with NiaKylie Fashion! ✨</p>
+          <p style="margin: 0 0 4px 0; font-weight: 700; color: #475569;">Thank you for shopping with Niakylie Women Collection! ✨</p>
           <p style="margin: 0; font-size: 11px;">For support or returns, email support@niakylie.com or call +91 98765 43210.</p>
         </div>
 

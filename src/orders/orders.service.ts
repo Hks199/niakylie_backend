@@ -38,7 +38,7 @@ export class OrdersService {
     private readonly productsRepository: ProductsRepository,
     private readonly inventoryRepository: InventoryRepository,
     private readonly notificationsService: NotificationsService,
-  ) {}
+  ) { }
 
   private async resolveOrder(orderIdOrNumber: string, userId?: string): Promise<OrderDocument> {
     let order = await this.ordersRepository.findByOrderNumber(orderIdOrNumber);
@@ -84,7 +84,7 @@ export class OrdersService {
     if (!allowed.includes(dto.status)) {
       throw new BadRequestException(
         `Cannot transition order from '${order.orderStatus}' to '${dto.status}'. ` +
-          `Valid transitions: ${allowed.length ? allowed.join(', ') : 'none'}`,
+        `Valid transitions: ${allowed.length ? allowed.join(', ') : 'none'}`,
       );
     }
 
@@ -145,7 +145,7 @@ export class OrdersService {
         recipientPhone: order.customerInfo.phone,
         orderNumber: order.orderNumber,
         status: dto.status,
-      }).catch(() => {});
+      }).catch(() => { });
     }
 
     return updated!;
@@ -324,7 +324,7 @@ export class OrdersService {
       <body>
         <div class="header">
           <div>
-            <div class="brand">NiaKylie Fashion</div>
+            <div class="brand">Niakylie Women Collection</div>
             <p style="color:#888;margin:0">Your fashion destination</p>
           </div>
           <div style="text-align:right">
@@ -356,8 +356,8 @@ export class OrdersService {
           </thead>
           <tbody>
             ${order.items
-              .map(
-                (item, i) => `
+        .map(
+          (item, i) => `
               <tr>
                 <td>${i + 1}</td>
                 <td>${item.sku}</td>
@@ -367,8 +367,8 @@ export class OrdersService {
                 <td>₹${item.unitPrice}</td>
                 <td>₹${item.totalPrice}</td>
               </tr>`,
-              )
-              .join('')}
+        )
+        .join('')}
           </tbody>
         </table>
 
@@ -381,7 +381,7 @@ export class OrdersService {
           <p class="grand-total"><span>Grand Total:</span><span>₹${order.pricing.grandTotal}</span></p>
         </div>
         <div style="clear:both;margin-top:40px;color:#888;font-size:12px;border-top:1px solid #eee;padding-top:10px;">
-          Thank you for shopping at NiaKylie Fashion! For any queries, contact support@niakylie.com
+          Thank you for shopping at Niakylie Women Collection! For any queries, contact support@niakylie.com
         </div>
       </body>
       </html>`;
