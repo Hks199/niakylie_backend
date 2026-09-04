@@ -109,9 +109,18 @@ export class NotificationsRepository {
     }
 
     const filter: Record<string, any> = {
-      userId: userObjId,
       isDeleted: false,
     };
+
+    if (isAdmin) {
+      filter.$or = [
+        { userId: userObjId },
+        { 'metadata.isAdminEvent': true },
+        { userId: { $exists: false } },
+      ];
+    } else {
+      filter.userId = userObjId;
+    }
 
     if (isRead !== undefined) {
       const valStr = String(isRead);
@@ -139,42 +148,54 @@ export class NotificationsRepository {
     const [data, total, unreadCount] = await Promise.all([
       this.notificationModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).exec(),
       this.notificationModel.countDocuments(filter).exec(),
-      this.countUnread(userId),
+      this.countUnread(userId, isAdmin),
     ]);
 
     return { data, total, unreadCount, page, limit };
   }
 
-  async countUnread(userId: string): Promise<number> {
+  async countUnread(userId: string, isAdmin = false): Promise<number> {
     if (!Types.ObjectId.isValid(userId)) return 0;
-    return this.notificationModel
-      .countDocuments({
-        userId: new Types.ObjectId(userId),
-        isRead: { $ne: true },
-        isDeleted: false,
-      })
-      .exec();
+    const filter: Record<string, any> = {
+      isRead: { $ne: true },
+      isDeleted: false,
+    };
+    if (isAdmin) {
+      filter.$or = [
+        { userId: new Types.ObjectId(userId) },
+        { 'metadata.isAdminEvent': true },
+        { userId: { $exists: false } },
+      ];
+    } else {
+      filter.userId = new Types.ObjectId(userId);
+    }
+    return this.notificationModel.countDocuments(filter).exec();
   }
 
   async markAsRead(id: string, userId: string): Promise<NotificationDocument | null> {
-    if (!Types.ObjectId.isValid(id) || !Types.ObjectId.isValid(userId)) return null;
+    if (!Types.ObjectId.isValid(id)) return null;
     return this.notificationModel
       .findOneAndUpdate(
-        { _id: new Types.ObjectId(id), userId: new Types.ObjectId(userId), isDeleted: false },
+        { _id: new Types.ObjectId(id), isDeleted: false },
         { isRead: true, readAt: new Date() },
         { new: true },
       )
       .exec();
   }
 
-  async markAllAsRead(userId: string): Promise<{ modifiedCount: number }> {
+  async markAllAsRead(userId: string, isAdmin = false): Promise<{ modifiedCount: number }> {
     if (!Types.ObjectId.isValid(userId)) return { modifiedCount: 0 };
-    const res = await this.notificationModel
-      .updateMany(
-        { userId: new Types.ObjectId(userId), isRead: false, isDeleted: false },
-        { isRead: true, readAt: new Date() },
-      )
-      .exec();
+    const filter: Record<string, any> = { isRead: false, isDeleted: false };
+    if (isAdmin) {
+      filter.$or = [
+        { userId: new Types.ObjectId(userId) },
+        { 'metadata.isAdminEvent': true },
+        { userId: { $exists: false } },
+      ];
+    } else {
+      filter.userId = new Types.ObjectId(userId);
+    }
+    const res = await this.notificationModel.updateMany(filter, { isRead: true, readAt: new Date() }).exec();
     return { modifiedCount: res.modifiedCount };
   }
 

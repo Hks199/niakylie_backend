@@ -112,6 +112,24 @@ export class ReviewsService {
         status: ReviewStatus.APPROVED,
       });
       await this.updateProductRatingSummary(resolvedProductId);
+
+      if (this.notificationsService) {
+        this.notificationsService
+          .sendAdminEventNotification({
+            title: `⭐ New Product Review (${dto.rating} Stars)`,
+            message: `${userName} provided a ${dto.rating}-star review on ${product?.name || 'a product'}: "${dto.title || dto.comment || 'Great product quality!'}"`,
+            type: NotificationType.SYSTEM,
+            metadata: {
+              reviewId: existing._id.toString(),
+              productId: resolvedProductId,
+              rating: dto.rating,
+              targetTab: 'reviews',
+              isAdminEvent: true,
+            },
+          })
+          .catch(() => {});
+      }
+
       return updated!;
     }
 
@@ -137,9 +155,15 @@ export class ReviewsService {
       this.notificationsService
         .sendAdminEventNotification({
           title: `⭐ New Product Review (${dto.rating} Stars)`,
-          message: `${userName} provided a ${dto.rating}-star review on ${product?.name || 'a product'}: "${dto.title || dto.comment}"`,
+          message: `${userName} provided a ${dto.rating}-star review on ${product?.name || 'a product'}: "${dto.title || dto.comment || 'Great product quality!'}"`,
           type: NotificationType.SYSTEM,
-          metadata: { reviewId: review._id.toString(), productId: resolvedProductId, rating: dto.rating, targetTab: 'reviews' },
+          metadata: {
+            reviewId: review._id.toString(),
+            productId: resolvedProductId,
+            rating: dto.rating,
+            targetTab: 'reviews',
+            isAdminEvent: true,
+          },
         })
         .catch(() => {});
     }
