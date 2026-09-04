@@ -494,6 +494,10 @@ export class NotificationsService {
       title = '🚨 Realtime Stock Alert: Out of Stock!';
       message = 'Product SKU NK-SAR-880 (Kanjivaram Silk Saree) reached 0 available stock level!';
       type = NotificationType.SYSTEM;
+    } else if (eventType === 'cancel' || eventType === 'cancelled') {
+      title = '🚫 Order Cancelled: #NK-ORD-20260904-7953';
+      message = 'Order #NK-ORD-20260904-7953 was cancelled by Customer Ananya R. Reason: "Size mismatch / Ordered duplicate item"';
+      type = NotificationType.ORDER_UPDATE;
     }
 
     await this.sendAdminEventNotification({

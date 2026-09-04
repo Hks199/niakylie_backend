@@ -17,6 +17,7 @@ import { RequestReturnDto } from './dto/request-return.dto.js';
 import { CancelOrderDto } from './dto/cancel-order.dto.js';
 
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { NotificationType } from '../notifications/schemas/notification.schema.js';
 
 // Status transition rules — defines which transitions are valid
 const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
@@ -273,6 +274,30 @@ export class OrdersService {
 
         await this.productsRepository.incrementVariantStock(itemPId, itemVId, itemSku, qty);
       }
+    }
+
+    // Notify admin in real-time about order cancellation
+    if (this.notificationsService) {
+      const customerName = order.customerInfo
+        ? `${order.customerInfo.firstName || ''} ${order.customerInfo.lastName || ''}`.trim()
+        : 'Customer';
+      const orderNum = order.orderNumber || orderId;
+      const reasonStr = dto.reason ? ` Reason: "${dto.reason}"` : '';
+
+      this.notificationsService.sendAdminEventNotification({
+        title: `🚫 Order Cancelled: #${orderNum}`,
+        message: `Order #${orderNum} was cancelled by ${customerName}.${reasonStr}`,
+        type: NotificationType.ORDER_UPDATE,
+        metadata: {
+          orderId: order._id?.toString(),
+          orderNumber: orderNum,
+          cancellationReason: dto.reason,
+          targetTab: 'orders',
+          cancelledBy: userId ? 'customer' : 'admin',
+        },
+      }).catch((err) => {
+        console.warn('Failed to send admin notification for order cancellation:', err);
+      });
     }
 
     return updated!;
