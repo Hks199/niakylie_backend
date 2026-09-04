@@ -18,16 +18,20 @@ const orders_repository_js_1 = require("../checkout/repositories/orders.reposito
 const users_repository_js_1 = require("../users/repositories/users.repository.js");
 const review_schema_js_1 = require("./schemas/review.schema.js");
 const order_schema_js_1 = require("../checkout/schemas/order.schema.js");
+const notifications_service_js_1 = require("../notifications/notifications.service.js");
+const notification_schema_js_1 = require("../notifications/schemas/notification.schema.js");
 let ReviewsService = class ReviewsService {
     reviewsRepo;
     productsRepo;
     ordersRepo;
     usersRepo;
-    constructor(reviewsRepo, productsRepo, ordersRepo, usersRepo) {
+    notificationsService;
+    constructor(reviewsRepo, productsRepo, ordersRepo, usersRepo, notificationsService) {
         this.reviewsRepo = reviewsRepo;
         this.productsRepo = productsRepo;
         this.ordersRepo = ordersRepo;
         this.usersRepo = usersRepo;
+        this.notificationsService = notificationsService;
     }
     async updateProductRatingSummary(productId) {
         const stats = await this.reviewsRepo.getRatingStatsForProduct(productId);
@@ -105,6 +109,22 @@ let ReviewsService = class ReviewsService {
                 status: review_schema_js_1.ReviewStatus.APPROVED,
             });
             await this.updateProductRatingSummary(resolvedProductId);
+            if (this.notificationsService) {
+                this.notificationsService
+                    .sendAdminEventNotification({
+                    title: `⭐ New Product Review (${dto.rating} Stars)`,
+                    message: `${userName} provided a ${dto.rating}-star review on ${product?.name || 'a product'}: "${dto.title || dto.comment || 'Great product quality!'}"`,
+                    type: notification_schema_js_1.NotificationType.SYSTEM,
+                    metadata: {
+                        reviewId: existing._id.toString(),
+                        productId: resolvedProductId,
+                        rating: dto.rating,
+                        targetTab: 'reviews',
+                        isAdminEvent: true,
+                    },
+                })
+                    .catch(() => { });
+            }
             return updated;
         }
         const isVerifiedPurchase = userId ? await this.checkVerifiedPurchase(userId, resolvedProductId) : true;
@@ -121,6 +141,22 @@ let ReviewsService = class ReviewsService {
             status: review_schema_js_1.ReviewStatus.APPROVED,
         });
         await this.updateProductRatingSummary(resolvedProductId);
+        if (this.notificationsService) {
+            this.notificationsService
+                .sendAdminEventNotification({
+                title: `⭐ New Product Review (${dto.rating} Stars)`,
+                message: `${userName} provided a ${dto.rating}-star review on ${product?.name || 'a product'}: "${dto.title || dto.comment || 'Great product quality!'}"`,
+                type: notification_schema_js_1.NotificationType.SYSTEM,
+                metadata: {
+                    reviewId: review._id.toString(),
+                    productId: resolvedProductId,
+                    rating: dto.rating,
+                    targetTab: 'reviews',
+                    isAdminEvent: true,
+                },
+            })
+                .catch(() => { });
+        }
         return review;
     }
     async getProductReviews(productId, query) {
@@ -227,6 +263,7 @@ exports.ReviewsService = ReviewsService = __decorate([
     __metadata("design:paramtypes", [reviews_repository_js_1.ReviewsRepository,
         products_repository_js_1.ProductsRepository,
         orders_repository_js_1.OrdersRepository,
-        users_repository_js_1.UsersRepository])
+        users_repository_js_1.UsersRepository,
+        notifications_service_js_1.NotificationsService])
 ], ReviewsService);
 //# sourceMappingURL=reviews.service.js.map

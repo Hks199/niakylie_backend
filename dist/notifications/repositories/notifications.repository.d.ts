@@ -7,16 +7,16 @@ export declare class NotificationsRepository {
     create(data: Partial<Notification>): Promise<NotificationDocument>;
     createMany(dataList: Partial<Notification>[]): Promise<NotificationDocument[]>;
     findById(id: string): Promise<NotificationDocument | null>;
-    findByUserId(userId: string, query: QueryNotificationDto): Promise<{
+    findByUserId(userId: string, query: QueryNotificationDto, isAdmin?: boolean): Promise<{
         data: NotificationDocument[];
         total: number;
         unreadCount: number;
         page: number;
         limit: number;
     }>;
-    countUnread(userId: string): Promise<number>;
+    countUnread(userId: string, isAdmin?: boolean): Promise<number>;
     markAsRead(id: string, userId: string): Promise<NotificationDocument | null>;
-    markAllAsRead(userId: string): Promise<{
+    markAllAsRead(userId: string, isAdmin?: boolean): Promise<{
         modifiedCount: number;
     }>;
     softDelete(id: string, userId: string): Promise<NotificationDocument | null>;

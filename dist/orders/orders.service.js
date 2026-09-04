@@ -18,6 +18,7 @@ const inventory_repository_js_1 = require("../inventory/repositories/inventory.r
 const inventory_schema_js_1 = require("../inventory/schemas/inventory.schema.js");
 const order_schema_js_1 = require("../checkout/schemas/order.schema.js");
 const notifications_service_js_1 = require("../notifications/notifications.service.js");
+const notification_schema_js_1 = require("../notifications/schemas/notification.schema.js");
 const VALID_TRANSITIONS = {
     [order_schema_js_1.OrderStatus.PENDING]: [order_schema_js_1.OrderStatus.CONFIRMED, order_schema_js_1.OrderStatus.CANCELLED],
     [order_schema_js_1.OrderStatus.CONFIRMED]: [order_schema_js_1.OrderStatus.PACKED, order_schema_js_1.OrderStatus.SHIPPED, order_schema_js_1.OrderStatus.CANCELLED],
@@ -74,11 +75,14 @@ let OrdersService = class OrdersService {
     }
     async updateStatus(orderId, dto) {
         const order = await this.findById(orderId);
-        const allowed = VALID_TRANSITIONS[order.orderStatus] || [];
-        if (!allowed.includes(dto.status)) {
-            throw new common_1.BadRequestException(`Cannot transition order from '${order.orderStatus}' to '${dto.status}'. ` +
-                `Valid transitions: ${allowed.length ? allowed.join(', ') : 'none'}`);
+        if (order.orderStatus === dto.status) {
+            if (dto.notes) {
+                const updatedSame = await this.ordersRepository.updateStatus(order._id.toString(), dto.status, dto.notes);
+                return updatedSame;
+            }
+            return order;
         }
+        const previousStatus = order.orderStatus;
         const extraData = {};
         if (dto.status === order_schema_js_1.OrderStatus.SHIPPED) {
             extraData['shippingInfo.shippedAt'] = new Date();
@@ -86,8 +90,8 @@ let OrdersService = class OrdersService {
         if (dto.status === order_schema_js_1.OrderStatus.DELIVERED) {
             extraData['shippingInfo.deliveredAt'] = new Date();
         }
-        const updated = await this.ordersRepository.updateStatus(order._id.toString(), dto.status, dto.notes, extraData);
-        if (dto.status === order_schema_js_1.OrderStatus.CANCELLED && order.items && order.items.length > 0) {
+        const updated = await this.ordersRepository.updateStatus(order._id.toString(), dto.status, dto.notes || `Status updated from ${previousStatus} to ${dto.status} by Admin`, extraData);
+        if (dto.status === order_schema_js_1.OrderStatus.CANCELLED && previousStatus !== order_schema_js_1.OrderStatus.CANCELLED && order.items && order.items.length > 0) {
             for (const item of order.items) {
                 const itemSku = item.sku;
                 const itemPId = item.productId?.toString();
@@ -214,6 +218,27 @@ let OrdersService = class OrdersService {
                 }
                 await this.productsRepository.incrementVariantStock(itemPId, itemVId, itemSku, qty);
             }
+        }
+        if (this.notificationsService) {
+            const customerName = order.customerInfo
+                ? `${order.customerInfo.firstName || ''} ${order.customerInfo.lastName || ''}`.trim()
+                : 'Customer';
+            const orderNum = order.orderNumber || orderId;
+            const reasonStr = dto.reason ? ` Reason: "${dto.reason}"` : '';
+            this.notificationsService.sendAdminEventNotification({
+                title: `🚫 Order Cancelled: #${orderNum}`,
+                message: `Order #${orderNum} was cancelled by ${customerName}.${reasonStr}`,
+                type: notification_schema_js_1.NotificationType.ORDER_UPDATE,
+                metadata: {
+                    orderId: order._id?.toString(),
+                    orderNumber: orderNum,
+                    cancellationReason: dto.reason,
+                    targetTab: 'orders',
+                    cancelledBy: userId ? 'customer' : 'admin',
+                },
+            }).catch((err) => {
+                console.warn('Failed to send admin notification for order cancellation:', err);
+            });
         }
         return updated;
     }

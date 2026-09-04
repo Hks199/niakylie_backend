@@ -5,7 +5,7 @@ import { UsersRepository } from '../users/repositories/users.repository.js';
 import { SendNotificationDto } from './dto/send-notification.dto.js';
 import { BroadcastNotificationDto } from './dto/broadcast-notification.dto.js';
 import { QueryNotificationDto } from './dto/query-notification.dto.js';
-import { NotificationDocument } from './schemas/notification.schema.js';
+import { NotificationDocument, NotificationType } from './schemas/notification.schema.js';
 import { NotificationEventsService } from './notification-events.service.js';
 export declare class NotificationsService {
     private readonly notificationsRepo;
@@ -90,5 +90,15 @@ export declare class NotificationsService {
         success: boolean;
         message: string;
         notification: NotificationDocument;
+    }>;
+    sendAdminEventNotification(params: {
+        title: string;
+        message: string;
+        type: NotificationType;
+        metadata?: Record<string, any>;
+    }): Promise<void>;
+    sendTestAdminEvent(eventType?: string): Promise<{
+        success: boolean;
+        message: string;
     }>;
 }

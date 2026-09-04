@@ -80,15 +80,21 @@ export class OrdersService {
 
   async updateStatus(orderId: string, dto: UpdateOrderStatusDto): Promise<OrderDocument> {
     const order = await this.findById(orderId);
-    const allowed = VALID_TRANSITIONS[order.orderStatus] || [];
 
-    if (!allowed.includes(dto.status)) {
-      throw new BadRequestException(
-        `Cannot transition order from '${order.orderStatus}' to '${dto.status}'. ` +
-        `Valid transitions: ${allowed.length ? allowed.join(', ') : 'none'}`,
-      );
+    // If status is unchanged, update timeline note if provided and return
+    if (order.orderStatus === dto.status) {
+      if (dto.notes) {
+        const updatedSame = await this.ordersRepository.updateStatus(
+          order._id.toString(),
+          dto.status,
+          dto.notes,
+        );
+        return updatedSame!;
+      }
+      return order;
     }
 
+    const previousStatus = order.orderStatus;
     const extraData: Record<string, any> = {};
     if (dto.status === OrderStatus.SHIPPED) {
       extraData['shippingInfo.shippedAt'] = new Date();
@@ -100,11 +106,12 @@ export class OrdersService {
     const updated = await this.ordersRepository.updateStatus(
       order._id.toString(),
       dto.status,
-      dto.notes,
+      dto.notes || `Status updated from ${previousStatus} to ${dto.status} by Admin`,
       extraData as any,
     );
 
-    if (dto.status === OrderStatus.CANCELLED && order.items && order.items.length > 0) {
+    // If transitioning to CANCELLED from a non-cancelled status, restore stock
+    if (dto.status === OrderStatus.CANCELLED && previousStatus !== OrderStatus.CANCELLED && order.items && order.items.length > 0) {
       for (const item of order.items) {
         const itemSku = item.sku;
         const itemPId = item.productId?.toString();

@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationsController = void 0;
 const common_1 = require("@nestjs/common");
+const throttler_1 = require("@nestjs/throttler");
 const rxjs_1 = require("rxjs");
 const swagger_1 = require("@nestjs/swagger");
 const notifications_service_js_1 = require("./notifications.service.js");
@@ -81,10 +82,14 @@ let NotificationsController = class NotificationsController {
         const userId = user.id || user._id;
         return this.notificationsService.sendCouponTestNotification(userId);
     }
+    async sendTestAdminEvent(type) {
+        return this.notificationsService.sendTestAdminEvent(type);
+    }
 };
 exports.NotificationsController = NotificationsController;
 __decorate([
     (0, common_1.Sse)('stream'),
+    (0, throttler_1.SkipThrottle)(),
     (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, swagger_1.ApiOperation)({ summary: 'Real-time Server-Sent Events (SSE) notification stream' }),
@@ -121,6 +126,7 @@ __decorate([
 ], NotificationsController.prototype, "broadcastNotification", null);
 __decorate([
     (0, common_1.Get)('my'),
+    (0, throttler_1.SkipThrottle)(),
     (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, swagger_1.ApiOperation)({ summary: 'Get current user in-app notifications with unread counter' }),
@@ -134,6 +140,7 @@ __decorate([
 ], NotificationsController.prototype, "getMyNotifications", null);
 __decorate([
     (0, common_1.Get)('my/unread-count'),
+    (0, throttler_1.SkipThrottle)(),
     (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, swagger_1.ApiOperation)({ summary: 'Get count of unread in-app notifications' }),
@@ -238,6 +245,18 @@ __decorate([
     __metadata("design:paramtypes", [user_schema_js_1.User]),
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "sendTestCoupon", null);
+__decorate([
+    (0, common_1.Post)('test-admin-event'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard, index_js_1.RolesGuard),
+    (0, index_js_1.Roles)(index_js_1.Role.ADMIN, 'admin'),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: '[Admin] Trigger live test admin event for notification bell' }),
+    __param(0, (0, common_1.Query)('type')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], NotificationsController.prototype, "sendTestAdminEvent", null);
 exports.NotificationsController = NotificationsController = __decorate([
     (0, swagger_1.ApiTags)('Notifications'),
     (0, common_1.Controller)('notifications'),

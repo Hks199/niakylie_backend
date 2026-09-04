@@ -206,11 +206,13 @@ export class ProductsRepository {
     }
 
     if (brandIdFilter) {
-      const brandOr = [
+      const brandOr: any[] = [
         { brandId: brandIdFilter },
         { brand: brandIdFilter },
-        { brand: { $regex: brandInput.split(',')[0].trim(), $options: 'i' } },
       ];
+      if (brandInput) {
+        brandOr.push({ brand: { $regex: brandInput.split(',')[0].trim(), $options: 'i' } });
+      }
       if (baseMatch.$or) {
         const catOr = baseMatch.$or;
         delete baseMatch.$or;

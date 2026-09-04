@@ -143,6 +143,7 @@ let ProductsRepository = class ProductsRepository {
                     allBrandIds.push(objId, objId.toString());
                 }
                 else {
+                    allBrandIds.push(b, b.toLowerCase().trim());
                     const foundBrands = await this.productModel.db.collection('brands').find({
                         $or: [
                             { slug: b.toLowerCase().trim() },
@@ -167,8 +168,23 @@ let ProductsRepository = class ProductsRepository {
                 { category: categoryIdFilter },
             ];
         }
-        if (brandIdFilter)
-            baseMatch.brandId = brandIdFilter;
+        if (brandIdFilter) {
+            const brandOr = [
+                { brandId: brandIdFilter },
+                { brand: brandIdFilter },
+            ];
+            if (brandInput) {
+                brandOr.push({ brand: { $regex: brandInput.split(',')[0].trim(), $options: 'i' } });
+            }
+            if (baseMatch.$or) {
+                const catOr = baseMatch.$or;
+                delete baseMatch.$or;
+                baseMatch.$and = [{ $or: catOr }, { $or: brandOr }];
+            }
+            else {
+                baseMatch.$or = brandOr;
+            }
+        }
         if (material)
             baseMatch.material = { $regex: material, $options: 'i' };
         if (pattern)
