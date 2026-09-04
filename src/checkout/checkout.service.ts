@@ -431,7 +431,7 @@ export class CheckoutService {
 
     // Dispatch in-app notification & email for the placed order
     if (order.userId) {
-      await this.notificationsService.sendOrderUpdateNotification({
+      this.notificationsService.sendOrderUpdateNotification({
         userId: order.userId.toString(),
         recipientEmail: customerInfo.email,
         recipientPhone: customerInfo.phone,

@@ -64,9 +64,9 @@ let EmailProvider = EmailProvider_1 = class EmailProvider {
             port,
             secure: port === 465,
             auth: user && pass ? { user, pass } : undefined,
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 15000,
+            connectionTimeout: 2500,
+            greetingTimeout: 2500,
+            socketTimeout: 3000,
         });
     }
     generateHtmlTemplate(options) {
@@ -121,12 +121,14 @@ let EmailProvider = EmailProvider_1 = class EmailProvider {
             return { success: true, messageId: mockMessageId };
         }
         try {
-            const info = await this.transporter.sendMail({
+            const sendPromise = this.transporter.sendMail({
                 from: this.fromEmail,
                 to: options.to,
                 subject: options.subject,
                 html,
             });
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP connection timed out after 2500ms')), 2500));
+            const info = (await Promise.race([sendPromise, timeoutPromise]));
             this.logger.log(`[EmailProvider SMTP] Real email sent to '${options.to}' | MessageId: ${info.messageId}`);
             return { success: true, messageId: info.messageId };
         }

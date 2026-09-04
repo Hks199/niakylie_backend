@@ -75,10 +75,18 @@ export class NotificationsRepository {
     };
 
     if (isRead !== undefined) {
-      filter.isRead = isRead;
+      const boolVal = Boolean(isRead) || String(isRead) === 'true';
+      filter.isRead = boolVal ? { $in: [true, 'true'] } : { $ne: true };
     }
-    if (type) {
-      filter.type = type;
+    if (type && type.trim()) {
+      const typeStr = type.trim().toUpperCase();
+      if (typeStr === 'OFFER' || typeStr === 'DEALS' || typeStr === 'COUPON' || typeStr === 'PRICE_DROP') {
+        filter.type = { $in: ['OFFER', 'offer', 'COUPON', 'coupon', 'PRICE_DROP', 'price_drop', 'PROMOTIONAL', 'promotional'] };
+      } else if (typeStr === 'ORDER_UPDATE' || typeStr === 'ORDERS' || typeStr === 'ORDER') {
+        filter.type = { $in: ['ORDER_UPDATE', 'order_update'] };
+      } else {
+        filter.type = new RegExp(`^${typeStr}$`, 'i');
+      }
     }
 
     const skip = (page - 1) * limit;
@@ -97,7 +105,7 @@ export class NotificationsRepository {
     return this.notificationModel
       .countDocuments({
         userId: new Types.ObjectId(userId),
-        isRead: false,
+        isRead: { $ne: true },
         isDeleted: false,
       })
       .exec();

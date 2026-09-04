@@ -135,7 +135,7 @@ let CheckoutService = class CheckoutService {
                 unitMrp: item.unitMrp,
                 color: item.color,
                 size: item.size,
-                image: item.image,
+                image: item.image || product?.images?.[0] || product?.thumbnail || '',
                 itemTotal,
                 availableStock,
                 isStockAvailable,
@@ -367,7 +367,7 @@ let CheckoutService = class CheckoutService {
         };
         const order = await this.ordersRepository.create(orderData);
         if (order.userId) {
-            await this.notificationsService.sendOrderUpdateNotification({
+            this.notificationsService.sendOrderUpdateNotification({
                 userId: order.userId.toString(),
                 recipientEmail: customerInfo.email,
                 recipientPhone: customerInfo.phone,

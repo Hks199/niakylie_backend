@@ -139,7 +139,7 @@ export class OrdersService {
     }
 
     if (updated && order.userId) {
-      await this.notificationsService.sendOrderUpdateNotification({
+      this.notificationsService.sendOrderUpdateNotification({
         userId: order.userId.toString(),
         recipientEmail: order.customerInfo.email,
         recipientPhone: order.customerInfo.phone,
