@@ -13,6 +13,7 @@ import {
   Sse,
   MessageEvent,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { Observable } from 'rxjs';
 import {
   ApiTags,
@@ -40,6 +41,7 @@ export class NotificationsController {
   ) {}
 
   @Sse('stream')
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Real-time Server-Sent Events (SSE) notification stream' })
@@ -71,6 +73,7 @@ export class NotificationsController {
   }
 
   @Get('my')
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get current user in-app notifications with unread counter' })
@@ -84,6 +87,7 @@ export class NotificationsController {
   }
 
   @Get('my/unread-count')
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get count of unread in-app notifications' })
