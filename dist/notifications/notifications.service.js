@@ -372,9 +372,6 @@ let NotificationsService = class NotificationsService {
             let adminUsers = users.filter((u) => u.roles?.some((r) => r === index_js_1.Role.ADMIN || r === 'ADMIN' || r === 'admin') ||
                 u.role === 'admin' ||
                 u.role === 'ADMIN');
-            if (adminUsers.length === 0 && users.length > 0) {
-                adminUsers = users.slice(0, 1);
-            }
             if (adminUsers.length > 0) {
                 for (const admin of adminUsers) {
                     const notif = await this.notificationsRepo.create({

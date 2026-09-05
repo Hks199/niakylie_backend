@@ -34,7 +34,11 @@ let NotificationsController = class NotificationsController {
     }
     streamNotifications(user) {
         const userId = user.id || user._id;
-        return this.eventsService.getNotificationStream(userId);
+        const isAdmin = user?.roles?.some((r) => r === index_js_1.Role.ADMIN || r === 'ADMIN' || r === 'admin') ||
+            user?.role === 'admin' ||
+            user?.role === 'ADMIN' ||
+            false;
+        return this.eventsService.getNotificationStream(userId, isAdmin);
     }
     async sendNotification(dto) {
         return this.notificationsService.sendNotification(dto);

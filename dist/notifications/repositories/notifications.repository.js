@@ -124,6 +124,11 @@ let NotificationsRepository = class NotificationsRepository {
         }
         else {
             filter.userId = userObjId;
+            filter.$nor = [
+                { 'metadata.isAdminEvent': true },
+                { 'metadata.targetTab': 'reviews' },
+                { 'metadata.reviewId': { $exists: true, $ne: null } },
+            ];
         }
         if (isRead !== undefined) {
             const valStr = String(isRead);
@@ -172,6 +177,11 @@ let NotificationsRepository = class NotificationsRepository {
         }
         else {
             filter.userId = new mongoose_2.Types.ObjectId(userId);
+            filter.$nor = [
+                { 'metadata.isAdminEvent': true },
+                { 'metadata.targetTab': 'reviews' },
+                { 'metadata.reviewId': { $exists: true, $ne: null } },
+            ];
         }
         return this.notificationModel.countDocuments(filter).exec();
     }
