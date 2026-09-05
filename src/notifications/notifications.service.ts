@@ -462,10 +462,6 @@ export class NotificationsService {
           (u as any).role === 'ADMIN',
       );
 
-      if (adminUsers.length === 0 && users.length > 0) {
-        adminUsers = users.slice(0, 1);
-      }
-
       if (adminUsers.length > 0) {
         for (const admin of adminUsers) {
           const notif = await this.notificationsRepo.create({
@@ -481,6 +477,7 @@ export class NotificationsService {
           this.emitRealtime(notif);
         }
       } else {
+        // No admin accounts found — store as admin-only (no userId) so customers never receive it
         const notif = await this.notificationsRepo.create({
           type: params.type,
           channel: NotificationChannel.IN_APP,

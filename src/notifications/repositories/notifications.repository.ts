@@ -120,6 +120,12 @@ export class NotificationsRepository {
       ];
     } else {
       filter.userId = userObjId;
+      // Customers must never see admin-only events (product reviews, stock alerts, etc.)
+      filter.$nor = [
+        { 'metadata.isAdminEvent': true },
+        { 'metadata.targetTab': 'reviews' },
+        { 'metadata.reviewId': { $exists: true, $ne: null } },
+      ];
     }
 
     if (isRead !== undefined) {
@@ -168,6 +174,11 @@ export class NotificationsRepository {
       ];
     } else {
       filter.userId = new Types.ObjectId(userId);
+      filter.$nor = [
+        { 'metadata.isAdminEvent': true },
+        { 'metadata.targetTab': 'reviews' },
+        { 'metadata.reviewId': { $exists: true, $ne: null } },
+      ];
     }
     return this.notificationModel.countDocuments(filter).exec();
   }

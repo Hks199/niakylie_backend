@@ -47,7 +47,12 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Real-time Server-Sent Events (SSE) notification stream' })
   streamNotifications(@CurrentUser() user: User): Observable<MessageEvent> {
     const userId = (user as any).id || (user as any)._id;
-    return this.eventsService.getNotificationStream(userId) as any;
+    const isAdmin =
+      user?.roles?.some((r: any) => r === Role.ADMIN || r === 'ADMIN' || r === 'admin') ||
+      (user as any)?.role === 'admin' ||
+      (user as any)?.role === 'ADMIN' ||
+      false;
+    return this.eventsService.getNotificationStream(userId, isAdmin) as any;
   }
 
   @Post('send')

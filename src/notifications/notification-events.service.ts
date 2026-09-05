@@ -35,17 +35,25 @@ export class NotificationEventsService {
   }
 
   /**
-   * Get filtered real-time notification stream for a specific user ID or broadcast
+   * Get filtered real-time notification stream for a specific user.
+   * Admin-only events (e.g. product reviews) are never pushed to customers.
    */
-  getNotificationStream(userId: string): Observable<SseMessageEvent> {
+  getNotificationStream(userId: string, isAdmin = false): Observable<SseMessageEvent> {
     return this.notificationSubject.asObservable().pipe(
       filter((event) => {
-        // Event belongs to target user OR is global broadcast (no userId) OR is admin event
-        return (
-          !event.userId ||
-          event.userId.toString() === userId.toString() ||
-          Boolean(event.metadata?.isAdminEvent)
-        );
+        const isAdminEvent = Boolean(event.metadata?.isAdminEvent);
+        const isReviewEvent =
+          event.metadata?.targetTab === 'reviews' ||
+          Boolean(event.metadata?.reviewId) ||
+          /product review/i.test(event.title || '');
+
+        // Product reviews and other admin events: admins only
+        if (isAdminEvent || isReviewEvent) {
+          return isAdmin;
+        }
+
+        // Customer / targeted events: only the recipient (or global broadcast without userId)
+        return !event.userId || event.userId.toString() === userId.toString();
       }),
       map((event) => ({
         data: event,
