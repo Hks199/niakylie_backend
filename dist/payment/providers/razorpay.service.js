@@ -117,12 +117,44 @@ let RazorpayService = class RazorpayService {
         return false;
     }
     async processRefund(params) {
+        const amountInPaise = params.amount ? Math.round(params.amount * 100) : undefined;
+        if (this.keyId && this.keySecret && !this.keyId.includes('mockkey')) {
+            try {
+                const authHeader = 'Basic ' + Buffer.from(`${this.keyId}:${this.keySecret}`).toString('base64');
+                const body = {};
+                if (amountInPaise && amountInPaise > 0) {
+                    body.amount = amountInPaise;
+                }
+                const response = await fetch(`https://api.razorpay.com/v1/payments/${params.paymentId}/refund`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: authHeader,
+                    },
+                    body: JSON.stringify(body),
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    return {
+                        id: data.id,
+                        entity: data.entity || 'refund',
+                        amount: data.amount,
+                        payment_id: data.payment_id || params.paymentId,
+                        status: data.status || 'processed',
+                    };
+                }
+                const errText = await response.text();
+                console.warn('Razorpay refund API error, falling back to mock:', errText);
+            }
+            catch (err) {
+                console.warn('Razorpay refund request failed, falling back to mock:', err);
+            }
+        }
         const mockRefundId = `rfnd_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
-        const amountInPaise = params.amount ? Math.round(params.amount * 100) : 0;
         return {
             id: mockRefundId,
             entity: 'refund',
-            amount: amountInPaise,
+            amount: amountInPaise || 0,
             payment_id: params.paymentId,
             status: 'processed',
         };

@@ -154,7 +154,8 @@ export class OrdersRepository {
       [OrderStatus.OUT_FOR_DELIVERY]: 'Out for Delivery',
       [OrderStatus.DELIVERED]: 'Order Delivered',
       [OrderStatus.CANCELLED]: 'Order Cancelled',
-      [OrderStatus.RETURNED]: 'Return Requested',
+      [OrderStatus.RETURN_REQUESTED]: 'Return Requested',
+      [OrderStatus.RETURNED]: 'Return Approved',
       [OrderStatus.REFUNDED]: 'Order Refunded',
     };
 

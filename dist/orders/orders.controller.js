@@ -19,6 +19,8 @@ const orders_service_js_1 = require("./orders.service.js");
 const query_order_dto_js_1 = require("./dto/query-order.dto.js");
 const update_order_status_dto_js_1 = require("./dto/update-order-status.dto.js");
 const update_tracking_dto_js_1 = require("./dto/update-tracking.dto.js");
+const reject_return_dto_js_1 = require("./dto/reject-return.dto.js");
+const process_return_refund_dto_js_1 = require("./dto/process-return-refund.dto.js");
 const request_return_dto_js_1 = require("./dto/request-return.dto.js");
 const cancel_order_dto_js_1 = require("./dto/cancel-order.dto.js");
 const optional_jwt_auth_guard_js_1 = require("../auth/guards/optional-jwt-auth.guard.js");
@@ -42,8 +44,11 @@ let OrdersController = class OrdersController {
     async approveReturn(orderId) {
         return this.ordersService.approveReturn(orderId);
     }
+    async rejectReturn(orderId, dto) {
+        return this.ordersService.rejectReturn(orderId, dto);
+    }
     async markRefunded(orderId, body) {
-        return this.ordersService.markRefunded(orderId, body?.notes);
+        return this.ordersService.processReturnRefund(orderId, body || {});
     }
     async getMyOrders(req, guestIdHeader) {
         const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub;
@@ -133,7 +138,7 @@ __decorate([
 __decorate([
     (0, common_1.Patch)('admin/:orderId/approve-return'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
-    (0, swagger_1.ApiOperation)({ summary: '[Admin] Approve a return request for an order' }),
+    (0, swagger_1.ApiOperation)({ summary: '[Admin] Approve a return request (restocks inventory)' }),
     (0, swagger_1.ApiParam)({ name: 'orderId', example: 'NK-ORD-20260807-1234' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Return approved' }),
     __param(0, (0, common_1.Param)('orderId')),
@@ -142,16 +147,28 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "approveReturn", null);
 __decorate([
-    (0, common_1.Patch)('admin/:orderId/refund'),
+    (0, common_1.Patch)('admin/:orderId/reject-return'),
     (0, swagger_1.ApiBearerAuth)('JWT-auth'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, swagger_1.ApiOperation)({ summary: '[Admin] Mark order as REFUNDED' }),
+    (0, swagger_1.ApiOperation)({ summary: '[Admin] Reject a return request' }),
     (0, swagger_1.ApiParam)({ name: 'orderId', example: 'NK-ORD-20260807-1234' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Order marked as refunded' }),
     __param(0, (0, common_1.Param)('orderId')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, reject_return_dto_js_1.RejectReturnDto]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "rejectReturn", null);
+__decorate([
+    (0, common_1.Patch)('admin/:orderId/refund'),
+    (0, swagger_1.ApiBearerAuth)('JWT-auth'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({ summary: '[Admin] Process return refund (Razorpay / COD UPI or bank)' }),
+    (0, swagger_1.ApiParam)({ name: 'orderId', example: 'NK-ORD-20260807-1234' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Order refunded' }),
+    __param(0, (0, common_1.Param)('orderId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, process_return_refund_dto_js_1.ProcessReturnRefundDto]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "markRefunded", null);
 __decorate([

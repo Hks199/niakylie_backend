@@ -137,7 +137,8 @@ let OrdersRepository = class OrdersRepository {
             [order_schema_js_1.OrderStatus.OUT_FOR_DELIVERY]: 'Out for Delivery',
             [order_schema_js_1.OrderStatus.DELIVERED]: 'Order Delivered',
             [order_schema_js_1.OrderStatus.CANCELLED]: 'Order Cancelled',
-            [order_schema_js_1.OrderStatus.RETURNED]: 'Return Requested',
+            [order_schema_js_1.OrderStatus.RETURN_REQUESTED]: 'Return Requested',
+            [order_schema_js_1.OrderStatus.RETURNED]: 'Return Approved',
             [order_schema_js_1.OrderStatus.REFUNDED]: 'Order Refunded',
         };
         const timelineEntry = {

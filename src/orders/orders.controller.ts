@@ -26,6 +26,8 @@ import { OrdersService } from './orders.service.js';
 import { QueryOrderDto } from './dto/query-order.dto.js';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto.js';
 import { UpdateTrackingDto } from './dto/update-tracking.dto.js';
+import { RejectReturnDto } from './dto/reject-return.dto.js';
+import { ProcessReturnRefundDto } from './dto/process-return-refund.dto.js';
 import { RequestReturnDto } from './dto/request-return.dto.js';
 import { CancelOrderDto } from './dto/cancel-order.dto.js';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard.js';
@@ -83,24 +85,33 @@ export class OrdersController {
 
   @Patch('admin/:orderId/approve-return')
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: '[Admin] Approve a return request for an order' })
+  @ApiOperation({ summary: '[Admin] Approve a return request (restocks inventory)' })
   @ApiParam({ name: 'orderId', example: 'NK-ORD-20260807-1234' })
   @ApiResponse({ status: 200, description: 'Return approved' })
   async approveReturn(@Param('orderId') orderId: string) {
     return this.ordersService.approveReturn(orderId);
   }
 
+  @Patch('admin/:orderId/reject-return')
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Admin] Reject a return request' })
+  @ApiParam({ name: 'orderId', example: 'NK-ORD-20260807-1234' })
+  async rejectReturn(@Param('orderId') orderId: string, @Body() dto: RejectReturnDto) {
+    return this.ordersService.rejectReturn(orderId, dto);
+  }
+
   @Patch('admin/:orderId/refund')
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: '[Admin] Mark order as REFUNDED' })
+  @ApiOperation({ summary: '[Admin] Process return refund (Razorpay / COD UPI or bank)' })
   @ApiParam({ name: 'orderId', example: 'NK-ORD-20260807-1234' })
-  @ApiResponse({ status: 200, description: 'Order marked as refunded' })
+  @ApiResponse({ status: 200, description: 'Order refunded' })
   async markRefunded(
     @Param('orderId') orderId: string,
-    @Body() body: { notes?: string },
+    @Body() body: ProcessReturnRefundDto,
   ) {
-    return this.ordersService.markRefunded(orderId, body?.notes);
+    return this.ordersService.processReturnRefund(orderId, body || {});
   }
 
   // ─── CUSTOMER ─────────────────────────────────────────────────────────────

@@ -23,6 +23,7 @@ export declare enum OrderStatus {
     OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY",
     DELIVERED = "DELIVERED",
     CANCELLED = "CANCELLED",
+    RETURN_REQUESTED = "RETURN_REQUESTED",
     RETURNED = "RETURNED",
     REFUNDED = "REFUNDED"
 }
@@ -529,9 +530,33 @@ export declare class Order {
     timeline: OrderTimeline[];
     returnInfo?: {
         reason?: string;
+        notes?: string;
         requestedAt?: Date;
         approvedAt?: Date;
-        notes?: string;
+        rejectedAt?: Date;
+        rejectionReason?: string;
+        status?: 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
+        items?: Array<{
+            productId?: string;
+            variantId?: string;
+            sku?: string;
+            name?: string;
+            quantity: number;
+            unitPrice: number;
+            refundAmount: number;
+        }>;
+        refundAmount?: number;
+        refundMethod?: 'RAZORPAY' | 'UPI' | 'BANK';
+        refundDetails?: {
+            upiId?: string;
+            bankAccountNumber?: string;
+            bankIfsc?: string;
+            bankAccountName?: string;
+            razorpayRefundId?: string;
+            processedAt?: Date;
+            notes?: string;
+        };
+        images?: string[];
     };
     cancellationReason?: string;
     isDeleted: boolean;
@@ -669,9 +694,33 @@ export declare const OrderSchema: MongooseSchema<Order, import("mongoose").Model
     }>> | undefined;
     returnInfo?: import("mongoose").SchemaDefinitionProperty<{
         reason?: string;
+        notes?: string;
         requestedAt?: Date;
         approvedAt?: Date;
-        notes?: string;
+        rejectedAt?: Date;
+        rejectionReason?: string;
+        status?: "REQUESTED" | "APPROVED" | "REJECTED" | "REFUNDED";
+        items?: Array<{
+            productId?: string;
+            variantId?: string;
+            sku?: string;
+            name?: string;
+            quantity: number;
+            unitPrice: number;
+            refundAmount: number;
+        }>;
+        refundAmount?: number;
+        refundMethod?: "RAZORPAY" | "UPI" | "BANK";
+        refundDetails?: {
+            upiId?: string;
+            bankAccountNumber?: string;
+            bankIfsc?: string;
+            bankAccountName?: string;
+            razorpayRefundId?: string;
+            processedAt?: Date;
+            notes?: string;
+        };
+        images?: string[];
     } | undefined, Order, Document<unknown, {}, Order, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<Order & {

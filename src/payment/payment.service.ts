@@ -343,7 +343,13 @@ export class PaymentService {
     if (order) {
       order.paymentInfo.status = isFullRefund ? PaymentStatus.REFUNDED : PaymentStatus.COMPLETED;
       if (isFullRefund) {
-        order.orderStatus = OrderStatus.CANCELLED;
+        // Return flow: mark REFUNDED. Do not force CANCELLED on return refunds.
+        if (
+          order.orderStatus === OrderStatus.RETURNED ||
+          order.orderStatus === OrderStatus.RETURN_REQUESTED
+        ) {
+          order.orderStatus = OrderStatus.REFUNDED;
+        }
       }
       await order.save();
     }
