@@ -14,12 +14,19 @@ const checkout_module_js_1 = require("../checkout/checkout.module.js");
 const products_module_js_1 = require("../products/products.module.js");
 const inventory_module_js_1 = require("../inventory/inventory.module.js");
 const notifications_module_js_1 = require("../notifications/notifications.module.js");
+const payment_module_js_1 = require("../payment/payment.module.js");
 let OrdersModule = class OrdersModule {
 };
 exports.OrdersModule = OrdersModule;
 exports.OrdersModule = OrdersModule = __decorate([
     (0, common_1.Module)({
-        imports: [checkout_module_js_1.CheckoutModule, products_module_js_1.ProductsModule, inventory_module_js_1.InventoryModule, notifications_module_js_1.NotificationsModule],
+        imports: [
+            checkout_module_js_1.CheckoutModule,
+            products_module_js_1.ProductsModule,
+            inventory_module_js_1.InventoryModule,
+            notifications_module_js_1.NotificationsModule,
+            (0, common_1.forwardRef)(() => payment_module_js_1.PaymentModule),
+        ],
         controllers: [orders_controller_js_1.OrdersController],
         providers: [orders_service_js_1.OrdersService],
         exports: [orders_service_js_1.OrdersService],

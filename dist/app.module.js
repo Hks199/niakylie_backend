@@ -76,7 +76,7 @@ exports.AppModule = AppModule = __decorate([
                 useFactory: (configService) => [
                     {
                         ttl: configService.get('throttle.ttl') ?? 60000,
-                        limit: configService.get('throttle.limit') ?? 100,
+                        limit: configService.get('throttle.limit') ?? 300,
                     },
                 ],
                 inject: [config_1.ConfigService],

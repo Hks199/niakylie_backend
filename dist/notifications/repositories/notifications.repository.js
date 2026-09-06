@@ -35,48 +35,101 @@ let NotificationsRepository = class NotificationsRepository {
             return null;
         return this.notificationModel.findOne({ _id: new mongoose_2.Types.ObjectId(id), isDeleted: false }).exec();
     }
-    async findByUserId(userId, query) {
+    async findByUserId(userId, query, isAdmin = false) {
         const { page = 1, limit = 10, isRead, type } = query;
         const userObjId = new mongoose_2.Types.ObjectId(userId);
         const userTotalCount = await this.notificationModel.countDocuments({ userId: userObjId, isDeleted: false }).exec();
         if (userTotalCount === 0) {
-            await this.notificationModel.insertMany([
-                {
-                    userId: userObjId,
-                    type: 'offer',
-                    channel: 'in_app',
-                    title: 'Welcome to NiaKylie!',
-                    message: 'Enjoy 15% OFF on your first purchase with coupon code FESTIVE15.',
-                    isRead: false,
-                    status: 'SENT',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: userObjId,
-                    type: 'system',
-                    channel: 'in_app',
-                    title: 'Complimentary Nationwide Shipping',
-                    message: 'Get free express shipping on all orders over ₹1,000 across India.',
-                    isRead: false,
-                    status: 'SENT',
-                    createdAt: new Date(Date.now() - 3600000),
-                },
-                {
-                    userId: userObjId,
-                    type: 'coupon',
-                    channel: 'in_app',
-                    title: 'Exclusive Festive Coupon Drop',
-                    message: 'Special ₹500 flat discount unlocked! Use code NIAKYLIE500 on sarees and ethnic wear.',
-                    isRead: false,
-                    status: 'SENT',
-                    createdAt: new Date(Date.now() - 7200000),
-                },
-            ]);
+            if (isAdmin) {
+                await this.notificationModel.insertMany([
+                    {
+                        userId: userObjId,
+                        type: 'ORDER_UPDATE',
+                        channel: 'in_app',
+                        title: '🛍️ Order Update: #NK-ORD-20260904-7991',
+                        message: 'Order #NK-ORD-20260904-7991 for ₹3,499 was confirmed and processed.',
+                        isRead: false,
+                        status: 'SENT',
+                        metadata: { orderNumber: 'NK-ORD-20260904-7991', targetTab: 'orders' },
+                        createdAt: new Date(),
+                    },
+                    {
+                        userId: userObjId,
+                        type: 'SYSTEM',
+                        channel: 'in_app',
+                        title: '🚨 Stock Alert: Low Inventory',
+                        message: 'Product Handloom Banarasi Saree is running low on stock (2 units remaining).',
+                        isRead: false,
+                        status: 'SENT',
+                        metadata: { targetTab: 'inventory', stockAlert: true },
+                        createdAt: new Date(Date.now() - 3600000),
+                    },
+                    {
+                        userId: userObjId,
+                        type: 'SYSTEM',
+                        channel: 'in_app',
+                        title: '⭐ New Customer Review Posted',
+                        message: 'Priya S. submitted a 5-star review: "Exquisite fabric quality and ultra fast delivery!"',
+                        isRead: false,
+                        status: 'SENT',
+                        metadata: { reviewId: 'demo', targetTab: 'reviews' },
+                        createdAt: new Date(Date.now() - 7200000),
+                    },
+                ]);
+            }
+            else {
+                await this.notificationModel.insertMany([
+                    {
+                        userId: userObjId,
+                        type: 'offer',
+                        channel: 'in_app',
+                        title: 'Welcome to NiaKylie!',
+                        message: 'Enjoy 15% OFF on your first purchase with coupon code FESTIVE15.',
+                        isRead: false,
+                        status: 'SENT',
+                        createdAt: new Date(),
+                    },
+                    {
+                        userId: userObjId,
+                        type: 'system',
+                        channel: 'in_app',
+                        title: 'Complimentary Nationwide Shipping',
+                        message: 'Get free express shipping on all orders over ₹1,000 across India.',
+                        isRead: false,
+                        status: 'SENT',
+                        createdAt: new Date(Date.now() - 3600000),
+                    },
+                    {
+                        userId: userObjId,
+                        type: 'coupon',
+                        channel: 'in_app',
+                        title: 'Exclusive Festive Coupon Drop',
+                        message: 'Special ₹500 flat discount unlocked! Use code NIAKYLIE500 on sarees and ethnic wear.',
+                        isRead: false,
+                        status: 'SENT',
+                        createdAt: new Date(Date.now() - 7200000),
+                    },
+                ]);
+            }
         }
         const filter = {
-            userId: userObjId,
             isDeleted: false,
         };
+        if (isAdmin) {
+            filter.$or = [
+                { userId: userObjId },
+                { 'metadata.isAdminEvent': true },
+                { userId: { $exists: false } },
+            ];
+        }
+        else {
+            filter.userId = userObjId;
+            filter.$nor = [
+                { 'metadata.isAdminEvent': true },
+                { 'metadata.targetTab': 'reviews' },
+                { 'metadata.reviewId': { $exists: true, $ne: null } },
+            ];
+        }
         if (isRead !== undefined) {
             const valStr = String(isRead);
             const isReadTrue = isRead === true || valStr === 'true' || valStr === '1';
@@ -104,34 +157,56 @@ let NotificationsRepository = class NotificationsRepository {
         const [data, total, unreadCount] = await Promise.all([
             this.notificationModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).exec(),
             this.notificationModel.countDocuments(filter).exec(),
-            this.countUnread(userId),
+            this.countUnread(userId, isAdmin),
         ]);
         return { data, total, unreadCount, page, limit };
     }
-    async countUnread(userId) {
+    async countUnread(userId, isAdmin = false) {
         if (!mongoose_2.Types.ObjectId.isValid(userId))
             return 0;
-        return this.notificationModel
-            .countDocuments({
-            userId: new mongoose_2.Types.ObjectId(userId),
+        const filter = {
             isRead: { $ne: true },
             isDeleted: false,
-        })
-            .exec();
+        };
+        if (isAdmin) {
+            filter.$or = [
+                { userId: new mongoose_2.Types.ObjectId(userId) },
+                { 'metadata.isAdminEvent': true },
+                { userId: { $exists: false } },
+            ];
+        }
+        else {
+            filter.userId = new mongoose_2.Types.ObjectId(userId);
+            filter.$nor = [
+                { 'metadata.isAdminEvent': true },
+                { 'metadata.targetTab': 'reviews' },
+                { 'metadata.reviewId': { $exists: true, $ne: null } },
+            ];
+        }
+        return this.notificationModel.countDocuments(filter).exec();
     }
     async markAsRead(id, userId) {
-        if (!mongoose_2.Types.ObjectId.isValid(id) || !mongoose_2.Types.ObjectId.isValid(userId))
+        if (!mongoose_2.Types.ObjectId.isValid(id))
             return null;
         return this.notificationModel
-            .findOneAndUpdate({ _id: new mongoose_2.Types.ObjectId(id), userId: new mongoose_2.Types.ObjectId(userId), isDeleted: false }, { isRead: true, readAt: new Date() }, { new: true })
+            .findOneAndUpdate({ _id: new mongoose_2.Types.ObjectId(id), isDeleted: false }, { isRead: true, readAt: new Date() }, { new: true })
             .exec();
     }
-    async markAllAsRead(userId) {
+    async markAllAsRead(userId, isAdmin = false) {
         if (!mongoose_2.Types.ObjectId.isValid(userId))
             return { modifiedCount: 0 };
-        const res = await this.notificationModel
-            .updateMany({ userId: new mongoose_2.Types.ObjectId(userId), isRead: false, isDeleted: false }, { isRead: true, readAt: new Date() })
-            .exec();
+        const filter = { isRead: false, isDeleted: false };
+        if (isAdmin) {
+            filter.$or = [
+                { userId: new mongoose_2.Types.ObjectId(userId) },
+                { 'metadata.isAdminEvent': true },
+                { userId: { $exists: false } },
+            ];
+        }
+        else {
+            filter.userId = new mongoose_2.Types.ObjectId(userId);
+        }
+        const res = await this.notificationModel.updateMany(filter, { isRead: true, readAt: new Date() }).exec();
         return { modifiedCount: res.modifiedCount };
     }
     async softDelete(id, userId) {

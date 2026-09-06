@@ -54,6 +54,7 @@ const products_repository_js_1 = require("../products/repositories/products.repo
 const users_repository_js_1 = require("../users/repositories/users.repository.js");
 const coupons_service_js_1 = require("../coupons/coupons.service.js");
 const notifications_service_js_1 = require("../notifications/notifications.service.js");
+const notification_schema_js_1 = require("../notifications/schemas/notification.schema.js");
 const online_payment_discount_service_js_1 = require("../payment/online-payment-discount.service.js");
 const inventory_schema_js_1 = require("../inventory/schemas/inventory.schema.js");
 const order_schema_js_1 = require("./schemas/order.schema.js");
@@ -295,9 +296,29 @@ let CheckoutService = class CheckoutService {
                 let status = inventory_schema_js_1.StockStatus.IN_STOCK;
                 if (newAvailable <= 0) {
                     status = inventory_schema_js_1.StockStatus.OUT_OF_STOCK;
+                    if (this.notificationsService) {
+                        this.notificationsService
+                            .sendAdminEventNotification({
+                            title: '🚨 Stock Alert: Out of Stock!',
+                            message: `SKU ${item.sku} (${item.name || 'Product'}) reached 0 available stock level!`,
+                            type: notification_schema_js_1.NotificationType.SYSTEM,
+                            metadata: { sku: item.sku, availableStock: newAvailable, targetTab: 'inventory' },
+                        })
+                            .catch(() => { });
+                    }
                 }
                 else if (newAvailable <= lowThreshold) {
                     status = inventory_schema_js_1.StockStatus.LOW_STOCK;
+                    if (this.notificationsService) {
+                        this.notificationsService
+                            .sendAdminEventNotification({
+                            title: '⚠️ Stock Alert: Low Stock Warning',
+                            message: `SKU ${item.sku} (${item.name || 'Product'}) stock is low (${newAvailable} items left).`,
+                            type: notification_schema_js_1.NotificationType.SYSTEM,
+                            metadata: { sku: item.sku, availableStock: newAvailable, targetTab: 'inventory' },
+                        })
+                            .catch(() => { });
+                    }
                 }
                 await this.inventoryRepository.updateBySku(item.sku, {
                     totalStock: newTotal,
@@ -379,6 +400,12 @@ let CheckoutService = class CheckoutService {
             ],
         };
         const order = await this.ordersRepository.create(orderData);
+        this.notificationsService.sendAdminEventNotification({
+            title: '🛍️ New Customer Order Placed',
+            message: `Order #${order.orderNumber} for ₹${(order.pricing?.grandTotal || 0).toLocaleString('en-IN')} placed by ${customerInfo.firstName} ${customerInfo.lastName}.`,
+            type: 'ORDER_UPDATE',
+            metadata: { orderNumber: order.orderNumber, grandTotal: order.pricing?.grandTotal, targetTab: 'orders' },
+        }).catch(() => { });
         if (order.userId) {
             this.notificationsService.sendOrderUpdateNotification({
                 userId: order.userId.toString(),

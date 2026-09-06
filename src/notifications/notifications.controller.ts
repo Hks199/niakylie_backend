@@ -13,6 +13,7 @@ import {
   Sse,
   MessageEvent,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { Observable } from 'rxjs';
 import {
   ApiTags,
@@ -40,12 +41,18 @@ export class NotificationsController {
   ) {}
 
   @Sse('stream')
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Real-time Server-Sent Events (SSE) notification stream' })
   streamNotifications(@CurrentUser() user: User): Observable<MessageEvent> {
     const userId = (user as any).id || (user as any)._id;
-    return this.eventsService.getNotificationStream(userId) as any;
+    const isAdmin =
+      user?.roles?.some((r: any) => r === Role.ADMIN || r === 'ADMIN' || r === 'admin') ||
+      (user as any)?.role === 'admin' ||
+      (user as any)?.role === 'ADMIN' ||
+      false;
+    return this.eventsService.getNotificationStream(userId, isAdmin) as any;
   }
 
   @Post('send')
@@ -71,6 +78,7 @@ export class NotificationsController {
   }
 
   @Get('my')
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get current user in-app notifications with unread counter' })
@@ -84,6 +92,7 @@ export class NotificationsController {
   }
 
   @Get('my/unread-count')
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get count of unread in-app notifications' })
@@ -176,5 +185,15 @@ export class NotificationsController {
   async sendTestCoupon(@CurrentUser() user: User) {
     const userId = (user as any).id || (user as any)._id;
     return this.notificationsService.sendCouponTestNotification(userId);
+  }
+
+  @Post('test-admin-event')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, 'admin' as any)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '[Admin] Trigger live test admin event for notification bell' })
+  async sendTestAdminEvent(@Query('type') type?: string) {
+    return this.notificationsService.sendTestAdminEvent(type);
   }
 }

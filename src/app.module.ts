@@ -63,7 +63,7 @@ import { UploadsModule } from './uploads/uploads.module.js';
       useFactory: (configService: ConfigService) => [
         {
           ttl: configService.get<number>('throttle.ttl') ?? 60000,
-          limit: configService.get<number>('throttle.limit') ?? 100,
+          limit: configService.get<number>('throttle.limit') ?? 300,
         },
       ],
       inject: [ConfigService],

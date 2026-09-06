@@ -63,4 +63,8 @@ export declare class NotificationsController {
         message: string;
         notification: import("./schemas/notification.schema.js").NotificationDocument;
     }>;
+    sendTestAdminEvent(type?: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }

@@ -167,11 +167,18 @@ describe('OrdersService', () => {
   });
 
   describe('getMyOrders', () => {
-    it('should return list of customer orders', async () => {
-      ordersRepo.findByUserIdOrGuestId = jest.fn().mockResolvedValue([mockOrder] as any);
+    it('should return paginated list of customer orders', async () => {
+      ordersRepo.findByUserIdOrGuestIdPaginated = jest.fn().mockResolvedValue({
+        data: [mockOrder],
+        total: 1,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      } as any);
 
       const result = await service.getMyOrders(userId.toString());
-      expect(result).toHaveLength(1);
+      expect(result.data).toHaveLength(1);
+      expect(result.total).toBe(1);
     });
   });
 

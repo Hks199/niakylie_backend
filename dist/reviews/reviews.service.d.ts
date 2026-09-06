@@ -7,12 +7,14 @@ import { UpdateReviewDto } from './dto/update-review.dto.js';
 import { QueryReviewDto } from './dto/query-review.dto.js';
 import { ModerateReviewDto } from './dto/moderate-review.dto.js';
 import { ReviewDocument } from './schemas/review.schema.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 export declare class ReviewsService {
     private readonly reviewsRepo;
     private readonly productsRepo;
     private readonly ordersRepo;
     private readonly usersRepo;
-    constructor(reviewsRepo: ReviewsRepository, productsRepo: ProductsRepository, ordersRepo: OrdersRepository, usersRepo: UsersRepository);
+    private readonly notificationsService?;
+    constructor(reviewsRepo: ReviewsRepository, productsRepo: ProductsRepository, ordersRepo: OrdersRepository, usersRepo: UsersRepository, notificationsService?: NotificationsService | undefined);
     private updateProductRatingSummary;
     checkVerifiedPurchase(userId: string, productId: string): Promise<boolean>;
     private resolveDeterministicUserId;

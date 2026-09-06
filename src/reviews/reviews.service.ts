@@ -15,6 +15,8 @@ import { QueryReviewDto } from './dto/query-review.dto.js';
 import { ModerateReviewDto } from './dto/moderate-review.dto.js';
 import { ReviewDocument, ReviewStatus } from './schemas/review.schema.js';
 import { OrderStatus } from '../checkout/schemas/order.schema.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
+import { NotificationType } from '../notifications/schemas/notification.schema.js';
 
 @Injectable()
 export class ReviewsService {
@@ -23,6 +25,7 @@ export class ReviewsService {
     private readonly productsRepo: ProductsRepository,
     private readonly ordersRepo: OrdersRepository,
     private readonly usersRepo: UsersRepository,
+    private readonly notificationsService?: NotificationsService,
   ) {}
 
   private async updateProductRatingSummary(productId: string): Promise<void> {
@@ -109,6 +112,24 @@ export class ReviewsService {
         status: ReviewStatus.APPROVED,
       });
       await this.updateProductRatingSummary(resolvedProductId);
+
+      if (this.notificationsService) {
+        this.notificationsService
+          .sendAdminEventNotification({
+            title: `⭐ New Product Review (${dto.rating} Stars)`,
+            message: `${userName} provided a ${dto.rating}-star review on ${product?.name || 'a product'}: "${dto.title || dto.comment || 'Great product quality!'}"`,
+            type: NotificationType.SYSTEM,
+            metadata: {
+              reviewId: existing._id.toString(),
+              productId: resolvedProductId,
+              rating: dto.rating,
+              targetTab: 'reviews',
+              isAdminEvent: true,
+            },
+          })
+          .catch(() => {});
+      }
+
       return updated!;
     }
 
@@ -128,6 +149,25 @@ export class ReviewsService {
     });
 
     await this.updateProductRatingSummary(resolvedProductId);
+
+    // Notify admin in real-time about new product review
+    if (this.notificationsService) {
+      this.notificationsService
+        .sendAdminEventNotification({
+          title: `⭐ New Product Review (${dto.rating} Stars)`,
+          message: `${userName} provided a ${dto.rating}-star review on ${product?.name || 'a product'}: "${dto.title || dto.comment || 'Great product quality!'}"`,
+          type: NotificationType.SYSTEM,
+          metadata: {
+            reviewId: review._id.toString(),
+            productId: resolvedProductId,
+            rating: dto.rating,
+            targetTab: 'reviews',
+            isAdminEvent: true,
+          },
+        })
+        .catch(() => {});
+    }
+
     return review;
   }
 

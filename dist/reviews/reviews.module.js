@@ -17,6 +17,7 @@ const product_reviews_controller_js_1 = require("./product-reviews.controller.js
 const products_module_js_1 = require("../products/products.module.js");
 const checkout_module_js_1 = require("../checkout/checkout.module.js");
 const users_module_js_1 = require("../users/users.module.js");
+const notifications_module_js_1 = require("../notifications/notifications.module.js");
 let ReviewsModule = class ReviewsModule {
 };
 exports.ReviewsModule = ReviewsModule;
@@ -27,6 +28,7 @@ exports.ReviewsModule = ReviewsModule = __decorate([
             products_module_js_1.ProductsModule,
             checkout_module_js_1.CheckoutModule,
             users_module_js_1.UsersModule,
+            notifications_module_js_1.NotificationsModule,
         ],
         controllers: [reviews_controller_js_1.ReviewsController, product_reviews_controller_js_1.ProductReviewsController],
         providers: [reviews_service_js_1.ReviewsService, reviews_repository_js_1.ReviewsRepository],

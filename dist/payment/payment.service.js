@@ -268,7 +268,10 @@ let PaymentService = class PaymentService {
         if (order) {
             order.paymentInfo.status = isFullRefund ? order_schema_js_1.PaymentStatus.REFUNDED : order_schema_js_1.PaymentStatus.COMPLETED;
             if (isFullRefund) {
-                order.orderStatus = order_schema_js_1.OrderStatus.CANCELLED;
+                if (order.orderStatus === order_schema_js_1.OrderStatus.RETURNED ||
+                    order.orderStatus === order_schema_js_1.OrderStatus.RETURN_REQUESTED) {
+                    order.orderStatus = order_schema_js_1.OrderStatus.REFUNDED;
+                }
             }
             await order.save();
         }

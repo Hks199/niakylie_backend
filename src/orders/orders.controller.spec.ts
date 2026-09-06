@@ -61,12 +61,21 @@ describe('OrdersController', () => {
 
   describe('getMyOrders', () => {
     it('should return customer orders', async () => {
-      service.getMyOrders.mockResolvedValue([mockOrder] as any);
+      service.getMyOrders.mockResolvedValue({
+        data: [mockOrder],
+        total: 1,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      } as any);
       const req = { user: { id: 'user123' } };
 
-      const result = await controller.getMyOrders(req);
-      expect(service.getMyOrders).toHaveBeenCalledWith('user123');
-      expect(result).toHaveLength(1);
+      const result = await controller.getMyOrders(req, {});
+      expect(service.getMyOrders).toHaveBeenCalledWith('user123', undefined, undefined, {
+        page: undefined,
+        limit: undefined,
+      });
+      expect(result.data).toHaveLength(1);
     });
   });
 

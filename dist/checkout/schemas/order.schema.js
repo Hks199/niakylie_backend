@@ -39,6 +39,7 @@ var OrderStatus;
     OrderStatus["OUT_FOR_DELIVERY"] = "OUT_FOR_DELIVERY";
     OrderStatus["DELIVERED"] = "DELIVERED";
     OrderStatus["CANCELLED"] = "CANCELLED";
+    OrderStatus["RETURN_REQUESTED"] = "RETURN_REQUESTED";
     OrderStatus["RETURNED"] = "RETURNED";
     OrderStatus["REFUNDED"] = "REFUNDED";
 })(OrderStatus || (exports.OrderStatus = OrderStatus = {}));
@@ -372,9 +373,38 @@ __decorate([
     (0, mongoose_1.Prop)({
         type: {
             reason: { type: String, trim: true },
+            notes: { type: String, trim: true },
             requestedAt: { type: Date },
             approvedAt: { type: Date },
-            notes: { type: String, trim: true },
+            rejectedAt: { type: Date },
+            rejectionReason: { type: String, trim: true },
+            status: {
+                type: String,
+                enum: ['REQUESTED', 'APPROVED', 'REJECTED', 'REFUNDED'],
+            },
+            items: [
+                {
+                    productId: { type: String },
+                    variantId: { type: String },
+                    sku: { type: String },
+                    name: { type: String },
+                    quantity: { type: Number },
+                    unitPrice: { type: Number },
+                    refundAmount: { type: Number },
+                },
+            ],
+            refundAmount: { type: Number },
+            refundMethod: { type: String, enum: ['RAZORPAY', 'UPI', 'BANK'] },
+            refundDetails: {
+                upiId: { type: String },
+                bankAccountNumber: { type: String },
+                bankIfsc: { type: String },
+                bankAccountName: { type: String },
+                razorpayRefundId: { type: String },
+                processedAt: { type: Date },
+                notes: { type: String },
+            },
+            images: [{ type: String }],
         },
         _id: false,
     }),

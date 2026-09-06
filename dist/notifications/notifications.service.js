@@ -16,6 +16,7 @@ const notifications_repository_js_1 = require("./repositories/notifications.repo
 const email_provider_js_1 = require("./providers/email.provider.js");
 const sms_provider_js_1 = require("./providers/sms.provider.js");
 const users_repository_js_1 = require("../users/repositories/users.repository.js");
+const index_js_1 = require("../shared/index.js");
 const notification_schema_js_1 = require("./schemas/notification.schema.js");
 const notification_events_service_js_1 = require("./notification-events.service.js");
 let NotificationsService = class NotificationsService {
@@ -206,10 +207,20 @@ let NotificationsService = class NotificationsService {
         return { sentCount: notificationsToCreate.length };
     }
     async getUserNotifications(userId, query) {
-        return this.notificationsRepo.findByUserId(userId, query);
+        const user = await this.usersRepo.findById(userId);
+        const isAdmin = user?.roles?.some((r) => r === index_js_1.Role.ADMIN || r === 'ADMIN' || r === 'admin') ||
+            user?.role === 'admin' ||
+            user?.role === 'ADMIN' ||
+            false;
+        return this.notificationsRepo.findByUserId(userId, query, isAdmin);
     }
     async getUnreadCount(userId) {
-        const unreadCount = await this.notificationsRepo.countUnread(userId);
+        const user = await this.usersRepo.findById(userId);
+        const isAdmin = user?.roles?.some((r) => r === index_js_1.Role.ADMIN || r === 'ADMIN' || r === 'admin') ||
+            user?.role === 'admin' ||
+            user?.role === 'ADMIN' ||
+            false;
+        const unreadCount = await this.notificationsRepo.countUnread(userId, isAdmin);
         return { unreadCount };
     }
     async markAsRead(id, userId) {
@@ -220,7 +231,12 @@ let NotificationsService = class NotificationsService {
         return updated;
     }
     async markAllAsRead(userId) {
-        return this.notificationsRepo.markAllAsRead(userId);
+        const user = await this.usersRepo.findById(userId);
+        const isAdmin = user?.roles?.some((r) => r === index_js_1.Role.ADMIN || r === 'ADMIN' || r === 'admin') ||
+            user?.role === 'admin' ||
+            user?.role === 'ADMIN' ||
+            false;
+        return this.notificationsRepo.markAllAsRead(userId, isAdmin);
     }
     async deleteNotification(id, userId) {
         const deleted = await this.notificationsRepo.softDelete(id, userId);
@@ -349,6 +365,83 @@ let NotificationsService = class NotificationsService {
         });
         this.emitRealtime(notification);
         return { success: true, message: 'Exclusive Coupon push notification dispatched', notification };
+    }
+    async sendAdminEventNotification(params) {
+        try {
+            const { data: users } = await this.usersRepo.findAll({ page: 1, limit: 1000 });
+            let adminUsers = users.filter((u) => u.roles?.some((r) => r === index_js_1.Role.ADMIN || r === 'ADMIN' || r === 'admin') ||
+                u.role === 'admin' ||
+                u.role === 'ADMIN');
+            if (adminUsers.length > 0) {
+                for (const admin of adminUsers) {
+                    const notif = await this.notificationsRepo.create({
+                        userId: admin._id,
+                        recipientEmail: admin.email,
+                        type: params.type,
+                        channel: notification_schema_js_1.NotificationChannel.IN_APP,
+                        title: params.title,
+                        message: params.message,
+                        metadata: { ...params.metadata, isAdminEvent: true },
+                        status: notification_schema_js_1.NotificationDeliveryStatus.SENT,
+                    });
+                    this.emitRealtime(notif);
+                }
+            }
+            else {
+                const notif = await this.notificationsRepo.create({
+                    type: params.type,
+                    channel: notification_schema_js_1.NotificationChannel.IN_APP,
+                    title: params.title,
+                    message: params.message,
+                    metadata: { ...params.metadata, isAdminEvent: true },
+                    status: notification_schema_js_1.NotificationDeliveryStatus.SENT,
+                });
+                this.emitRealtime(notif);
+            }
+        }
+        catch (e) {
+            this.emitRealtime({
+                title: params.title,
+                message: params.message,
+                type: params.type,
+                channel: notification_schema_js_1.NotificationChannel.IN_APP,
+                metadata: { ...params.metadata, isAdminEvent: true },
+                createdAt: new Date().toISOString(),
+            });
+        }
+    }
+    async sendTestAdminEvent(eventType) {
+        let title = '🛍️ Realtime Order: New Order Received!';
+        let message = `Customer order #NK-ORD-${Date.now().toString().slice(-4)} for ₹3,499 was received from user.`;
+        let type = notification_schema_js_1.NotificationType.ORDER_UPDATE;
+        if (eventType === 'review') {
+            title = '⭐ Realtime Review: New Product Review Received';
+            message = 'Customer Priya S. provided a 5-star review on Handloom Banarasi Saree: "Exquisite quality and fast delivery!"';
+            type = notification_schema_js_1.NotificationType.SYSTEM;
+        }
+        else if (eventType === 'stock' || eventType === 'inventory') {
+            title = '🚨 Realtime Stock Alert: Out of Stock!';
+            message = 'Product SKU NK-SAR-880 (Kanjivaram Silk Saree) reached 0 available stock level!';
+            type = notification_schema_js_1.NotificationType.SYSTEM;
+        }
+        else if (eventType === 'cancel' || eventType === 'cancelled') {
+            title = '🚫 Order Cancelled: #NK-ORD-20260904-7953';
+            message = 'Order #NK-ORD-20260904-7953 was cancelled by Customer Ananya R. Reason: "Size mismatch / Ordered duplicate item"';
+            type = notification_schema_js_1.NotificationType.ORDER_UPDATE;
+        }
+        const targetTab = eventType === 'review' ? 'reviews' : eventType === 'stock' || eventType === 'inventory' ? 'inventory' : 'orders';
+        await this.sendAdminEventNotification({
+            title,
+            message,
+            type,
+            metadata: {
+                isTestEvent: true,
+                sentAt: new Date().toISOString(),
+                targetTab,
+                ...(eventType === 'review' ? { reviewId: `test_rev_${Date.now()}` } : {}),
+            },
+        });
+        return { success: true, message: 'Test admin realtime event dispatched successfully.' };
     }
 };
 exports.NotificationsService = NotificationsService;

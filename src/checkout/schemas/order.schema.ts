@@ -29,6 +29,7 @@ export enum OrderStatus {
   OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY',
   DELIVERED = 'DELIVERED',
   CANCELLED = 'CANCELLED',
+  RETURN_REQUESTED = 'RETURN_REQUESTED',
   RETURNED = 'RETURNED',
   REFUNDED = 'REFUNDED',
 }
@@ -237,17 +238,70 @@ export class Order {
   @Prop({
     type: {
       reason: { type: String, trim: true },
+      notes: { type: String, trim: true },
       requestedAt: { type: Date },
       approvedAt: { type: Date },
-      notes: { type: String, trim: true },
+      rejectedAt: { type: Date },
+      rejectionReason: { type: String, trim: true },
+      status: {
+        type: String,
+        enum: ['REQUESTED', 'APPROVED', 'REJECTED', 'REFUNDED'],
+      },
+      items: [
+        {
+          productId: { type: String },
+          variantId: { type: String },
+          sku: { type: String },
+          name: { type: String },
+          quantity: { type: Number },
+          unitPrice: { type: Number },
+          refundAmount: { type: Number },
+        },
+      ],
+      refundAmount: { type: Number },
+      refundMethod: { type: String, enum: ['RAZORPAY', 'UPI', 'BANK'] },
+      refundDetails: {
+        upiId: { type: String },
+        bankAccountNumber: { type: String },
+        bankIfsc: { type: String },
+        bankAccountName: { type: String },
+        razorpayRefundId: { type: String },
+        processedAt: { type: Date },
+        notes: { type: String },
+      },
+      images: [{ type: String }],
     },
     _id: false,
   })
   returnInfo?: {
     reason?: string;
+    notes?: string;
     requestedAt?: Date;
     approvedAt?: Date;
-    notes?: string;
+    rejectedAt?: Date;
+    rejectionReason?: string;
+    status?: 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'REFUNDED';
+    items?: Array<{
+      productId?: string;
+      variantId?: string;
+      sku?: string;
+      name?: string;
+      quantity: number;
+      unitPrice: number;
+      refundAmount: number;
+    }>;
+    refundAmount?: number;
+    refundMethod?: 'RAZORPAY' | 'UPI' | 'BANK';
+    refundDetails?: {
+      upiId?: string;
+      bankAccountNumber?: string;
+      bankIfsc?: string;
+      bankAccountName?: string;
+      razorpayRefundId?: string;
+      processedAt?: Date;
+      notes?: string;
+    };
+    images?: string[];
   };
 
   @Prop({ type: String, trim: true })
