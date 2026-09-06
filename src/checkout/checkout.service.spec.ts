@@ -9,6 +9,8 @@ import { InventoryRepository } from '../inventory/repositories/inventory.reposit
 import { ProductsRepository } from '../products/repositories/products.repository.js';
 import { UsersRepository } from '../users/repositories/users.repository.js';
 import { CouponsService } from '../coupons/coupons.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
+import { OnlinePaymentDiscountService } from '../payment/online-payment-discount.service.js';
 import { PaymentMethod, ShippingMethod, OrderStatus } from './schemas/order.schema.js';
 
 describe('CheckoutService', () => {
@@ -131,6 +133,7 @@ describe('CheckoutService', () => {
 
     const mockProductsRepo = {
       findById: jest.fn(),
+      decrementVariantStock: jest.fn().mockResolvedValue(undefined),
     };
 
     const mockUsersRepo = {
@@ -143,6 +146,18 @@ describe('CheckoutService', () => {
       recordUsage: jest.fn(),
     };
 
+    const mockNotificationsService = {
+      sendOrderUpdateNotification: jest.fn().mockResolvedValue(undefined),
+      sendAdminEventNotification: jest.fn().mockResolvedValue(undefined),
+      sendNotification: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const mockOnlineDiscountService = {
+      getConfig: jest.fn().mockResolvedValue({ isEnabled: false }),
+      updateConfig: jest.fn(),
+      calculateDiscount: jest.fn().mockResolvedValue(0),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CheckoutService,
@@ -152,6 +167,8 @@ describe('CheckoutService', () => {
         { provide: ProductsRepository, useValue: mockProductsRepo },
         { provide: UsersRepository, useValue: mockUsersRepo },
         { provide: CouponsService, useValue: mockCouponsService },
+        { provide: NotificationsService, useValue: mockNotificationsService },
+        { provide: OnlinePaymentDiscountService, useValue: mockOnlineDiscountService },
       ],
     }).compile();
 
@@ -188,11 +205,12 @@ describe('CheckoutService', () => {
 
       expect(result.pricing.subtotal).toBe(2000);
       expect(result.pricing.totalMrp).toBe(3000);
-      // Tax: 18% of (2000 - 200 = 1800) = 324
-      expect(result.pricing.tax).toBe(324);
+      // Tax is currently 0%
+      expect(result.pricing.tax).toBe(0);
       // Subtotal >= 1000 -> Free Shipping
       expect(result.pricing.shippingFee).toBe(0);
-      expect(result.pricing.grandTotal).toBe(2124);
+      // grandTotal = subtotal - coupon + shipping = 2000 - 200 + 0 = 1800
+      expect(result.pricing.grandTotal).toBe(1800);
       expect(result.isCheckoutReady).toBe(true);
     });
   });
@@ -201,7 +219,12 @@ describe('CheckoutService', () => {
     it('should place order, deduct stock, and clear cart', async () => {
       cartRepo.findCart.mockResolvedValue(mockCart as any);
       productsRepo.findById.mockResolvedValue({ name: 'Silk Saree' } as any);
-      inventoryRepo.findBySku.mockResolvedValue({ availableStock: 10, soldStock: 0 } as any);
+      inventoryRepo.findBySku.mockResolvedValue({
+        availableStock: 10,
+        totalStock: 10,
+        soldStock: 0,
+        lowStockThreshold: 5,
+      } as any);
       couponsService.validateCoupon.mockResolvedValue({ code: 'WELCOME10', discountAmount: 200 } as any);
       usersRepo.findById.mockResolvedValue(mockUser as any);
       ordersRepo.create.mockResolvedValue(mockOrder as any);
@@ -213,9 +236,12 @@ describe('CheckoutService', () => {
 
       expect(ordersRepo.create).toHaveBeenCalled();
       expect(inventoryRepo.updateBySku).toHaveBeenCalledWith('NIA-SAREE01', {
+        totalStock: 8,
         availableStock: 8,
         soldStock: 2,
+        status: 'IN_STOCK',
       });
+      expect(productsRepo.decrementVariantStock).toHaveBeenCalled();
       expect(cartRepo.clearCart).toHaveBeenCalledWith(userId.toString(), undefined);
       expect(result).toBe(mockOrder);
     });

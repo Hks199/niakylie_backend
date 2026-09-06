@@ -37,7 +37,6 @@ const cms_module_js_1 = require("./cms/cms.module.js");
 const banners_module_js_1 = require("./banners/banners.module.js");
 const dashboard_module_js_1 = require("./dashboard/dashboard.module.js");
 const announcements_module_js_1 = require("./announcements/announcements.module.js");
-const uploads_module_js_1 = require("./uploads/uploads.module.js");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer.apply(index_js_4.RequestLoggerMiddleware).forRoutes('*');
@@ -57,7 +56,6 @@ exports.AppModule = AppModule = __decorate([
             categories_module_js_1.CategoriesModule,
             brands_module_js_1.BrandsModule,
             s3_module_js_1.S3Module,
-            uploads_module_js_1.UploadsModule,
             products_module_js_1.ProductsModule,
             inventory_module_js_1.InventoryModule,
             search_module_js_1.SearchModule,

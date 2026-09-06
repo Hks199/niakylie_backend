@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller.js';
 import { UsersService } from './users.service.js';
+import { S3Service } from '../s3/s3.service.js';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -22,9 +23,18 @@ describe('UsersController', () => {
       debitWallet: jest.fn(),
     };
 
+    const mockS3Service = {
+      uploadBuffer: jest.fn(),
+      uploadManyBuffers: jest.fn(),
+      deleteByUrl: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UsersController],
-      providers: [{ provide: UsersService, useValue: mockUsersService }],
+      providers: [
+        { provide: UsersService, useValue: mockUsersService },
+        { provide: S3Service, useValue: mockS3Service },
+      ],
     }).compile();
 
     controller = module.get<UsersController>(UsersController);

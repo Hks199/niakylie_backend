@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BrandsController } from './brands.controller.js';
 import { BrandsService } from './brands.service.js';
+import { S3Service } from '../s3/s3.service.js';
 
 describe('BrandsController', () => {
   let controller: BrandsController;
@@ -15,9 +16,18 @@ describe('BrandsController', () => {
       findAll: jest.fn(),
     };
 
+    const mockS3Service = {
+      uploadBuffer: jest.fn().mockResolvedValue('/uploads/brands/logo-123.png'),
+      uploadManyBuffers: jest.fn(),
+      deleteByUrl: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BrandsController],
-      providers: [{ provide: BrandsService, useValue: mockBrandsService }],
+      providers: [
+        { provide: BrandsService, useValue: mockBrandsService },
+        { provide: S3Service, useValue: mockS3Service },
+      ],
     }).compile();
 
     controller = module.get<BrandsController>(BrandsController);

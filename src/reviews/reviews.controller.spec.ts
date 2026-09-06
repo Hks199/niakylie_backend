@@ -44,7 +44,11 @@ describe('ReviewsController', () => {
       const dto = { productId: 'prod123', rating: 5, comment: 'Great product' };
 
       const result = await controller.createReview(dto, req);
-      expect(service.createReview).toHaveBeenCalledWith('user123', dto);
+      expect(service.createReview).toHaveBeenCalledWith('user123', undefined, {
+        comment: 'Great product',
+        productId: 'prod123',
+        rating: 5,
+      });
       expect(result).toBe(mockReview);
     });
   });

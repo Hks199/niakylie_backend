@@ -6,6 +6,7 @@ import { ConflictException, UnauthorizedException, BadRequestException } from '@
 import { AuthService } from './auth.service.js';
 import { UsersService } from '../users/users.service.js';
 import { UsersRepository } from '../users/repositories/users.repository.js';
+import { MailService } from '../mail/mail.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import * as sharedUtils from '../shared/utils/hash.util.js';
@@ -48,6 +49,11 @@ describe('AuthService', () => {
       }),
     };
 
+    const mockMailService = {
+      sendMail: jest.fn().mockResolvedValue(true),
+      sendOtpEmail: jest.fn().mockResolvedValue(true),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -55,6 +61,7 @@ describe('AuthService', () => {
         { provide: UsersRepository, useValue: mockUsersRepository },
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: MailService, useValue: mockMailService },
       ],
     }).compile();
 
@@ -76,7 +83,7 @@ describe('AuthService', () => {
         firstName: 'John',
         lastName: 'Doe',
       };
-      usersService.findByEmail.mockResolvedValue({ id: '1' } as any);
+      usersService.findByEmail.mockResolvedValue({ id: '1', isEmailVerified: true } as any);
 
       await expect(service.register(dto)).rejects.toThrow(ConflictException);
     });
@@ -120,6 +127,7 @@ describe('AuthService', () => {
         password: 'hashedPassword',
         roles: ['customer'],
         isActive: true,
+        isEmailVerified: true,
       } as any;
 
       usersService.findByEmail.mockResolvedValue(mockUser);
