@@ -11,7 +11,8 @@ exports.default = () => ({
         uri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/niakylie',
     },
     redis: {
-        host: process.env.REDIS_HOST || '127.0.0.1',
+        enabled: process.env.REDIS_ENABLED === 'true',
+        host: process.env.REDIS_HOST || '',
         port: parseInt(process.env.REDIS_PORT || '6379', 10),
         password: process.env.REDIS_PASSWORD || undefined,
         ttl: parseInt(process.env.REDIS_TTL || '600', 10),

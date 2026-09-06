@@ -13,10 +13,16 @@ const logger = new Logger('RedisCacheModule');
     CacheModule.registerAsync({
       isGlobal: true,
       useFactory: async (configService: ConfigService) => {
-        const host = configService.get<string>('redis.host') ?? 'localhost';
+        const enabled = configService.get<boolean>('redis.enabled') ?? false;
+        const host = configService.get<string>('redis.host') || '';
         const port = configService.get<number>('redis.port') ?? 6379;
         const password = configService.get<string>('redis.password') || undefined;
         const ttl = (configService.get<number>('redis.ttl') ?? 600) * 1000;
+
+        if (!enabled || !host) {
+          logger.log('Redis disabled — using in-memory cache');
+          return { ttl };
+        }
 
         try {
           const store = await redisStore({
@@ -35,13 +41,12 @@ const logger = new Logger('RedisCacheModule');
             ttl,
           });
 
-          logger.log(`✅ Redis connected at ${host}:${port}`);
+          logger.log(`Redis connected at ${host}:${port}`);
           return { store };
         } catch (err) {
           logger.warn(
-            `⚠️  Redis unavailable at ${host}:${port}. Falling back to in-memory cache. (${(err as Error).message})`,
+            `Redis unavailable at ${host}:${port}. Falling back to in-memory cache. (${(err as Error).message})`,
           );
-          // Graceful fallback: use NestJS built-in in-memory cache
           return { ttl };
         }
       },

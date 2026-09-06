@@ -23,10 +23,15 @@ exports.RedisCacheModule = RedisCacheModule = __decorate([
             cache_manager_1.CacheModule.registerAsync({
                 isGlobal: true,
                 useFactory: async (configService) => {
-                    const host = configService.get('redis.host') ?? 'localhost';
+                    const enabled = configService.get('redis.enabled') ?? false;
+                    const host = configService.get('redis.host') || '';
                     const port = configService.get('redis.port') ?? 6379;
                     const password = configService.get('redis.password') || undefined;
                     const ttl = (configService.get('redis.ttl') ?? 600) * 1000;
+                    if (!enabled || !host) {
+                        logger.log('Redis disabled — using in-memory cache');
+                        return { ttl };
+                    }
                     try {
                         const store = await (0, cache_manager_redis_yet_1.redisStore)({
                             socket: {
@@ -43,11 +48,11 @@ exports.RedisCacheModule = RedisCacheModule = __decorate([
                             password,
                             ttl,
                         });
-                        logger.log(`✅ Redis connected at ${host}:${port}`);
+                        logger.log(`Redis connected at ${host}:${port}`);
                         return { store };
                     }
                     catch (err) {
-                        logger.warn(`⚠️  Redis unavailable at ${host}:${port}. Falling back to in-memory cache. (${err.message})`);
+                        logger.warn(`Redis unavailable at ${host}:${port}. Falling back to in-memory cache. (${err.message})`);
                         return { ttl };
                     }
                 },
