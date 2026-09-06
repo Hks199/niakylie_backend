@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsController } from './notifications.controller.js';
 import { NotificationsService } from './notifications.service.js';
+import { NotificationEventsService } from './notification-events.service.js';
 import { NotificationType } from './schemas/notification.schema.js';
 
 describe('NotificationsController', () => {
@@ -24,9 +25,17 @@ describe('NotificationsController', () => {
       deleteNotification: jest.fn(),
     };
 
+    const mockEventsService = {
+      emitNotification: jest.fn(),
+      getNotificationStream: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [NotificationsController],
-      providers: [{ provide: NotificationsService, useValue: mockService }],
+      providers: [
+        { provide: NotificationsService, useValue: mockService },
+        { provide: NotificationEventsService, useValue: mockEventsService },
+      ],
     }).compile();
 
     controller = module.get<NotificationsController>(NotificationsController);
@@ -62,9 +71,9 @@ describe('NotificationsController', () => {
   describe('getMyNotifications', () => {
     it('should delegate fetching customer notifications to service', async () => {
       service.getUserNotifications.mockResolvedValue({ data: [mockNotification as any], total: 1, unreadCount: 1, page: 1, limit: 10 });
-      const req = { user: { id: 'user123' } } as any;
+      const user = { id: 'user123' } as any;
 
-      const result = await controller.getMyNotifications(req, { page: 1, limit: 10 });
+      const result = await controller.getMyNotifications(user, { page: 1, limit: 10 });
       expect(service.getUserNotifications).toHaveBeenCalledWith('user123', { page: 1, limit: 10 });
       expect(result.total).toBe(1);
     });
@@ -73,9 +82,9 @@ describe('NotificationsController', () => {
   describe('markAsRead', () => {
     it('should delegate mark as read to service', async () => {
       service.markAsRead.mockResolvedValue({ ...mockNotification, isRead: true } as any);
-      const req = { user: { id: 'user123' } } as any;
+      const user = { id: 'user123' } as any;
 
-      const result = await controller.markAsRead('notif123', req);
+      const result = await controller.markAsRead('notif123', user);
       expect(service.markAsRead).toHaveBeenCalledWith('notif123', 'user123');
     });
   });

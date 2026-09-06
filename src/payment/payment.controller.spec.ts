@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentController } from './payment.controller.js';
 import { PaymentService } from './payment.service.js';
+import { OnlinePaymentDiscountService } from './online-payment-discount.service.js';
 import { PaymentProvider } from './schemas/payment-transaction.schema.js';
 
 describe('PaymentController', () => {
@@ -20,9 +21,18 @@ describe('PaymentController', () => {
       getOrderTransactions: jest.fn(),
     };
 
+    const mockOnlineDiscountService = {
+      getConfig: jest.fn(),
+      updateConfig: jest.fn(),
+      calculateDiscount: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PaymentController],
-      providers: [{ provide: PaymentService, useValue: mockService }],
+      providers: [
+        { provide: PaymentService, useValue: mockService },
+        { provide: OnlinePaymentDiscountService, useValue: mockOnlineDiscountService },
+      ],
     }).compile();
 
     controller = module.get<PaymentController>(PaymentController);

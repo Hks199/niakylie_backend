@@ -6,6 +6,7 @@ import { CmsService } from './cms.service.js';
 import { PagesRepository } from './repositories/pages.repository.js';
 import { FaqsRepository } from './repositories/faqs.repository.js';
 import { BlogsRepository } from './repositories/blogs.repository.js';
+import { SubscribersRepository } from './repositories/subscribers.repository.js';
 
 describe('CmsService', () => {
   let service: CmsService;
@@ -73,12 +74,19 @@ describe('CmsService', () => {
       softDelete: jest.fn(),
     };
 
+    const mockSubscribersRepo = {
+      createOrUpdate: jest.fn(),
+      findAll: jest.fn(),
+      deleteById: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CmsService,
         { provide: PagesRepository, useValue: mockPagesRepo },
         { provide: FaqsRepository, useValue: mockFaqsRepo },
         { provide: BlogsRepository, useValue: mockBlogsRepo },
+        { provide: SubscribersRepository, useValue: mockSubscribersRepo },
       ],
     }).compile();
 

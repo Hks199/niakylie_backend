@@ -7,6 +7,7 @@ import { ReviewsRepository } from './repositories/reviews.repository.js';
 import { ProductsRepository } from '../products/repositories/products.repository.js';
 import { OrdersRepository } from '../checkout/repositories/orders.repository.js';
 import { UsersRepository } from '../users/repositories/users.repository.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { ReviewStatus } from './schemas/review.schema.js';
 import { OrderStatus } from '../checkout/schemas/order.schema.js';
 
@@ -70,6 +71,8 @@ describe('ReviewsService', () => {
 
     const mockProductsRepo = {
       findById: jest.fn(),
+      findBySlug: jest.fn(),
+      findAll: jest.fn(),
       update: jest.fn(),
     };
 
@@ -81,6 +84,12 @@ describe('ReviewsService', () => {
       findById: jest.fn(),
     };
 
+    const mockNotificationsService = {
+      sendNotification: jest.fn().mockResolvedValue(undefined),
+      sendAdminEventNotification: jest.fn().mockResolvedValue(undefined),
+      broadcastNotification: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReviewsService,
@@ -88,6 +97,7 @@ describe('ReviewsService', () => {
         { provide: ProductsRepository, useValue: mockProductsRepo },
         { provide: OrdersRepository, useValue: mockOrdersRepo },
         { provide: UsersRepository, useValue: mockUsersRepo },
+        { provide: NotificationsService, useValue: mockNotificationsService },
       ],
     }).compile();
 
@@ -103,34 +113,44 @@ describe('ReviewsService', () => {
   });
 
   describe('createReview', () => {
-    it('should throw NotFoundException if product is not found', async () => {
+    it('should still create review when product lookup fails', async () => {
       productsRepo.findById.mockResolvedValue(null);
+      productsRepo.findBySlug.mockResolvedValue(null);
+      productsRepo.findAll.mockResolvedValue({ data: [], total: 0 } as any);
+      reviewsRepo.findByProductAndUser.mockResolvedValue(null);
+      reviewsRepo.findProductReviews.mockResolvedValue({ data: [], total: 0, page: 1, limit: 10 } as any);
+      reviewsRepo.create.mockResolvedValue(mockReview as any);
+      ordersRepo.findByUserId.mockResolvedValue([]);
 
-      await expect(
-        service.createReview(userId.toString(), {
-          productId: productId.toString(),
-          rating: 5,
-          comment: 'Love it!',
-        }),
-      ).rejects.toThrow(NotFoundException);
+      // Service no longer hard-fails on missing product; it falls back and still creates
+      const result = await service.createReview(userId.toString(), undefined, {
+        productId: productId.toString(),
+        rating: 5,
+        comment: 'Love it!',
+      });
+      expect(reviewsRepo.create).toHaveBeenCalled();
+      expect(result).toBe(mockReview);
     });
 
-    it('should throw BadRequestException if user already reviewed product', async () => {
+    it('should update existing review instead of rejecting duplicate', async () => {
       productsRepo.findById.mockResolvedValue(mockProduct as any);
       reviewsRepo.findByProductAndUser.mockResolvedValue(mockReview as any);
+      reviewsRepo.update.mockResolvedValue(mockReview as any);
 
-      await expect(
-        service.createReview(userId.toString(), {
-          productId: productId.toString(),
-          rating: 5,
-          comment: 'Duplicate review',
-        }),
-      ).rejects.toThrow(BadRequestException);
+      // Existing reviews are updated rather than rejected
+      const result = await service.createReview(userId.toString(), undefined, {
+        productId: productId.toString(),
+        rating: 5,
+        comment: 'Duplicate review',
+      });
+      expect(reviewsRepo.update).toHaveBeenCalled();
+      expect(result).toBe(mockReview);
     });
 
     it('should create review and update product rating summary', async () => {
       productsRepo.findById.mockResolvedValue(mockProduct as any);
       reviewsRepo.findByProductAndUser.mockResolvedValue(null);
+      reviewsRepo.findProductReviews.mockResolvedValue({ data: [], total: 0, page: 1, limit: 10 } as any);
       usersRepo.findById.mockResolvedValue(mockUser as any);
       ordersRepo.findByUserId.mockResolvedValue([
         {
@@ -140,7 +160,7 @@ describe('ReviewsService', () => {
       ] as any);
       reviewsRepo.create.mockResolvedValue(mockReview as any);
 
-      const result = await service.createReview(userId.toString(), {
+      const result = await service.createReview(userId.toString(), undefined, {
         productId: productId.toString(),
         rating: 5,
         title: 'Great Product',

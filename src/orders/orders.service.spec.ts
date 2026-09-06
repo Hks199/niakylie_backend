@@ -4,6 +4,9 @@ import { Types } from 'mongoose';
 
 import { OrdersService } from './orders.service.js';
 import { OrdersRepository } from '../checkout/repositories/orders.repository.js';
+import { ProductsRepository } from '../products/repositories/products.repository.js';
+import { InventoryRepository } from '../inventory/repositories/inventory.repository.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { OrderStatus } from '../checkout/schemas/order.schema.js';
 
 describe('OrdersService', () => {
@@ -47,10 +50,29 @@ describe('OrdersService', () => {
       softDelete: jest.fn(),
     };
 
+    const mockProductsRepo = {
+      findById: jest.fn(),
+      incrementVariantStock: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const mockInventoryRepo = {
+      findBySku: jest.fn(),
+      updateBySku: jest.fn(),
+    };
+
+    const mockNotificationsService = {
+      sendOrderUpdateNotification: jest.fn().mockResolvedValue(undefined),
+      sendAdminEventNotification: jest.fn().mockResolvedValue(undefined),
+      sendNotification: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrdersService,
         { provide: OrdersRepository, useValue: mockRepo },
+        { provide: ProductsRepository, useValue: mockProductsRepo },
+        { provide: InventoryRepository, useValue: mockInventoryRepo },
+        { provide: NotificationsService, useValue: mockNotificationsService },
       ],
     }).compile();
 
@@ -115,16 +137,27 @@ describe('OrdersService', () => {
 
   describe('requestReturn', () => {
     it('should allow return for DELIVERED order', async () => {
-      const deliveredOrder = { ...mockOrder, orderStatus: OrderStatus.DELIVERED };
+      const deliveredOrder = {
+        ...mockOrder,
+        orderStatus: OrderStatus.DELIVERED,
+        timeline: [
+          ...mockOrder.timeline,
+          { status: OrderStatus.DELIVERED, title: 'Delivered', timestamp: new Date() },
+        ],
+      };
       ordersRepo.findByOrderNumber.mockResolvedValue(deliveredOrder as any);
-      ordersRepo.updateStatus.mockResolvedValue({ ...deliveredOrder, orderStatus: OrderStatus.RETURNED } as any);
+      ordersRepo.updateStatus.mockResolvedValue({
+        ...deliveredOrder,
+        orderStatus: OrderStatus.RETURN_REQUESTED,
+      } as any);
 
       const result = await service.requestReturn({
         orderId: 'NK-ORD-20260808-1234',
         reason: 'Product damaged',
         items: [{ productId: '60d5ecb8b392d40015f8a001', sku: 'SKU001', quantity: 1 }],
+        refundDetails: { upiId: 'customer@upi' },
       });
-      expect(result.orderStatus).toBe(OrderStatus.RETURNED);
+      expect(result.orderStatus).toBe(OrderStatus.RETURN_REQUESTED);
     });
 
     it('should reject return for non-DELIVERED order', async () => {

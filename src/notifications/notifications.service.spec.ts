@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
 
 import { NotificationsService } from './notifications.service.js';
+import { NotificationEventsService } from './notification-events.service.js';
 import { NotificationsRepository } from './repositories/notifications.repository.js';
 import { EmailProvider } from './providers/email.provider.js';
 import { SmsProvider } from './providers/sms.provider.js';
@@ -73,6 +74,11 @@ describe('NotificationsService', () => {
       findAll: jest.fn(),
     };
 
+    const mockEventsService = {
+      emitNotification: jest.fn(),
+      getNotificationStream: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotificationsService,
@@ -80,6 +86,7 @@ describe('NotificationsService', () => {
         { provide: EmailProvider, useValue: mockEmailProvider },
         { provide: SmsProvider, useValue: mockSmsProvider },
         { provide: UsersRepository, useValue: mockUsersRepo },
+        { provide: NotificationEventsService, useValue: mockEventsService },
       ],
     }).compile();
 

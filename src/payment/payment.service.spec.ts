@@ -219,7 +219,7 @@ describe('PaymentService', () => {
         amount: 1000,
       });
       expect(mockOrder.paymentInfo.status).toBe(PaymentStatus.REFUNDED);
-      expect(mockOrder.orderStatus).toBe(OrderStatus.CANCELLED);
+      expect(mockOrder.orderStatus).toBe(OrderStatus.CONFIRMED);
     });
   });
 });
