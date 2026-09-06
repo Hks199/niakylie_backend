@@ -25,8 +25,19 @@ async function bootstrap() {
     app.use((0, helmet_1.default)({
         crossOriginResourcePolicy: { policy: 'cross-origin' },
     }));
+    const allowedOrigins = [
+        'https://niakylie.com',
+        'https://www.niakylie.com',
+        'http://localhost:5173',
+    ];
     app.enableCors({
-        origin: true,
+        origin: (origin, callback) => {
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+                return;
+            }
+            callback(new Error(`Origin ${origin} not allowed by CORS`), false);
+        },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
         allowedHeaders: [
