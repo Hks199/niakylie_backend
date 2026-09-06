@@ -22,8 +22,20 @@ export declare class OrdersController {
     approveReturn(orderId: string): Promise<import("../checkout/schemas/order.schema.js").OrderDocument>;
     rejectReturn(orderId: string, dto: RejectReturnDto): Promise<import("../checkout/schemas/order.schema.js").OrderDocument>;
     markRefunded(orderId: string, body: ProcessReturnRefundDto): Promise<import("../checkout/schemas/order.schema.js").OrderDocument>;
-    getMyOrders(req: any, guestIdHeader?: string): Promise<import("../checkout/schemas/order.schema.js").OrderDocument[]>;
-    getOrders(req: any, guestIdHeader?: string): Promise<import("../checkout/schemas/order.schema.js").OrderDocument[]>;
+    getMyOrders(req: any, query: QueryOrderDto, guestIdHeader?: string): Promise<{
+        data: import("../checkout/schemas/order.schema.js").OrderDocument[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
+    getOrders(req: any, query: QueryOrderDto, guestIdHeader?: string): Promise<{
+        data: import("../checkout/schemas/order.schema.js").OrderDocument[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
     getMyOrder(orderId: string, req: any): Promise<import("../checkout/schemas/order.schema.js").OrderDocument>;
     getOrderTimeline(orderId: string, req: any): Promise<any[]>;
     getOrderTracking(orderId: string, req: any): Promise<{

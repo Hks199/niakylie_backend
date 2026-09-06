@@ -36,7 +36,16 @@ export declare class OrdersService {
     rejectReturn(orderId: string, dto: RejectReturnDto): Promise<OrderDocument>;
     processReturnRefund(orderId: string, dto?: ProcessReturnRefundDto): Promise<OrderDocument>;
     markRefunded(orderId: string, notes?: string): Promise<OrderDocument>;
-    getMyOrders(userId?: string, guestId?: string, userEmail?: string): Promise<OrderDocument[]>;
+    getMyOrders(userId?: string, guestId?: string, userEmail?: string, pagination?: {
+        page?: number;
+        limit?: number;
+    }): Promise<{
+        data: OrderDocument[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
     getMyOrder(orderId: string, userId: string): Promise<OrderDocument>;
     getOrderTimeline(orderId: string, userId?: string): Promise<any[]>;
     getOrderTracking(orderId: string, userId?: string): Promise<{
