@@ -18,6 +18,14 @@ export declare class OrdersRepository {
     findByInvoiceNumber(invoiceNumber: string): Promise<OrderDocument | null>;
     findByUserId(userId: string): Promise<OrderDocument[]>;
     findByUserIdOrGuestId(userId?: string, guestId?: string, userEmail?: string): Promise<OrderDocument[]>;
+    findByUserIdOrGuestIdPaginated(userId?: string, guestId?: string, userEmail?: string, page?: number, limit?: number): Promise<{
+        data: OrderDocument[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
+    private buildCustomerOrderFilter;
     findByGuestId(guestId: string): Promise<OrderDocument[]>;
     findAll(opts: OrderQueryOptions): Promise<{
         data: OrderDocument[];

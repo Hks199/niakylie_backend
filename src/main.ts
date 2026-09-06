@@ -35,8 +35,23 @@ async function bootstrap(): Promise<void> {
       crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
+  const allowedOrigins = [
+    'https://niakylie.com',
+    'https://www.niakylie.com',
+    'http://localhost:5173',
+  ];
   app.enableCors({
-    origin: true,
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      // Allow non-browser requests (no Origin header), e.g. Postman / server-to-server
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`Origin ${origin} not allowed by CORS`), false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [

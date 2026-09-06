@@ -346,8 +346,8 @@ let OrdersService = class OrdersService {
     async markRefunded(orderId, notes) {
         return this.processReturnRefund(orderId, { notes });
     }
-    async getMyOrders(userId, guestId, userEmail) {
-        return this.ordersRepository.findByUserIdOrGuestId(userId, guestId, userEmail);
+    async getMyOrders(userId, guestId, userEmail, pagination) {
+        return this.ordersRepository.findByUserIdOrGuestIdPaginated(userId, guestId, userEmail, pagination?.page, pagination?.limit);
     }
     async getMyOrder(orderId, userId) {
         return this.resolveOrder(orderId, userId);
