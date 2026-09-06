@@ -1,10 +1,10 @@
 # Production stack for EC2 (CI/CD pulls image from Docker Hub)
-# Local: DOCKERHUB_USERNAME=youruser docker compose up -d --build
-# EC2:   GitHub Actions writes .env + pulls pre-built image
+# Local:  docker compose up -d --build
+# EC2:    GitHub Actions writes .env + pulls pre-built image
 
 services:
   app:
-    image: ${DOCKERHUB_USERNAME}/niakylie-backend:${IMAGE_TAG:-latest}
+    image: harishsahu/niakylie-backend:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
