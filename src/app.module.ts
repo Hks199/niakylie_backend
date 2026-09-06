@@ -30,7 +30,6 @@ import { CmsModule } from './cms/cms.module.js';
 import { BannersModule } from './banners/banners.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { AnnouncementsModule } from './announcements/announcements.module.js';
-import { UploadsModule } from './uploads/uploads.module.js';
 
 @Module({
   imports: [
@@ -44,7 +43,6 @@ import { UploadsModule } from './uploads/uploads.module.js';
     CategoriesModule,
     BrandsModule,
     S3Module,
-    UploadsModule,
     ProductsModule,
     InventoryModule,
     SearchModule,
