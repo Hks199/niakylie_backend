@@ -25,7 +25,7 @@ describe('OrdersService', () => {
     customerInfo: { email: 'user@test.com', firstName: 'Jane', lastName: 'Doe', phone: '+91987654' },
     shippingAddress: { street: '1 Main St', city: 'Mumbai', state: 'MH', postalCode: '400001', country: 'India', phone: '+91987654' },
     billingAddress: { street: '1 Main St', city: 'Mumbai', state: 'MH', postalCode: '400001', country: 'India', phone: '+91987654' },
-    items: [{ sku: 'SKU001', name: 'Silk Saree', quantity: 1, unitPrice: 1000, unitMrp: 1500, totalPrice: 1000 }],
+    items: [{ productId: '60d5ecb8b392d40015f8a001', sku: 'SKU001', name: 'Silk Saree', quantity: 1, unitPrice: 1000, unitMrp: 1500, totalPrice: 1000 }],
     pricing: { subtotal: 1000, totalMrp: 1500, totalDiscount: 500, couponDiscount: 0, tax: 180, shippingFee: 0, grandTotal: 1180 },
     paymentInfo: { method: 'COD', status: 'PENDING' },
     shippingInfo: { method: 'STANDARD', fee: 0 },
@@ -122,6 +122,7 @@ describe('OrdersService', () => {
       const result = await service.requestReturn({
         orderId: 'NK-ORD-20260808-1234',
         reason: 'Product damaged',
+        items: [{ productId: '60d5ecb8b392d40015f8a001', sku: 'SKU001', quantity: 1 }],
       });
       expect(result.orderStatus).toBe(OrderStatus.RETURNED);
     });
@@ -130,7 +131,11 @@ describe('OrdersService', () => {
       ordersRepo.findByOrderNumber.mockResolvedValue(mockOrder as any); // CONFIRMED
 
       await expect(
-        service.requestReturn({ orderId: 'NK-ORD-20260808-1234', reason: 'Test' }),
+        service.requestReturn({
+          orderId: 'NK-ORD-20260808-1234',
+          reason: 'Test',
+          items: [{ productId: '60d5ecb8b392d40015f8a001', sku: 'SKU001', quantity: 1 }],
+        }),
       ).rejects.toThrow(BadRequestException);
     });
   });
