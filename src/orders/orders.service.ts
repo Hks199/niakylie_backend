@@ -461,8 +461,19 @@ export class OrdersService {
 
   // ─── CUSTOMER ─────────────────────────────────────────────────────────────
 
-  async getMyOrders(userId?: string, guestId?: string, userEmail?: string): Promise<OrderDocument[]> {
-    return this.ordersRepository.findByUserIdOrGuestId(userId, guestId, userEmail);
+  async getMyOrders(
+    userId?: string,
+    guestId?: string,
+    userEmail?: string,
+    pagination?: { page?: number; limit?: number },
+  ) {
+    return this.ordersRepository.findByUserIdOrGuestIdPaginated(
+      userId,
+      guestId,
+      userEmail,
+      pagination?.page,
+      pagination?.limit,
+    );
   }
 
   async getMyOrder(orderId: string, userId: string): Promise<OrderDocument> {

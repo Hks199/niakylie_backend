@@ -41,6 +41,45 @@ export class OrdersRepository {
   }
 
   async findByUserIdOrGuestId(userId?: string, guestId?: string, userEmail?: string): Promise<OrderDocument[]> {
+    const filter = this.buildCustomerOrderFilter(userId, guestId, userEmail);
+    if (!filter) return [];
+
+    return this.orderModel
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
+  async findByUserIdOrGuestIdPaginated(
+    userId?: string,
+    guestId?: string,
+    userEmail?: string,
+    page = 1,
+    limit = 10,
+  ): Promise<{ data: OrderDocument[]; total: number; page: number; limit: number; totalPages: number }> {
+    const filter = this.buildCustomerOrderFilter(userId, guestId, userEmail);
+    if (!filter) {
+      return { data: [], total: 0, page: 1, limit, totalPages: 1 };
+    }
+
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.max(1, Math.min(50, Number(limit) || 10));
+    const skip = (safePage - 1) * safeLimit;
+
+    const [data, total] = await Promise.all([
+      this.orderModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(safeLimit).exec(),
+      this.orderModel.countDocuments(filter).exec(),
+    ]);
+
+    const totalPages = Math.ceil(total / safeLimit) || 1;
+    return { data, total, page: safePage, limit: safeLimit, totalPages };
+  }
+
+  private buildCustomerOrderFilter(
+    userId?: string,
+    guestId?: string,
+    userEmail?: string,
+  ): Record<string, any> | null {
     const filter: Record<string, any> = { isDeleted: { $ne: true } };
     const orConditions: any[] = [];
 
@@ -63,15 +102,11 @@ export class OrdersRepository {
     }
 
     if (orConditions.length === 0) {
-      return [];
+      return null;
     }
 
     filter.$or = orConditions;
-
-    return this.orderModel
-      .find(filter)
-      .sort({ createdAt: -1 })
-      .exec();
+    return filter;
   }
 
   async findByGuestId(guestId: string): Promise<OrderDocument[]> {

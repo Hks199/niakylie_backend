@@ -119,31 +119,39 @@ export class OrdersController {
   @Get('my')
   @ApiHeader({ name: 'x-guest-id', required: false, description: 'Guest ID for unauthenticated order lookup' })
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get all orders for the authenticated customer or guest session' })
+  @ApiOperation({ summary: 'Get paginated orders for the authenticated customer or guest session' })
   @ApiResponse({ status: 200, description: 'Customer order list returned' })
   async getMyOrders(
     @Req() req: any,
+    @Query() query: QueryOrderDto,
     @Headers('x-guest-id') guestIdHeader?: string,
   ) {
     const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub;
     const userEmail = req.user?.email;
     const guestId = guestIdHeader || req.query?.guestId;
-    return this.ordersService.getMyOrders(userId, guestId, userEmail);
+    return this.ordersService.getMyOrders(userId, guestId, userEmail, {
+      page: query.page,
+      limit: query.limit,
+    });
   }
 
   @Get()
   @ApiHeader({ name: 'x-guest-id', required: false, description: 'Guest ID for unauthenticated order lookup' })
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get all orders for the authenticated customer or guest session' })
+  @ApiOperation({ summary: 'Get paginated orders for the authenticated customer or guest session' })
   @ApiResponse({ status: 200, description: 'Customer order list returned' })
   async getOrders(
     @Req() req: any,
+    @Query() query: QueryOrderDto,
     @Headers('x-guest-id') guestIdHeader?: string,
   ) {
     const userId = req.user?.id || req.user?._id?.toString() || req.user?.sub;
     const userEmail = req.user?.email;
     const guestId = guestIdHeader || req.query?.guestId;
-    return this.ordersService.getMyOrders(userId, guestId, userEmail);
+    return this.ordersService.getMyOrders(userId, guestId, userEmail, {
+      page: query.page,
+      limit: query.limit,
+    });
   }
 
   @Get('my/:orderId')
