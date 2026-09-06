@@ -45,7 +45,8 @@ exports.envValidationSchema = Joi.object({
     MONGODB_URI: Joi.string().required().messages({
         'any.required': 'MONGODB_URI is required in environment variables',
     }),
-    REDIS_HOST: Joi.string().default('localhost'),
+    REDIS_ENABLED: Joi.boolean().truthy('true').falsy('false').default(false),
+    REDIS_HOST: Joi.string().allow('').default(''),
     REDIS_PORT: Joi.number().default(6379),
     REDIS_PASSWORD: Joi.string().allow('').default(''),
     REDIS_TTL: Joi.number().default(600),

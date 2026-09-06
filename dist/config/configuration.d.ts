@@ -9,6 +9,7 @@ declare const _default: () => {
         uri: string;
     };
     redis: {
+        enabled: boolean;
         host: string;
         port: number;
         password: string | undefined;
