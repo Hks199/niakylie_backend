@@ -39,6 +39,7 @@ async function bootstrap(): Promise<void> {
     'https://niakylie.com',
     'https://www.niakylie.com',
     'http://localhost:5173',
+    'https://niakylie.netlify.app'
   ];
   app.enableCors({
     origin: (
