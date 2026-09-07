@@ -39,6 +39,9 @@ let S3Service = class S3Service {
         const ext = (0, path_1.extname)(originalName) || '.jpg';
         const filename = `image-${Date.now()}-${(0, crypto_1.randomBytes)(4).toString('hex')}${ext}`;
         if (!this.bucket) {
+            if (this.configService.get('app.nodeEnv') === 'production') {
+                throw new common_1.InternalServerErrorException('S3 storage is not configured');
+            }
             const uploadDir = (0, path_1.join)(process.cwd(), 'public', 'uploads', folder);
             (0, fs_1.mkdirSync)(uploadDir, { recursive: true });
             (0, fs_1.writeFileSync)((0, path_1.join)(uploadDir, filename), buffer);
@@ -53,7 +56,6 @@ let S3Service = class S3Service {
                     Key: key,
                     Body: stream_1.Readable.from(buffer),
                     ContentType: mimeType,
-                    ACL: 'public-read',
                 },
             });
             await upload.done();
@@ -61,6 +63,12 @@ let S3Service = class S3Service {
         }
         catch (error) {
             if (this.configService.get('app.nodeEnv') === 'production') {
+                console.error('S3 upload failed', {
+                    bucket: this.bucket,
+                    region: this.region,
+                    key,
+                    error: error instanceof Error ? error.message : String(error),
+                });
                 throw new common_1.BadRequestException('Image upload to S3 failed');
             }
             const uploadDir = (0, path_1.join)(process.cwd(), 'public', 'uploads', folder);
