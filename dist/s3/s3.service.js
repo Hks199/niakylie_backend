@@ -60,6 +60,9 @@ let S3Service = class S3Service {
             return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
         }
         catch (error) {
+            if (this.configService.get('app.nodeEnv') === 'production') {
+                throw new common_1.BadRequestException('Image upload to S3 failed');
+            }
             const uploadDir = (0, path_1.join)(process.cwd(), 'public', 'uploads', folder);
             (0, fs_1.mkdirSync)(uploadDir, { recursive: true });
             (0, fs_1.writeFileSync)((0, path_1.join)(uploadDir, filename), buffer);

@@ -66,7 +66,11 @@ export class S3Service {
       await upload.done();
       return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
     } catch (error) {
-      // Fallback to local storage if S3 upload fails
+      // Keep local fallback for development, but surface production failures.
+      if (this.configService.get<string>('app.nodeEnv') === 'production') {
+        throw new BadRequestException('Image upload to S3 failed');
+      }
+
       const uploadDir = join(process.cwd(), 'public', 'uploads', folder);
       mkdirSync(uploadDir, { recursive: true });
       writeFileSync(join(uploadDir, filename), buffer);

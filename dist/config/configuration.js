@@ -39,10 +39,10 @@ exports.default = () => ({
         callbackUrl: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/api/v1/auth/google/callback',
     },
     s3: {
-        region: process.env.AWS_S3_REGION || 'ap-south-1',
-        bucket: process.env.AWS_S3_BUCKET || '',
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+        region: process.env.S3_REGION || process.env.AWS_S3_REGION || 'ap-south-1',
+        bucket: process.env.S3_BUCKET || process.env.AWS_S3_BUCKET || '',
+        accessKeyId: process.env.S3_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || '',
+        secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY || '',
     },
     admin: {
         secretKey: process.env.ADMIN_SECRET_KEY || 'NIAKYLIE_ADMIN_SECRET_2026',
