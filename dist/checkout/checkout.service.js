@@ -452,7 +452,7 @@ let CheckoutService = class CheckoutService {
         catch (e) {
         }
         if (!logoBase64) {
-            logoBase64 = 'http://localhost:5173/asset/niakylie_logo.png';
+            logoBase64 = '/asset/niakylie_logo.png';
         }
         const itemsList = (order.items || [])
             .map((item) => `
@@ -602,7 +602,7 @@ let CheckoutService = class CheckoutService {
 
         <div class="header">
           <div>
-            <img id="receipt-logo" src="http://localhost:5173/asset/niakylie_logo.png" onerror="this.onerror=null; this.src='${logoBase64}';" alt="NiaKylie Logo" style="height: 60px; max-width: 220px; width: auto; object-fit: contain; display: block; margin-bottom: 6px;" />
+            <img id="receipt-logo" src="${logoBase64}" alt="NiaKylie Logo" style="height: 60px; max-width: 220px; width: auto; object-fit: contain; display: block; margin-bottom: 6px;" />
             <div class="brand-tag">Luxury Ethnic Couture</div>
           </div>
           <div class="invoice-title">
