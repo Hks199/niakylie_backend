@@ -1,9 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   S3Client,
   DeleteObjectCommand,
-  ObjectCannedACL,
 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { Readable } from 'stream';
@@ -43,6 +42,10 @@ export class S3Service {
     const filename = `image-${Date.now()}-${randomBytes(4).toString('hex')}${ext}`;
 
     if (!this.bucket) {
+      if (this.configService.get<string>('app.nodeEnv') === 'production') {
+        throw new InternalServerErrorException('S3 storage is not configured');
+      }
+
       const uploadDir = join(process.cwd(), 'public', 'uploads', folder);
       mkdirSync(uploadDir, { recursive: true });
       writeFileSync(join(uploadDir, filename), buffer);
@@ -59,7 +62,6 @@ export class S3Service {
           Key: key,
           Body: Readable.from(buffer),
           ContentType: mimeType,
-          ACL: 'public-read' as ObjectCannedACL,
         },
       });
 
@@ -68,6 +70,12 @@ export class S3Service {
     } catch (error) {
       // Keep local fallback for development, but surface production failures.
       if (this.configService.get<string>('app.nodeEnv') === 'production') {
+        console.error('S3 upload failed', {
+          bucket: this.bucket,
+          region: this.region,
+          key,
+          error: error instanceof Error ? error.message : String(error),
+        });
         throw new BadRequestException('Image upload to S3 failed');
       }
 

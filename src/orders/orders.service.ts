@@ -8,6 +8,8 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
+import * as fs from 'fs';
+import * as path from 'path';
 import { OrdersRepository } from '../checkout/repositories/orders.repository.js';
 import { ProductsRepository } from '../products/repositories/products.repository.js';
 import { InventoryRepository } from '../inventory/repositories/inventory.repository.js';
@@ -707,6 +709,30 @@ export class OrdersService {
   async getInvoice(orderId: string, userId?: string) {
     const order = await this.resolveOrder(orderId, userId);
 
+    let logoBase64 = '';
+    try {
+      const primaryPath = path.resolve(process.cwd(), '../niakylie_frontend/public/asset/niakylie_logo.png');
+      const fallbackPath = 'D:/niakylie_frontend/public/asset/niakylie_logo.png';
+
+      let targetPath = '';
+      if (fs.existsSync(primaryPath)) {
+        targetPath = primaryPath;
+      } else if (fs.existsSync(fallbackPath)) {
+        targetPath = fallbackPath;
+      }
+
+      if (targetPath) {
+        const logoBuffer = fs.readFileSync(targetPath);
+        logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
+      }
+    } catch (e) {
+      // fallback
+    }
+
+    if (!logoBase64) {
+      logoBase64 = '/asset/niakylie_logo.png';
+    }
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -728,6 +754,7 @@ export class OrdersService {
       <body>
         <div class="header">
           <div>
+            <img id="receipt-logo" src="${logoBase64}" alt="NiaKylie Logo" style="height: 60px; max-width: 220px; width: auto; object-fit: contain; display: block; margin-bottom: 6px;" />
             <div class="brand">Niakylie Women Collection</div>
             <p style="color:#888;margin:0">Your fashion destination</p>
           </div>

@@ -139,6 +139,11 @@ jobs:
             cd /opt/niakylie_backend
             mkdir -p public
 
+            if [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ] || [ -z "${AWS_S3_REGION}" ] || [ -z "${AWS_S3_BUCKET}" ]; then
+              echo "Deployment blocked: AWS S3 secrets are not configured in GitHub Actions."
+              exit 1
+            fi
+
             # Build .env on the server from GitHub Secrets (never committed to git)
             umask 077
             {

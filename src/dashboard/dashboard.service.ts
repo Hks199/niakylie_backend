@@ -265,7 +265,7 @@ export class DashboardService {
           _id: '$items.productId',
           productName: { $first: '$items.name' },
           sku: { $first: '$items.sku' },
-          image: { $first: '$items.image' },
+          itemImage: { $first: '$items.image' },
           totalQuantitySold: { $sum: '$items.quantity' },
           totalRevenue: {
             $sum: {
@@ -278,12 +278,31 @@ export class DashboardService {
       { $sort: { totalRevenue: -1 } },
       { $limit: limit },
       {
+        $lookup: {
+          from: 'products',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'productDoc',
+        },
+      },
+      { $unwind: { path: '$productDoc', preserveNullAndEmptyArrays: true } },
+      {
         $project: {
           _id: 0,
           productId: '$_id',
-          productName: 1,
+          productName: { $ifNull: ['$productName', '$productDoc.name'] },
           sku: 1,
-          image: 1,
+          image: {
+            $ifNull: [
+              '$itemImage',
+              {
+                $ifNull: [
+                  { $arrayElemAt: ['$productDoc.images', 0] },
+                  { $ifNull: ['$productDoc.thumbnail', '$productDoc.image'] },
+                ],
+              },
+            ],
+          },
           totalQuantitySold: 1,
           totalRevenue: 1,
           orderCount: 1,
@@ -451,8 +470,14 @@ export class DashboardService {
           $project: {
             inventoryId: '$_id',
             productId: 1,
-            productName: '$product.title',
+            productName: { $ifNull: ['$product.name', '$product.title'] },
             sku: 1,
+            image: {
+              $ifNull: [
+                { $arrayElemAt: ['$product.images', 0] },
+                { $ifNull: ['$product.thumbnail', '$product.image'] },
+              ],
+            },
             availableQuantity: 1,
             reservedQuantity: 1,
           },
@@ -479,8 +504,14 @@ export class DashboardService {
           $project: {
             inventoryId: '$_id',
             productId: 1,
-            productName: '$product.title',
+            productName: { $ifNull: ['$product.name', '$product.title'] },
             sku: 1,
+            image: {
+              $ifNull: [
+                { $arrayElemAt: ['$product.images', 0] },
+                { $ifNull: ['$product.thumbnail', '$product.image'] },
+              ],
+            },
             availableQuantity: 1,
             lowStockThreshold: 1,
           },
