@@ -677,7 +677,7 @@ let CheckoutService = class CheckoutService {
 
         <div class="footer">
           <p style="margin: 0 0 4px 0; font-weight: 700; color: #475569;">Thank you for shopping with Niakylie Women Collection! ✨</p>
-          <p style="margin: 0; font-size: 11px;">For support or returns, email support@niakylie.com or call +91 98765 43210.</p>
+          <p style="margin: 0; font-size: 11px;">For support or returns, email niakylieofficial@gmail.com or call +91 9589928337.</p>
         </div>
 
         <script>
