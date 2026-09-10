@@ -1,8 +1,11 @@
+import { Model } from 'mongoose';
 import { UsersRepository } from './repositories/users.repository.js';
 import { UserDocument } from './schemas/user.schema.js';
+import { OrderDocument } from '../checkout/schemas/order.schema.js';
 export declare class UsersService {
     private readonly usersRepository;
-    constructor(usersRepository: UsersRepository);
+    private readonly orderModel;
+    constructor(usersRepository: UsersRepository, orderModel: Model<OrderDocument>);
     create(userData: Partial<import('./schemas/user.schema.js').User>): Promise<UserDocument>;
     findById(id: string): Promise<UserDocument>;
     findByEmail(email: string, includePassword?: boolean): Promise<UserDocument | null>;
@@ -17,12 +20,14 @@ export declare class UsersService {
             email: any;
             firstName: any;
             lastName: any;
-            phone: any;
             roles: any;
             isEmailVerified: any;
             isActive: any;
             createdAt: any;
             updatedAt: any;
+            phone: any;
+            orderCount: number;
+            totalSpent: number;
         }[];
         total: number;
         page: number;

@@ -15,12 +15,14 @@ export declare class UsersController {
             email: any;
             firstName: any;
             lastName: any;
-            phone: any;
             roles: any;
             isEmailVerified: any;
             isActive: any;
             createdAt: any;
             updatedAt: any;
+            phone: any;
+            orderCount: number;
+            totalSpent: number;
         }[];
         total: number;
         page: number;

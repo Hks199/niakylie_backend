@@ -8,14 +8,22 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersService = void 0;
 const common_1 = require("@nestjs/common");
+const mongoose_1 = require("@nestjs/mongoose");
+const mongoose_2 = require("mongoose");
 const users_repository_js_1 = require("./repositories/users.repository.js");
+const order_schema_js_1 = require("../checkout/schemas/order.schema.js");
 let UsersService = class UsersService {
     usersRepository;
-    constructor(usersRepository) {
+    orderModel;
+    constructor(usersRepository, orderModel) {
         this.usersRepository = usersRepository;
+        this.orderModel = orderModel;
     }
     async create(userData) {
         return this.usersRepository.create(userData);
@@ -34,13 +42,40 @@ let UsersService = class UsersService {
         const page = Math.max(1, options?.page || 1);
         const limit = Math.min(100, Math.max(1, options?.limit || 10));
         const result = await this.usersRepository.findAll({ ...options, page, limit });
+        const userIds = result.data.map((user) => user._id);
+        const orderStats = userIds.length
+            ? await this.orderModel.aggregate([
+                {
+                    $match: {
+                        userId: { $in: userIds },
+                        orderStatus: { $ne: order_schema_js_1.OrderStatus.CANCELLED },
+                    },
+                },
+                {
+                    $group: {
+                        _id: '$userId',
+                        orderCount: { $sum: 1 },
+                        totalSpent: { $sum: { $ifNull: ['$pricing.grandTotal', 0] } },
+                    },
+                },
+            ])
+            : [];
+        const statsByUserId = new Map(orderStats.map((stats) => [stats._id.toString(), stats]));
         return {
             users: result.data.map((user) => ({
+                ...(function () {
+                    const address = user.addresses?.find((item) => item.isDefault) || user.addresses?.[0];
+                    const stats = statsByUserId.get(user._id.toString());
+                    return {
+                        phone: address?.phone || user.phone,
+                        orderCount: stats?.orderCount || 0,
+                        totalSpent: stats?.totalSpent || 0,
+                    };
+                })(),
                 id: user._id.toString(),
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName,
-                phone: user.phone,
                 roles: user.roles,
                 isEmailVerified: user.isEmailVerified,
                 isActive: user.isActive,
@@ -188,6 +223,8 @@ let UsersService = class UsersService {
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [users_repository_js_1.UsersRepository])
+    __param(1, (0, mongoose_1.InjectModel)(order_schema_js_1.Order.name)),
+    __metadata("design:paramtypes", [users_repository_js_1.UsersRepository,
+        mongoose_2.Model])
 ], UsersService);
 //# sourceMappingURL=users.service.js.map

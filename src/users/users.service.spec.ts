@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { getModelToken } from '@nestjs/mongoose';
 
 import { UsersService } from './users.service.js';
 import { UsersRepository } from './repositories/users.repository.js';
+import { Order } from '../checkout/schemas/order.schema.js';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -26,6 +28,7 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         { provide: UsersRepository, useValue: mockUsersRepository },
+        { provide: getModelToken(Order.name), useValue: { aggregate: jest.fn() } },
       ],
     }).compile();
 

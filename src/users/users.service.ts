@@ -1,10 +1,16 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
 import { UsersRepository } from './repositories/users.repository.js';
 import { UserDocument } from './schemas/user.schema.js';
+import { Order, OrderDocument, OrderStatus } from '../checkout/schemas/order.schema.js';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    @InjectModel(Order.name) private readonly orderModel: Model<OrderDocument>,
+  ) {}
 
   async create(userData: Partial<import('./schemas/user.schema.js').User>): Promise<UserDocument> {
     return this.usersRepository.create(userData);
@@ -26,13 +32,43 @@ export class UsersService {
     const page = Math.max(1, options?.page || 1);
     const limit = Math.min(100, Math.max(1, options?.limit || 10));
     const result = await this.usersRepository.findAll({ ...options, page, limit });
+    const userIds = result.data.map((user) => user._id as Types.ObjectId);
+    const orderStats = userIds.length
+      ? await this.orderModel.aggregate<{ _id: Types.ObjectId; orderCount: number; totalSpent: number }>([
+          {
+            $match: {
+              userId: { $in: userIds },
+              orderStatus: { $ne: OrderStatus.CANCELLED },
+            },
+          },
+          {
+            $group: {
+              _id: '$userId',
+              orderCount: { $sum: 1 },
+              totalSpent: { $sum: { $ifNull: ['$pricing.grandTotal', 0] } },
+            },
+          },
+        ])
+      : [];
+    const statsByUserId = new Map(orderStats.map((stats) => [stats._id.toString(), stats]));
+
     return {
       users: result.data.map((user: any) => ({
+        // Delivery-phone data belongs to the embedded address, not user.phone.
+        // Prefer the default address, then fall back to the first saved address.
+        ...(function () {
+          const address = user.addresses?.find((item: any) => item.isDefault) || user.addresses?.[0];
+          const stats = statsByUserId.get(user._id.toString());
+          return {
+            phone: address?.phone || user.phone,
+            orderCount: stats?.orderCount || 0,
+            totalSpent: stats?.totalSpent || 0,
+          };
+        })(),
         id: user._id.toString(),
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        phone: user.phone,
         roles: user.roles,
         isEmailVerified: user.isEmailVerified,
         isActive: user.isActive,

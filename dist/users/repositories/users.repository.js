@@ -44,6 +44,7 @@ let UsersRepository = class UsersRepository {
                 { lastName: searchRegex },
                 { email: searchRegex },
                 { phone: searchRegex },
+                { 'addresses.phone': searchRegex },
             ];
         }
         if (options?.isActive !== undefined) {
@@ -52,7 +53,7 @@ let UsersRepository = class UsersRepository {
         const [data, total] = await Promise.all([
             this.userModel
                 .find(filter)
-                .select('email firstName lastName phone roles isEmailVerified isActive createdAt updatedAt')
+                .select('email firstName lastName phone addresses roles isEmailVerified isActive createdAt updatedAt')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit)

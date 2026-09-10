@@ -12,6 +12,7 @@ const mongoose_1 = require("@nestjs/mongoose");
 const platform_express_1 = require("@nestjs/platform-express");
 const multer_1 = require("multer");
 const user_schema_js_1 = require("./schemas/user.schema.js");
+const order_schema_js_1 = require("../checkout/schemas/order.schema.js");
 const users_repository_js_1 = require("./repositories/users.repository.js");
 const users_service_js_1 = require("./users.service.js");
 const users_controller_js_1 = require("./users.controller.js");
@@ -22,7 +23,10 @@ exports.UsersModule = UsersModule;
 exports.UsersModule = UsersModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            mongoose_1.MongooseModule.forFeature([{ name: user_schema_js_1.User.name, schema: user_schema_js_1.UserSchema }]),
+            mongoose_1.MongooseModule.forFeature([
+                { name: user_schema_js_1.User.name, schema: user_schema_js_1.UserSchema },
+                { name: order_schema_js_1.Order.name, schema: order_schema_js_1.OrderSchema },
+            ]),
             platform_express_1.MulterModule.register({
                 storage: (0, multer_1.memoryStorage)(),
             }),
