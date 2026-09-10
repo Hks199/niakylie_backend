@@ -7,6 +7,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -25,8 +26,9 @@ import { S3Service } from '../s3/s3.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { AddressDto } from './dto/address.dto.js';
 import { UpdateNotificationPreferenceDto } from './dto/notification-preference.dto.js';
+import { QueryUsersDto } from './dto/query-users.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
-import { CurrentUser } from '../shared/index.js';
+import { CurrentUser, Roles, RolesGuard, Role } from '../shared/index.js';
 import { User } from './schemas/user.schema.js';
 
 @ApiTags('Users')
@@ -38,6 +40,26 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly s3Service: S3Service,
   ) {}
+
+  @Get('admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'List users with pagination and filters (Admin)' })
+  @ApiResponse({ status: 200, description: 'Paginated user list returned successfully' })
+  async getAdminUsers(@Query() query: QueryUsersDto) {
+    const page = Number.parseInt(query.page || '1', 10);
+    const limit = Number.parseInt(query.limit || '10', 10);
+    const normalizedPage = Number.isFinite(page) && page > 0 ? page : 1;
+    const normalizedLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 10;
+    const normalizedStatus = query.isActive?.toLowerCase();
+
+    return this.usersService.findAll({
+      page: normalizedPage,
+      limit: normalizedLimit,
+      search: query.search,
+      isActive: normalizedStatus === 'true' || normalizedStatus === 'false' ? normalizedStatus === 'true' : undefined,
+    });
+  }
 
   @Get('profile')
   @ApiOperation({ summary: 'Get current user profile' })

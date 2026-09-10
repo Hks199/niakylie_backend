@@ -8,6 +8,8 @@ export declare class UsersRepository {
     findAll(options?: {
         page?: number;
         limit?: number;
+        search?: string;
+        isActive?: boolean;
     }): Promise<{
         data: UserDocument[];
         total: number;

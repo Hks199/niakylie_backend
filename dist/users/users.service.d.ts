@@ -6,6 +6,29 @@ export declare class UsersService {
     create(userData: Partial<import('./schemas/user.schema.js').User>): Promise<UserDocument>;
     findById(id: string): Promise<UserDocument>;
     findByEmail(email: string, includePassword?: boolean): Promise<UserDocument | null>;
+    findAll(options?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        isActive?: boolean;
+    }): Promise<{
+        users: {
+            id: any;
+            email: any;
+            firstName: any;
+            lastName: any;
+            phone: any;
+            roles: any;
+            isEmailVerified: any;
+            isActive: any;
+            createdAt: any;
+            updatedAt: any;
+        }[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
     findByGoogleId(googleId: string): Promise<UserDocument | null>;
     update(id: string, updateData: Partial<import('./schemas/user.schema.js').User>): Promise<UserDocument>;
     updateProfile(id: string, updateDto: import('./dto/update-profile.dto.js').UpdateProfileDto): Promise<UserDocument>;

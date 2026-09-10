@@ -268,8 +268,19 @@ let DashboardService = DashboardService_1 = class DashboardService {
             {
                 $lookup: {
                     from: 'products',
-                    localField: '_id',
-                    foreignField: '_id',
+                    let: { pId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $or: [
+                                        { $eq: ['$_id', '$$pId'] },
+                                        { $eq: [{ $toString: '$_id' }, { $toString: '$$pId' }] },
+                                    ],
+                                },
+                            },
+                        },
+                    ],
                     as: 'productDoc',
                 },
             },
@@ -281,16 +292,23 @@ let DashboardService = DashboardService_1 = class DashboardService {
                     productName: { $ifNull: ['$productName', '$productDoc.name'] },
                     sku: 1,
                     image: {
-                        $ifNull: [
-                            '$itemImage',
-                            {
+                        $cond: {
+                            if: {
+                                $and: [
+                                    { $ne: ['$itemImage', null] },
+                                    { $ne: ['$itemImage', ''] },
+                                ],
+                            },
+                            then: '$itemImage',
+                            else: {
                                 $ifNull: [
                                     { $arrayElemAt: ['$productDoc.images', 0] },
                                     { $ifNull: ['$productDoc.thumbnail', '$productDoc.image'] },
                                 ],
                             },
-                        ],
+                        },
                     },
+                    images: '$productDoc.images',
                     totalQuantitySold: 1,
                     totalRevenue: 1,
                     orderCount: 1,
@@ -434,8 +452,19 @@ let DashboardService = DashboardService_1 = class DashboardService {
                 {
                     $lookup: {
                         from: 'products',
-                        localField: 'productId',
-                        foreignField: '_id',
+                        let: { pId: '$productId' },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $or: [
+                                            { $eq: ['$_id', '$$pId'] },
+                                            { $eq: [{ $toString: '$_id' }, { $toString: '$$pId' }] },
+                                        ],
+                                    },
+                                },
+                            },
+                        ],
                         as: 'product',
                     },
                 },
@@ -452,6 +481,7 @@ let DashboardService = DashboardService_1 = class DashboardService {
                                 { $ifNull: ['$product.thumbnail', '$product.image'] },
                             ],
                         },
+                        images: '$product.images',
                         availableQuantity: 1,
                         reservedQuantity: 1,
                     },
@@ -468,8 +498,19 @@ let DashboardService = DashboardService_1 = class DashboardService {
                 {
                     $lookup: {
                         from: 'products',
-                        localField: 'productId',
-                        foreignField: '_id',
+                        let: { pId: '$productId' },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $or: [
+                                            { $eq: ['$_id', '$$pId'] },
+                                            { $eq: [{ $toString: '$_id' }, { $toString: '$$pId' }] },
+                                        ],
+                                    },
+                                },
+                            },
+                        ],
                         as: 'product',
                     },
                 },

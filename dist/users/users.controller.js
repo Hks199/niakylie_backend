@@ -22,6 +22,7 @@ const s3_service_js_1 = require("../s3/s3.service.js");
 const update_profile_dto_js_1 = require("./dto/update-profile.dto.js");
 const address_dto_js_1 = require("./dto/address.dto.js");
 const notification_preference_dto_js_1 = require("./dto/notification-preference.dto.js");
+const query_users_dto_js_1 = require("./dto/query-users.dto.js");
 const jwt_auth_guard_js_1 = require("../auth/guards/jwt-auth.guard.js");
 const index_js_1 = require("../shared/index.js");
 const user_schema_js_1 = require("./schemas/user.schema.js");
@@ -31,6 +32,19 @@ let UsersController = class UsersController {
     constructor(usersService, s3Service) {
         this.usersService = usersService;
         this.s3Service = s3Service;
+    }
+    async getAdminUsers(query) {
+        const page = Number.parseInt(query.page || '1', 10);
+        const limit = Number.parseInt(query.limit || '10', 10);
+        const normalizedPage = Number.isFinite(page) && page > 0 ? page : 1;
+        const normalizedLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 10;
+        const normalizedStatus = query.isActive?.toLowerCase();
+        return this.usersService.findAll({
+            page: normalizedPage,
+            limit: normalizedLimit,
+            search: query.search,
+            isActive: normalizedStatus === 'true' || normalizedStatus === 'false' ? normalizedStatus === 'true' : undefined,
+        });
     }
     async getProfile(user) {
         return user;
@@ -96,6 +110,17 @@ let UsersController = class UsersController {
     }
 };
 exports.UsersController = UsersController;
+__decorate([
+    (0, common_1.Get)('admin'),
+    (0, common_1.UseGuards)(jwt_auth_guard_js_1.JwtAuthGuard, index_js_1.RolesGuard),
+    (0, index_js_1.Roles)(index_js_1.Role.ADMIN),
+    (0, swagger_1.ApiOperation)({ summary: 'List users with pagination and filters (Admin)' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Paginated user list returned successfully' }),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [query_users_dto_js_1.QueryUsersDto]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getAdminUsers", null);
 __decorate([
     (0, common_1.Get)('profile'),
     (0, swagger_1.ApiOperation)({ summary: 'Get current user profile' }),

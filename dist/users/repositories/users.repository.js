@@ -32,12 +32,32 @@ let UsersRepository = class UsersRepository {
         return this.userModel.findById(id).exec();
     }
     async findAll(options) {
-        const page = options?.page || 1;
-        const limit = options?.limit || 100;
+        const page = Math.max(1, options?.page || 1);
+        const limit = Math.min(100, Math.max(1, options?.limit || 100));
         const skip = (page - 1) * limit;
+        const filter = {};
+        if (options?.search?.trim()) {
+            const escapedSearch = options.search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const searchRegex = new RegExp(escapedSearch, 'i');
+            filter.$or = [
+                { firstName: searchRegex },
+                { lastName: searchRegex },
+                { email: searchRegex },
+                { phone: searchRegex },
+            ];
+        }
+        if (options?.isActive !== undefined) {
+            filter.isActive = options.isActive;
+        }
         const [data, total] = await Promise.all([
-            this.userModel.find().skip(skip).limit(limit).exec(),
-            this.userModel.countDocuments().exec(),
+            this.userModel
+                .find(filter)
+                .select('email firstName lastName phone roles isEmailVerified isActive createdAt updatedAt')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .exec(),
+            this.userModel.countDocuments(filter).exec(),
         ]);
         return { data, total };
     }

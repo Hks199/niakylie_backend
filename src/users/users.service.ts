@@ -22,6 +22,30 @@ export class UsersService {
     return this.usersRepository.findByEmail(email, includePassword);
   }
 
+  async findAll(options?: { page?: number; limit?: number; search?: string; isActive?: boolean }) {
+    const page = Math.max(1, options?.page || 1);
+    const limit = Math.min(100, Math.max(1, options?.limit || 10));
+    const result = await this.usersRepository.findAll({ ...options, page, limit });
+    return {
+      users: result.data.map((user: any) => ({
+        id: user._id.toString(),
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        roles: user.roles,
+        isEmailVerified: user.isEmailVerified,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      })),
+      total: result.total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(result.total / limit)),
+    };
+  }
+
   async findByGoogleId(googleId: string): Promise<UserDocument | null> {
     return this.usersRepository.findByGoogleId(googleId);
   }

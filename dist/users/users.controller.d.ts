@@ -3,11 +3,30 @@ import { S3Service } from '../s3/s3.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { AddressDto } from './dto/address.dto.js';
 import { UpdateNotificationPreferenceDto } from './dto/notification-preference.dto.js';
+import { QueryUsersDto } from './dto/query-users.dto.js';
 import { User } from './schemas/user.schema.js';
 export declare class UsersController {
     private readonly usersService;
     private readonly s3Service;
     constructor(usersService: UsersService, s3Service: S3Service);
+    getAdminUsers(query: QueryUsersDto): Promise<{
+        users: {
+            id: any;
+            email: any;
+            firstName: any;
+            lastName: any;
+            phone: any;
+            roles: any;
+            isEmailVerified: any;
+            isActive: any;
+            createdAt: any;
+            updatedAt: any;
+        }[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
     getProfile(user: User): Promise<User>;
     updateProfile(user: User, updateDto: UpdateProfileDto): Promise<import("./schemas/user.schema.js").UserDocument>;
     uploadAvatar(user: User, file: Express.Multer.File): Promise<import("./schemas/user.schema.js").UserDocument>;
