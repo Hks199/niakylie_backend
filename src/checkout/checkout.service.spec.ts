@@ -11,6 +11,7 @@ import { UsersRepository } from '../users/repositories/users.repository.js';
 import { CouponsService } from '../coupons/coupons.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { OnlinePaymentDiscountService } from '../payment/online-payment-discount.service.js';
+import { ShippingService } from '../shipping/shipping.service.js';
 import { PaymentMethod, ShippingMethod, OrderStatus } from './schemas/order.schema.js';
 
 describe('CheckoutService', () => {
@@ -158,6 +159,12 @@ describe('CheckoutService', () => {
       calculateDiscount: jest.fn().mockResolvedValue(0),
     };
 
+    const mockShippingService = {
+      calculateFee: jest.fn().mockImplementation((subtotal: number) =>
+        Promise.resolve(subtotal >= 1000 || subtotal === 0 ? 0 : 99),
+      ),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CheckoutService,
@@ -169,6 +176,7 @@ describe('CheckoutService', () => {
         { provide: CouponsService, useValue: mockCouponsService },
         { provide: NotificationsService, useValue: mockNotificationsService },
         { provide: OnlinePaymentDiscountService, useValue: mockOnlineDiscountService },
+        { provide: ShippingService, useValue: mockShippingService },
       ],
     }).compile();
 

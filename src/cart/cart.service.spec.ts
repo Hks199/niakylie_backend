@@ -8,6 +8,7 @@ import { ProductsRepository } from '../products/repositories/products.repository
 import { InventoryRepository } from '../inventory/repositories/inventory.repository.js';
 import { UsersRepository } from '../users/repositories/users.repository.js';
 import { CouponsService } from '../coupons/coupons.service.js';
+import { ShippingService } from '../shipping/shipping.service.js';
 
 describe('CartService', () => {
   let service: CartService;
@@ -78,6 +79,12 @@ describe('CartService', () => {
       calculateDiscount: jest.fn(),
     };
 
+    const mockShippingService = {
+      calculateFee: jest.fn().mockImplementation((subtotal: number) =>
+        Promise.resolve(subtotal >= 1000 || subtotal === 0 ? 0 : 99),
+      ),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CartService,
@@ -86,6 +93,7 @@ describe('CartService', () => {
         { provide: InventoryRepository, useValue: mockInventoryRepo },
         { provide: UsersRepository, useValue: mockUsersRepo },
         { provide: CouponsService, useValue: mockCouponsService },
+        { provide: ShippingService, useValue: mockShippingService },
       ],
     }).compile();
 
