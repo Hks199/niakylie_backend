@@ -79,7 +79,7 @@ export class CheckoutService {
     private readonly notificationsService: NotificationsService,
     private readonly onlineDiscountService?: OnlinePaymentDiscountService,
     private readonly shippingService?: ShippingService,
-  ) { }
+  ) {}
 
   private generateOrderNumber(): string {
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -99,12 +99,16 @@ export class CheckoutService {
   ): Promise<CheckoutSummaryResponse> {
     const guestId = dto?.guestId;
     if (!userId && !guestId) {
-      throw new BadRequestException('Either userId or guestId must be provided');
+      throw new BadRequestException(
+        'Either userId or guestId must be provided',
+      );
     }
 
     const cart = await this.cartRepository.findCart(userId, guestId);
     if (!cart || !cart.items.length) {
-      throw new BadRequestException('Cart is empty. Add items to cart before proceeding to checkout');
+      throw new BadRequestException(
+        'Cart is empty. Add items to cart before proceeding to checkout',
+      );
     }
 
     // Filter active (non-saved for later) items
@@ -134,10 +138,18 @@ export class CheckoutService {
           ? rawVId.toString()
           : '';
 
-      const product = Types.ObjectId.isValid(pIdStr) ? await this.productsRepository.findById(pIdStr) : null;
-      const productName = product ? product.name : (item.productId as any)?.title || (item.productId as any)?.name || 'Fashion Item';
+      const product = Types.ObjectId.isValid(pIdStr)
+        ? await this.productsRepository.findById(pIdStr)
+        : null;
+      const productName = product
+        ? product.name
+        : (item.productId as any)?.title ||
+          (item.productId as any)?.name ||
+          'Fashion Item';
 
-      const inventory = item.sku ? await this.inventoryRepository.findBySku(item.sku) : null;
+      const inventory = item.sku
+        ? await this.inventoryRepository.findBySku(item.sku)
+        : null;
       const availableStock = inventory ? inventory.availableStock : 10;
       const isStockAvailable = availableStock >= item.quantity;
 
@@ -161,7 +173,11 @@ export class CheckoutService {
         unitMrp: item.unitMrp,
         color: item.color,
         size: item.size,
-        image: item.image || product?.images?.[0] || (product as any)?.thumbnail || '',
+        image:
+          item.image ||
+          product?.images?.[0] ||
+          (product as any)?.thumbnail ||
+          '',
         itemTotal,
         availableStock,
         isStockAvailable,
@@ -173,8 +189,15 @@ export class CheckoutService {
     // Shipping Fee Calculation
     const shippingMethod = dto?.shippingMethod || ShippingMethod.STANDARD;
     const shippingFee = this.shippingService
-      ? await this.shippingService.calculateFee(subtotal, shippingMethod === ShippingMethod.EXPRESS)
-      : (shippingMethod === ShippingMethod.EXPRESS ? 149 : (subtotal >= 1000 || subtotal === 0 ? 0 : 99));
+      ? await this.shippingService.calculateFee(
+          subtotal,
+          shippingMethod === ShippingMethod.EXPRESS,
+        )
+      : shippingMethod === ShippingMethod.EXPRESS
+        ? 149
+        : subtotal >= 1000 || subtotal === 0
+          ? 0
+          : 99;
 
     // Coupon Calculation
     let couponDiscount = 0;
@@ -212,13 +235,17 @@ export class CheckoutService {
 
     let onlinePaymentDiscount = 0;
     if (this.onlineDiscountService) {
-      onlinePaymentDiscount = await this.onlineDiscountService.calculateDiscount(subtotalAfterCoupon);
+      onlinePaymentDiscount =
+        await this.onlineDiscountService.calculateDiscount(subtotalAfterCoupon);
     }
 
     const isExplicitCod = (dto as any)?.paymentMethod === PaymentMethod.COD;
     const activeOnlineDiscount = isExplicitCod ? 0 : onlinePaymentDiscount;
 
-    const grandTotal = Math.max(0, subtotalAfterCoupon - activeOnlineDiscount + shippingFee);
+    const grandTotal = Math.max(
+      0,
+      subtotalAfterCoupon - activeOnlineDiscount + shippingFee,
+    );
 
     return {
       items: itemsSummary,
@@ -226,7 +253,8 @@ export class CheckoutService {
       shippingInfo: {
         method: shippingMethod,
         fee: shippingFee,
-        estimatedDeliveryDays: shippingMethod === ShippingMethod.EXPRESS ? '1-2 Days' : '3-5 Days',
+        estimatedDeliveryDays:
+          shippingMethod === ShippingMethod.EXPRESS ? '1-2 Days' : '3-5 Days',
       },
       couponInfo,
       pricing: {
@@ -266,7 +294,10 @@ export class CheckoutService {
     };
   }
 
-  async placeOrder(userId?: string, dto?: PlaceOrderDto): Promise<OrderDocument> {
+  async placeOrder(
+    userId?: string,
+    dto?: PlaceOrderDto,
+  ): Promise<OrderDocument> {
     if (!dto) {
       throw new BadRequestException('Order payload is required');
     }
@@ -276,7 +307,10 @@ export class CheckoutService {
       const user = await this.usersRepository.findById(userId);
       if (user && user.addresses && user.addresses.length > 0) {
         const found = dto.addressId
-          ? user.addresses.find((a: any) => a._id?.toString() === dto.addressId || a.id === dto.addressId)
+          ? user.addresses.find(
+              (a: any) =>
+                a._id?.toString() === dto.addressId || a.id === dto.addressId,
+            )
           : user.addresses.find((a: any) => a.isDefault) || user.addresses[0];
         if (found) {
           dto.shippingAddress = {
@@ -314,7 +348,10 @@ export class CheckoutService {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-          phone: dto.shippingAddress?.phone || (user as any).phone || '+919876543210',
+          phone:
+            dto.shippingAddress?.phone ||
+            (user as any).phone ||
+            '+919876543210',
         };
       }
     }
@@ -337,7 +374,10 @@ export class CheckoutService {
       const inventory = await this.inventoryRepository.findBySku(item.sku);
       if (inventory) {
         const newTotal = Math.max(0, inventory.totalStock - item.quantity);
-        const newAvailable = Math.max(0, inventory.availableStock - item.quantity);
+        const newAvailable = Math.max(
+          0,
+          inventory.availableStock - item.quantity,
+        );
         const newSold = (inventory.soldStock || 0) + item.quantity;
         const lowThreshold = inventory.lowStockThreshold || 5;
 
@@ -350,7 +390,11 @@ export class CheckoutService {
                 title: '🚨 Stock Alert: Out of Stock!',
                 message: `SKU ${item.sku} (${item.name || 'Product'}) reached 0 available stock level!`,
                 type: NotificationType.SYSTEM,
-                metadata: { sku: item.sku, availableStock: newAvailable, targetTab: 'inventory' },
+                metadata: {
+                  sku: item.sku,
+                  availableStock: newAvailable,
+                  targetTab: 'inventory',
+                },
               })
               .catch(() => {});
           }
@@ -362,7 +406,11 @@ export class CheckoutService {
                 title: '⚠️ Stock Alert: Low Stock Warning',
                 message: `SKU ${item.sku} (${item.name || 'Product'}) stock is low (${newAvailable} items left).`,
                 type: NotificationType.SYSTEM,
-                metadata: { sku: item.sku, availableStock: newAvailable, targetTab: 'inventory' },
+                metadata: {
+                  sku: item.sku,
+                  availableStock: newAvailable,
+                  targetTab: 'inventory',
+                },
               })
               .catch(() => {});
           }
@@ -388,7 +436,9 @@ export class CheckoutService {
     // Record Coupon usage if applied
     if (summary.couponInfo?.code) {
       try {
-        const coupon = await this.couponsService.findByCode(summary.couponInfo.code);
+        const coupon = await this.couponsService.findByCode(
+          summary.couponInfo.code,
+        );
         if (coupon) {
           await this.couponsService.recordUsage(coupon._id.toString());
         }
@@ -399,20 +449,29 @@ export class CheckoutService {
 
     const billingAddress = dto.billingAddress || dto.shippingAddress;
     const isPaid = !!(dto.razorpayPaymentId || dto.stripePaymentIntentId);
-    const initialPaymentStatus = isPaid ? PaymentStatus.COMPLETED : PaymentStatus.PENDING;
+    const initialPaymentStatus = isPaid
+      ? PaymentStatus.COMPLETED
+      : PaymentStatus.PENDING;
     const transactionId = dto.razorpayPaymentId || dto.stripePaymentIntentId;
 
     const orderData: Partial<any> = {
       orderNumber,
       invoiceNumber,
-      userId: userId && Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : undefined,
+      userId:
+        userId && Types.ObjectId.isValid(userId)
+          ? new Types.ObjectId(userId)
+          : undefined,
       guestId,
       customerInfo,
       shippingAddress: dto.shippingAddress,
       billingAddress,
       items: summary.items.map((item) => ({
-        productId: Types.ObjectId.isValid(item.productId) ? new Types.ObjectId(item.productId) : new Types.ObjectId(),
-        variantId: Types.ObjectId.isValid(item.variantId) ? new Types.ObjectId(item.variantId) : new Types.ObjectId(),
+        productId: Types.ObjectId.isValid(item.productId)
+          ? new Types.ObjectId(item.productId)
+          : new Types.ObjectId(),
+        variantId: Types.ObjectId.isValid(item.variantId)
+          ? new Types.ObjectId(item.variantId)
+          : new Types.ObjectId(),
         sku: item.sku,
         name: item.name,
         quantity: item.quantity,
@@ -434,7 +493,9 @@ export class CheckoutService {
         fee: summary.shippingInfo.fee,
         courierPartner: 'NiaKylie Express Logistics',
         estimatedDelivery: new Date(
-          Date.now() + (summary.shippingInfo.method === ShippingMethod.EXPRESS ? 2 : 5) * 86400000,
+          Date.now() +
+            (summary.shippingInfo.method === ShippingMethod.EXPRESS ? 2 : 5) *
+              86400000,
         ),
       },
       pricing: {
@@ -443,12 +504,27 @@ export class CheckoutService {
         totalDiscount: summary.pricing.totalDiscount,
         couponCode: summary.couponInfo?.code,
         couponDiscount: summary.pricing.couponDiscount,
-        onlinePaymentDiscount: String(dto.paymentMethod).toUpperCase() === 'COD' ? 0 : (summary.pricing.onlinePaymentDiscount || 0),
+        onlinePaymentDiscount:
+          String(dto.paymentMethod).toUpperCase() === 'COD'
+            ? 0
+            : summary.pricing.onlinePaymentDiscount || 0,
         tax: summary.pricing.tax,
         shippingFee: summary.pricing.shippingFee,
-        grandTotal: String(dto.paymentMethod).toUpperCase() === 'COD'
-          ? Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount + summary.pricing.shippingFee)
-          : Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount - (summary.pricing.onlinePaymentDiscount || 0) + summary.pricing.shippingFee),
+        grandTotal:
+          String(dto.paymentMethod).toUpperCase() === 'COD'
+            ? Math.max(
+                0,
+                summary.pricing.subtotal -
+                  summary.pricing.couponDiscount +
+                  summary.pricing.shippingFee,
+              )
+            : Math.max(
+                0,
+                summary.pricing.subtotal -
+                  summary.pricing.couponDiscount -
+                  (summary.pricing.onlinePaymentDiscount || 0) +
+                  summary.pricing.shippingFee,
+              ),
       },
       orderStatus: OrderStatus.CONFIRMED,
       timeline: [
@@ -464,22 +540,30 @@ export class CheckoutService {
     const order = await this.ordersRepository.create(orderData);
 
     // Dispatch real-time notification to Admin Control Center
-    this.notificationsService.sendAdminEventNotification({
-      title: '🛍️ New Customer Order Placed',
-      message: `Order #${order.orderNumber} for ₹${(order.pricing?.grandTotal || 0).toLocaleString('en-IN')} placed by ${customerInfo.firstName} ${customerInfo.lastName}.`,
-      type: 'ORDER_UPDATE' as any,
-      metadata: { orderNumber: order.orderNumber, grandTotal: order.pricing?.grandTotal, targetTab: 'orders' },
-    }).catch(() => { });
+    this.notificationsService
+      .sendAdminEventNotification({
+        title: '🛍️ New Customer Order Placed',
+        message: `Order #${order.orderNumber} for ₹${(order.pricing?.grandTotal || 0).toLocaleString('en-IN')} placed by ${customerInfo.firstName} ${customerInfo.lastName}.`,
+        type: 'ORDER_UPDATE' as any,
+        metadata: {
+          orderNumber: order.orderNumber,
+          grandTotal: order.pricing?.grandTotal,
+          targetTab: 'orders',
+        },
+      })
+      .catch(() => {});
 
     // Dispatch in-app notification & email for the placed order
     if (order.userId) {
-      this.notificationsService.sendOrderUpdateNotification({
-        userId: order.userId.toString(),
-        recipientEmail: customerInfo.email,
-        recipientPhone: customerInfo.phone,
-        orderNumber: order.orderNumber,
-        status: order.orderStatus,
-      }).catch(() => { });
+      this.notificationsService
+        .sendOrderUpdateNotification({
+          userId: order.userId.toString(),
+          recipientEmail: customerInfo.email,
+          recipientPhone: customerInfo.phone,
+          orderNumber: order.orderNumber,
+          status: order.orderStatus,
+        })
+        .catch(() => {});
     }
 
     // Clear cart after placing order
@@ -488,7 +572,10 @@ export class CheckoutService {
     return order;
   }
 
-  async getOrderById(orderIdOrNumber: string, userId?: string): Promise<OrderDocument> {
+  async getOrderById(
+    orderIdOrNumber: string,
+    userId?: string,
+  ): Promise<OrderDocument> {
     let order = await this.ordersRepository.findByOrderNumber(orderIdOrNumber);
     if (!order && Types.ObjectId.isValid(orderIdOrNumber)) {
       order = await this.ordersRepository.findById(orderIdOrNumber);
@@ -510,8 +597,12 @@ export class CheckoutService {
 
     let logoBase64 = '';
     try {
-      const primaryPath = path.resolve(process.cwd(), '../niakylie_frontend/public/asset/niakylie_logo.png');
-      const fallbackPath = 'D:/niakylie_frontend/public/asset/niakylie_logo.png';
+      const primaryPath = path.resolve(
+        process.cwd(),
+        '../niakylie_frontend/public/asset/niakylie_logo.png',
+      );
+      const fallbackPath =
+        'D:/niakylie_frontend/public/asset/niakylie_logo.png';
 
       let targetPath = '';
       if (fs.existsSync(primaryPath)) {
@@ -730,20 +821,22 @@ export class CheckoutService {
             <span>Subtotal</span>
             <span>₹${(order.pricing?.subtotal || 0).toLocaleString('en-IN')}</span>
           </div>
-          ${(order.pricing?.couponDiscount || 0) > 0
-        ? `<div class="summary-row" style="color: #16a34a;">
+          ${
+            (order.pricing?.couponDiscount || 0) > 0
+              ? `<div class="summary-row" style="color: #16a34a;">
                   <span>Coupon Discount</span>
                   <span>-₹${(order.pricing.couponDiscount || 0).toLocaleString('en-IN')}</span>
                 </div>`
-        : ''
-      }
-          ${(order.pricing?.onlinePaymentDiscount || 0) > 0
-        ? `<div class="summary-row" style="color: #059669; font-weight: 700;">
+              : ''
+          }
+          ${
+            (order.pricing?.onlinePaymentDiscount || 0) > 0
+              ? `<div class="summary-row" style="color: #059669; font-weight: 700;">
                   <span>Online Payment Extra Discount</span>
                   <span>-₹${(order.pricing.onlinePaymentDiscount || 0).toLocaleString('en-IN')}</span>
                 </div>`
-        : ''
-      }
+              : ''
+          }
           <div class="summary-row">
             <span>Tax (0%)</span>
             <span>₹0</span>

@@ -120,9 +120,17 @@ let CheckoutService = class CheckoutService {
                 : rawVId?.toString
                     ? rawVId.toString()
                     : '';
-            const product = mongoose_1.Types.ObjectId.isValid(pIdStr) ? await this.productsRepository.findById(pIdStr) : null;
-            const productName = product ? product.name : item.productId?.title || item.productId?.name || 'Fashion Item';
-            const inventory = item.sku ? await this.inventoryRepository.findBySku(item.sku) : null;
+            const product = mongoose_1.Types.ObjectId.isValid(pIdStr)
+                ? await this.productsRepository.findById(pIdStr)
+                : null;
+            const productName = product
+                ? product.name
+                : item.productId?.title ||
+                    item.productId?.name ||
+                    'Fashion Item';
+            const inventory = item.sku
+                ? await this.inventoryRepository.findBySku(item.sku)
+                : null;
             const availableStock = inventory ? inventory.availableStock : 10;
             const isStockAvailable = availableStock >= item.quantity;
             if (!isStockAvailable) {
@@ -142,7 +150,10 @@ let CheckoutService = class CheckoutService {
                 unitMrp: item.unitMrp,
                 color: item.color,
                 size: item.size,
-                image: item.image || product?.images?.[0] || product?.thumbnail || '',
+                image: item.image ||
+                    product?.images?.[0] ||
+                    product?.thumbnail ||
+                    '',
                 itemTotal,
                 availableStock,
                 isStockAvailable,
@@ -152,7 +163,11 @@ let CheckoutService = class CheckoutService {
         const shippingMethod = dto?.shippingMethod || order_schema_js_1.ShippingMethod.STANDARD;
         const shippingFee = this.shippingService
             ? await this.shippingService.calculateFee(subtotal, shippingMethod === order_schema_js_1.ShippingMethod.EXPRESS)
-            : (shippingMethod === order_schema_js_1.ShippingMethod.EXPRESS ? 149 : (subtotal >= 1000 || subtotal === 0 ? 0 : 99));
+            : shippingMethod === order_schema_js_1.ShippingMethod.EXPRESS
+                ? 149
+                : subtotal >= 1000 || subtotal === 0
+                    ? 0
+                    : 99;
         let couponDiscount = 0;
         let couponInfo;
         const couponCodeToApply = dto?.couponCode || cart.couponCode;
@@ -184,7 +199,8 @@ let CheckoutService = class CheckoutService {
         const subtotalAfterCoupon = Math.max(0, subtotal - couponDiscount);
         let onlinePaymentDiscount = 0;
         if (this.onlineDiscountService) {
-            onlinePaymentDiscount = await this.onlineDiscountService.calculateDiscount(subtotalAfterCoupon);
+            onlinePaymentDiscount =
+                await this.onlineDiscountService.calculateDiscount(subtotalAfterCoupon);
         }
         const isExplicitCod = dto?.paymentMethod === order_schema_js_1.PaymentMethod.COD;
         const activeOnlineDiscount = isExplicitCod ? 0 : onlinePaymentDiscount;
@@ -271,7 +287,9 @@ let CheckoutService = class CheckoutService {
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,
-                    phone: dto.shippingAddress?.phone || user.phone || '+919876543210',
+                    phone: dto.shippingAddress?.phone ||
+                        user.phone ||
+                        '+919876543210',
                 };
             }
         }
@@ -301,7 +319,11 @@ let CheckoutService = class CheckoutService {
                             title: '🚨 Stock Alert: Out of Stock!',
                             message: `SKU ${item.sku} (${item.name || 'Product'}) reached 0 available stock level!`,
                             type: notification_schema_js_1.NotificationType.SYSTEM,
-                            metadata: { sku: item.sku, availableStock: newAvailable, targetTab: 'inventory' },
+                            metadata: {
+                                sku: item.sku,
+                                availableStock: newAvailable,
+                                targetTab: 'inventory',
+                            },
                         })
                             .catch(() => { });
                     }
@@ -314,7 +336,11 @@ let CheckoutService = class CheckoutService {
                             title: '⚠️ Stock Alert: Low Stock Warning',
                             message: `SKU ${item.sku} (${item.name || 'Product'}) stock is low (${newAvailable} items left).`,
                             type: notification_schema_js_1.NotificationType.SYSTEM,
-                            metadata: { sku: item.sku, availableStock: newAvailable, targetTab: 'inventory' },
+                            metadata: {
+                                sku: item.sku,
+                                availableStock: newAvailable,
+                                targetTab: 'inventory',
+                            },
                         })
                             .catch(() => { });
                     }
@@ -340,19 +366,27 @@ let CheckoutService = class CheckoutService {
         }
         const billingAddress = dto.billingAddress || dto.shippingAddress;
         const isPaid = !!(dto.razorpayPaymentId || dto.stripePaymentIntentId);
-        const initialPaymentStatus = isPaid ? order_schema_js_1.PaymentStatus.COMPLETED : order_schema_js_1.PaymentStatus.PENDING;
+        const initialPaymentStatus = isPaid
+            ? order_schema_js_1.PaymentStatus.COMPLETED
+            : order_schema_js_1.PaymentStatus.PENDING;
         const transactionId = dto.razorpayPaymentId || dto.stripePaymentIntentId;
         const orderData = {
             orderNumber,
             invoiceNumber,
-            userId: userId && mongoose_1.Types.ObjectId.isValid(userId) ? new mongoose_1.Types.ObjectId(userId) : undefined,
+            userId: userId && mongoose_1.Types.ObjectId.isValid(userId)
+                ? new mongoose_1.Types.ObjectId(userId)
+                : undefined,
             guestId,
             customerInfo,
             shippingAddress: dto.shippingAddress,
             billingAddress,
             items: summary.items.map((item) => ({
-                productId: mongoose_1.Types.ObjectId.isValid(item.productId) ? new mongoose_1.Types.ObjectId(item.productId) : new mongoose_1.Types.ObjectId(),
-                variantId: mongoose_1.Types.ObjectId.isValid(item.variantId) ? new mongoose_1.Types.ObjectId(item.variantId) : new mongoose_1.Types.ObjectId(),
+                productId: mongoose_1.Types.ObjectId.isValid(item.productId)
+                    ? new mongoose_1.Types.ObjectId(item.productId)
+                    : new mongoose_1.Types.ObjectId(),
+                variantId: mongoose_1.Types.ObjectId.isValid(item.variantId)
+                    ? new mongoose_1.Types.ObjectId(item.variantId)
+                    : new mongoose_1.Types.ObjectId(),
                 sku: item.sku,
                 name: item.name,
                 quantity: item.quantity,
@@ -373,7 +407,9 @@ let CheckoutService = class CheckoutService {
                 method: summary.shippingInfo.method,
                 fee: summary.shippingInfo.fee,
                 courierPartner: 'NiaKylie Express Logistics',
-                estimatedDelivery: new Date(Date.now() + (summary.shippingInfo.method === order_schema_js_1.ShippingMethod.EXPRESS ? 2 : 5) * 86400000),
+                estimatedDelivery: new Date(Date.now() +
+                    (summary.shippingInfo.method === order_schema_js_1.ShippingMethod.EXPRESS ? 2 : 5) *
+                        86400000),
             },
             pricing: {
                 subtotal: summary.pricing.subtotal,
@@ -381,12 +417,19 @@ let CheckoutService = class CheckoutService {
                 totalDiscount: summary.pricing.totalDiscount,
                 couponCode: summary.couponInfo?.code,
                 couponDiscount: summary.pricing.couponDiscount,
-                onlinePaymentDiscount: String(dto.paymentMethod).toUpperCase() === 'COD' ? 0 : (summary.pricing.onlinePaymentDiscount || 0),
+                onlinePaymentDiscount: String(dto.paymentMethod).toUpperCase() === 'COD'
+                    ? 0
+                    : summary.pricing.onlinePaymentDiscount || 0,
                 tax: summary.pricing.tax,
                 shippingFee: summary.pricing.shippingFee,
                 grandTotal: String(dto.paymentMethod).toUpperCase() === 'COD'
-                    ? Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount + summary.pricing.shippingFee)
-                    : Math.max(0, summary.pricing.subtotal - summary.pricing.couponDiscount - (summary.pricing.onlinePaymentDiscount || 0) + summary.pricing.shippingFee),
+                    ? Math.max(0, summary.pricing.subtotal -
+                        summary.pricing.couponDiscount +
+                        summary.pricing.shippingFee)
+                    : Math.max(0, summary.pricing.subtotal -
+                        summary.pricing.couponDiscount -
+                        (summary.pricing.onlinePaymentDiscount || 0) +
+                        summary.pricing.shippingFee),
             },
             orderStatus: order_schema_js_1.OrderStatus.CONFIRMED,
             timeline: [
@@ -399,20 +442,28 @@ let CheckoutService = class CheckoutService {
             ],
         };
         const order = await this.ordersRepository.create(orderData);
-        this.notificationsService.sendAdminEventNotification({
+        this.notificationsService
+            .sendAdminEventNotification({
             title: '🛍️ New Customer Order Placed',
             message: `Order #${order.orderNumber} for ₹${(order.pricing?.grandTotal || 0).toLocaleString('en-IN')} placed by ${customerInfo.firstName} ${customerInfo.lastName}.`,
             type: 'ORDER_UPDATE',
-            metadata: { orderNumber: order.orderNumber, grandTotal: order.pricing?.grandTotal, targetTab: 'orders' },
-        }).catch(() => { });
+            metadata: {
+                orderNumber: order.orderNumber,
+                grandTotal: order.pricing?.grandTotal,
+                targetTab: 'orders',
+            },
+        })
+            .catch(() => { });
         if (order.userId) {
-            this.notificationsService.sendOrderUpdateNotification({
+            this.notificationsService
+                .sendOrderUpdateNotification({
                 userId: order.userId.toString(),
                 recipientEmail: customerInfo.email,
                 recipientPhone: customerInfo.phone,
                 orderNumber: order.orderNumber,
                 status: order.orderStatus,
-            }).catch(() => { });
+            })
+                .catch(() => { });
         }
         await this.cartRepository.clearCart(userId, guestId);
         return order;
