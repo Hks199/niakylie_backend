@@ -30,6 +30,7 @@ import { CmsModule } from './cms/cms.module.js';
 import { BannersModule } from './banners/banners.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { AnnouncementsModule } from './announcements/announcements.module.js';
+import { ShippingModule } from './shipping/shipping.module.js';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { AnnouncementsModule } from './announcements/announcements.module.js';
     BannersModule,
     DashboardModule,
     AnnouncementsModule,
+    ShippingModule,
     ThrottlerModule.forRootAsync({
       useFactory: (configService: ConfigService) => [
         {

@@ -14,6 +14,7 @@ import { UpdateCartItemDto } from './dto/update-cart-item.dto.js';
 import { MergeCartDto } from './dto/merge-cart.dto.js';
 import { ApplyCouponDto } from './dto/apply-coupon.dto.js';
 import { CartDocument } from './schemas/cart.schema.js';
+import { ShippingService } from '../shipping/shipping.service.js';
 
 @Injectable()
 export class CartService {
@@ -23,9 +24,10 @@ export class CartService {
     private readonly inventoryRepository: InventoryRepository,
     private readonly usersRepository: UsersRepository,
     private readonly couponsService?: CouponsService,
+    private readonly shippingService?: ShippingService,
   ) {}
 
-  private recalculateCart(cart: CartDocument): CartDocument {
+  private async recalculateCart(cart: CartDocument): Promise<CartDocument> {
     let subtotal = 0;
     let totalMrp = 0;
 
@@ -67,8 +69,9 @@ export class CartService {
     // 0% Tax
     cart.tax = 0;
 
-    // Free shipping threshold: subtotal >= 1000
-    cart.shippingFee = subtotal >= 1000 || subtotal === 0 ? 0 : 99;
+    cart.shippingFee = this.shippingService
+      ? await this.shippingService.calculateFee(subtotal)
+      : (subtotal >= 1000 || subtotal === 0 ? 0 : 99);
 
     cart.grandTotal = Math.max(0, subtotal - couponDiscount + cart.shippingFee);
 
@@ -80,7 +83,7 @@ export class CartService {
       throw new BadRequestException('Either userId or guestId header must be provided');
     }
     const cart = await this.cartRepository.findOrCreateCart(userId, guestId);
-    this.recalculateCart(cart);
+    await this.recalculateCart(cart);
     return cart.save();
   }
 
@@ -153,7 +156,7 @@ export class CartService {
       });
     }
 
-    this.recalculateCart(cart);
+    await this.recalculateCart(cart);
     await cart.save();
     return this.getCart(userId, guestId);
   }
@@ -186,7 +189,7 @@ export class CartService {
       cart.items[itemIndex].quantity = dto.quantity;
     }
 
-    this.recalculateCart(cart);
+    await this.recalculateCart(cart);
     return cart.save();
   }
 
@@ -197,7 +200,7 @@ export class CartService {
     }
 
     cart.items = cart.items.filter((item) => item.sku !== sku);
-    this.recalculateCart(cart);
+    await this.recalculateCart(cart);
     return cart.save();
   }
 
@@ -218,7 +221,7 @@ export class CartService {
       }
     }
 
-    this.recalculateCart(userCart);
+    await this.recalculateCart(userCart);
     await userCart.save();
 
     // Delete merged guest cart
@@ -239,7 +242,7 @@ export class CartService {
     }
 
     item.isSavedForLater = !item.isSavedForLater;
-    this.recalculateCart(cart);
+    await this.recalculateCart(cart);
     return cart.save();
   }
 
@@ -259,7 +262,7 @@ export class CartService {
     // Add to user wishlist
     await this.usersRepository.addToWishlist(userId, item.productId.toString());
 
-    this.recalculateCart(cart);
+    await this.recalculateCart(cart);
     return cart.save();
   }
 
@@ -273,7 +276,7 @@ export class CartService {
       throw new BadRequestException('Cannot apply coupon to an empty cart');
     }
 
-    this.recalculateCart(cart);
+    await this.recalculateCart(cart);
 
     if (this.couponsService) {
       const validation = await this.couponsService.validateCoupon({
@@ -292,7 +295,7 @@ export class CartService {
       cart.couponCode = dto.couponCode.toUpperCase().trim();
     }
 
-    this.recalculateCart(cart);
+    await this.recalculateCart(cart);
     return cart.save();
   }
 
@@ -304,7 +307,7 @@ export class CartService {
 
     cart.couponCode = undefined;
     cart.couponDiscount = 0;
-    this.recalculateCart(cart);
+    await this.recalculateCart(cart);
     return cart.save();
   }
 

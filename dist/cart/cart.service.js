@@ -16,20 +16,23 @@ const products_repository_js_1 = require("../products/repositories/products.repo
 const inventory_repository_js_1 = require("../inventory/repositories/inventory.repository.js");
 const users_repository_js_1 = require("../users/repositories/users.repository.js");
 const coupons_service_js_1 = require("../coupons/coupons.service.js");
+const shipping_service_js_1 = require("../shipping/shipping.service.js");
 let CartService = class CartService {
     cartRepository;
     productsRepository;
     inventoryRepository;
     usersRepository;
     couponsService;
-    constructor(cartRepository, productsRepository, inventoryRepository, usersRepository, couponsService) {
+    shippingService;
+    constructor(cartRepository, productsRepository, inventoryRepository, usersRepository, couponsService, shippingService) {
         this.cartRepository = cartRepository;
         this.productsRepository = productsRepository;
         this.inventoryRepository = inventoryRepository;
         this.usersRepository = usersRepository;
         this.couponsService = couponsService;
+        this.shippingService = shippingService;
     }
-    recalculateCart(cart) {
+    async recalculateCart(cart) {
         let subtotal = 0;
         let totalMrp = 0;
         for (const item of cart.items) {
@@ -69,7 +72,9 @@ let CartService = class CartService {
         cart.totalMrp = totalMrp;
         cart.totalDiscount = totalDiscount;
         cart.tax = 0;
-        cart.shippingFee = subtotal >= 1000 || subtotal === 0 ? 0 : 99;
+        cart.shippingFee = this.shippingService
+            ? await this.shippingService.calculateFee(subtotal)
+            : (subtotal >= 1000 || subtotal === 0 ? 0 : 99);
         cart.grandTotal = Math.max(0, subtotal - couponDiscount + cart.shippingFee);
         return cart;
     }
@@ -78,7 +83,7 @@ let CartService = class CartService {
             throw new common_1.BadRequestException('Either userId or guestId header must be provided');
         }
         const cart = await this.cartRepository.findOrCreateCart(userId, guestId);
-        this.recalculateCart(cart);
+        await this.recalculateCart(cart);
         return cart.save();
     }
     async addToCart(dto, userId) {
@@ -135,7 +140,7 @@ let CartService = class CartService {
                 isSavedForLater: false,
             });
         }
-        this.recalculateCart(cart);
+        await this.recalculateCart(cart);
         await cart.save();
         return this.getCart(userId, guestId);
     }
@@ -159,7 +164,7 @@ let CartService = class CartService {
             }
             cart.items[itemIndex].quantity = dto.quantity;
         }
-        this.recalculateCart(cart);
+        await this.recalculateCart(cart);
         return cart.save();
     }
     async removeItem(sku, userId, guestId) {
@@ -168,7 +173,7 @@ let CartService = class CartService {
             throw new common_1.NotFoundException('Cart not found');
         }
         cart.items = cart.items.filter((item) => item.sku !== sku);
-        this.recalculateCart(cart);
+        await this.recalculateCart(cart);
         return cart.save();
     }
     async mergeGuestCart(dto, userId) {
@@ -186,7 +191,7 @@ let CartService = class CartService {
                 userCart.items.push(guestItem);
             }
         }
-        this.recalculateCart(userCart);
+        await this.recalculateCart(userCart);
         await userCart.save();
         await this.cartRepository.delete(guestCart._id.toString());
         return userCart;
@@ -201,7 +206,7 @@ let CartService = class CartService {
             throw new common_1.NotFoundException(`Item with SKU '${sku}' not found in cart`);
         }
         item.isSavedForLater = !item.isSavedForLater;
-        this.recalculateCart(cart);
+        await this.recalculateCart(cart);
         return cart.save();
     }
     async moveToWishlist(sku, userId) {
@@ -215,7 +220,7 @@ let CartService = class CartService {
         }
         const [item] = cart.items.splice(itemIndex, 1);
         await this.usersRepository.addToWishlist(userId, item.productId.toString());
-        this.recalculateCart(cart);
+        await this.recalculateCart(cart);
         return cart.save();
     }
     async applyCoupon(dto, userId) {
@@ -226,7 +231,7 @@ let CartService = class CartService {
         if (!cart.items.length) {
             throw new common_1.BadRequestException('Cannot apply coupon to an empty cart');
         }
-        this.recalculateCart(cart);
+        await this.recalculateCart(cart);
         if (this.couponsService) {
             const validation = await this.couponsService.validateCoupon({
                 code: dto.couponCode,
@@ -244,7 +249,7 @@ let CartService = class CartService {
         else {
             cart.couponCode = dto.couponCode.toUpperCase().trim();
         }
-        this.recalculateCart(cart);
+        await this.recalculateCart(cart);
         return cart.save();
     }
     async removeCoupon(userId, guestId) {
@@ -254,7 +259,7 @@ let CartService = class CartService {
         }
         cart.couponCode = undefined;
         cart.couponDiscount = 0;
-        this.recalculateCart(cart);
+        await this.recalculateCart(cart);
         return cart.save();
     }
     async clearCart(userId, guestId) {
@@ -273,6 +278,7 @@ exports.CartService = CartService = __decorate([
         products_repository_js_1.ProductsRepository,
         inventory_repository_js_1.InventoryRepository,
         users_repository_js_1.UsersRepository,
-        coupons_service_js_1.CouponsService])
+        coupons_service_js_1.CouponsService,
+        shipping_service_js_1.ShippingService])
 ], CartService);
 //# sourceMappingURL=cart.service.js.map

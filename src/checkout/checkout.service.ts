@@ -15,6 +15,7 @@ import { CouponsService } from '../coupons/coupons.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { NotificationType } from '../notifications/schemas/notification.schema.js';
 import { OnlinePaymentDiscountService } from '../payment/online-payment-discount.service.js';
+import { ShippingService } from '../shipping/shipping.service.js';
 import { CheckoutSummaryDto } from './dto/checkout-summary.dto.js';
 import { PlaceOrderDto } from './dto/place-order.dto.js';
 import { StockStatus } from '../inventory/schemas/inventory.schema.js';
@@ -77,6 +78,7 @@ export class CheckoutService {
     private readonly couponsService: CouponsService,
     private readonly notificationsService: NotificationsService,
     private readonly onlineDiscountService?: OnlinePaymentDiscountService,
+    private readonly shippingService?: ShippingService,
   ) { }
 
   private generateOrderNumber(): string {
@@ -170,14 +172,9 @@ export class CheckoutService {
 
     // Shipping Fee Calculation
     const shippingMethod = dto?.shippingMethod || ShippingMethod.STANDARD;
-    let shippingFee = 0;
-
-    if (shippingMethod === ShippingMethod.EXPRESS) {
-      shippingFee = 199;
-    } else {
-      // Free shipping threshold: subtotal >= 1000
-      shippingFee = subtotal >= 1000 || subtotal === 0 ? 0 : 99;
-    }
+    const shippingFee = this.shippingService
+      ? await this.shippingService.calculateFee(subtotal, shippingMethod === ShippingMethod.EXPRESS)
+      : (shippingMethod === ShippingMethod.EXPRESS ? 149 : (subtotal >= 1000 || subtotal === 0 ? 0 : 99));
 
     // Coupon Calculation
     let couponDiscount = 0;

@@ -8,13 +8,15 @@ import { UpdateCartItemDto } from './dto/update-cart-item.dto.js';
 import { MergeCartDto } from './dto/merge-cart.dto.js';
 import { ApplyCouponDto } from './dto/apply-coupon.dto.js';
 import { CartDocument } from './schemas/cart.schema.js';
+import { ShippingService } from '../shipping/shipping.service.js';
 export declare class CartService {
     private readonly cartRepository;
     private readonly productsRepository;
     private readonly inventoryRepository;
     private readonly usersRepository;
     private readonly couponsService?;
-    constructor(cartRepository: CartRepository, productsRepository: ProductsRepository, inventoryRepository: InventoryRepository, usersRepository: UsersRepository, couponsService?: CouponsService | undefined);
+    private readonly shippingService?;
+    constructor(cartRepository: CartRepository, productsRepository: ProductsRepository, inventoryRepository: InventoryRepository, usersRepository: UsersRepository, couponsService?: CouponsService | undefined, shippingService?: ShippingService | undefined);
     private recalculateCart;
     getCart(userId?: string, guestId?: string): Promise<CartDocument>;
     addToCart(dto: AddToCartDto, userId?: string): Promise<CartDocument>;

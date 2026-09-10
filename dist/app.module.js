@@ -37,6 +37,7 @@ const cms_module_js_1 = require("./cms/cms.module.js");
 const banners_module_js_1 = require("./banners/banners.module.js");
 const dashboard_module_js_1 = require("./dashboard/dashboard.module.js");
 const announcements_module_js_1 = require("./announcements/announcements.module.js");
+const shipping_module_js_1 = require("./shipping/shipping.module.js");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer.apply(index_js_4.RequestLoggerMiddleware).forRoutes('*');
@@ -70,6 +71,7 @@ exports.AppModule = AppModule = __decorate([
             banners_module_js_1.BannersModule,
             dashboard_module_js_1.DashboardModule,
             announcements_module_js_1.AnnouncementsModule,
+            shipping_module_js_1.ShippingModule,
             throttler_1.ThrottlerModule.forRootAsync({
                 useFactory: (configService) => [
                     {

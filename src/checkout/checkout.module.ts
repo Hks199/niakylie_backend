@@ -15,6 +15,7 @@ import { NotificationsModule } from '../notifications/notifications.module.js';
 import { OnlinePaymentDiscount, OnlinePaymentDiscountSchema } from '../payment/schemas/online-payment-discount.schema.js';
 import { OnlinePaymentDiscountRepository } from '../payment/repositories/online-payment-discount.repository.js';
 import { OnlinePaymentDiscountService } from '../payment/online-payment-discount.service.js';
+import { ShippingModule } from '../shipping/shipping.module.js';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { OnlinePaymentDiscountService } from '../payment/online-payment-discount
     UsersModule,
     CouponsModule,
     NotificationsModule,
+    ShippingModule,
   ],
   controllers: [CheckoutController],
   providers: [

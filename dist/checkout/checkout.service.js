@@ -56,6 +56,7 @@ const coupons_service_js_1 = require("../coupons/coupons.service.js");
 const notifications_service_js_1 = require("../notifications/notifications.service.js");
 const notification_schema_js_1 = require("../notifications/schemas/notification.schema.js");
 const online_payment_discount_service_js_1 = require("../payment/online-payment-discount.service.js");
+const shipping_service_js_1 = require("../shipping/shipping.service.js");
 const inventory_schema_js_1 = require("../inventory/schemas/inventory.schema.js");
 const order_schema_js_1 = require("./schemas/order.schema.js");
 let CheckoutService = class CheckoutService {
@@ -67,7 +68,8 @@ let CheckoutService = class CheckoutService {
     couponsService;
     notificationsService;
     onlineDiscountService;
-    constructor(ordersRepository, cartRepository, inventoryRepository, productsRepository, usersRepository, couponsService, notificationsService, onlineDiscountService) {
+    shippingService;
+    constructor(ordersRepository, cartRepository, inventoryRepository, productsRepository, usersRepository, couponsService, notificationsService, onlineDiscountService, shippingService) {
         this.ordersRepository = ordersRepository;
         this.cartRepository = cartRepository;
         this.inventoryRepository = inventoryRepository;
@@ -76,6 +78,7 @@ let CheckoutService = class CheckoutService {
         this.couponsService = couponsService;
         this.notificationsService = notificationsService;
         this.onlineDiscountService = onlineDiscountService;
+        this.shippingService = shippingService;
     }
     generateOrderNumber() {
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -147,13 +150,9 @@ let CheckoutService = class CheckoutService {
         }
         const totalDiscount = Math.max(0, totalMrp - subtotal);
         const shippingMethod = dto?.shippingMethod || order_schema_js_1.ShippingMethod.STANDARD;
-        let shippingFee = 0;
-        if (shippingMethod === order_schema_js_1.ShippingMethod.EXPRESS) {
-            shippingFee = 199;
-        }
-        else {
-            shippingFee = subtotal >= 1000 || subtotal === 0 ? 0 : 99;
-        }
+        const shippingFee = this.shippingService
+            ? await this.shippingService.calculateFee(subtotal, shippingMethod === order_schema_js_1.ShippingMethod.EXPRESS)
+            : (shippingMethod === order_schema_js_1.ShippingMethod.EXPRESS ? 149 : (subtotal >= 1000 || subtotal === 0 ? 0 : 99));
         let couponDiscount = 0;
         let couponInfo;
         const couponCodeToApply = dto?.couponCode || cart.couponCode;
@@ -734,6 +733,7 @@ exports.CheckoutService = CheckoutService = __decorate([
         users_repository_js_1.UsersRepository,
         coupons_service_js_1.CouponsService,
         notifications_service_js_1.NotificationsService,
-        online_payment_discount_service_js_1.OnlinePaymentDiscountService])
+        online_payment_discount_service_js_1.OnlinePaymentDiscountService,
+        shipping_service_js_1.ShippingService])
 ], CheckoutService);
 //# sourceMappingURL=checkout.service.js.map

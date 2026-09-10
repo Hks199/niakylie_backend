@@ -17,6 +17,7 @@ const products_module_js_1 = require("../products/products.module.js");
 const inventory_module_js_1 = require("../inventory/inventory.module.js");
 const users_module_js_1 = require("../users/users.module.js");
 const coupons_module_js_1 = require("../coupons/coupons.module.js");
+const shipping_module_js_1 = require("../shipping/shipping.module.js");
 let CartModule = class CartModule {
 };
 exports.CartModule = CartModule;
@@ -28,6 +29,7 @@ exports.CartModule = CartModule = __decorate([
             inventory_module_js_1.InventoryModule,
             users_module_js_1.UsersModule,
             coupons_module_js_1.CouponsModule,
+            shipping_module_js_1.ShippingModule,
         ],
         controllers: [cart_controller_js_1.CartController],
         providers: [cart_service_js_1.CartService, cart_repository_js_1.CartRepository],

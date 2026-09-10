@@ -9,6 +9,7 @@ import { ProductsModule } from '../products/products.module.js';
 import { InventoryModule } from '../inventory/inventory.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { CouponsModule } from '../coupons/coupons.module.js';
+import { ShippingModule } from '../shipping/shipping.module.js';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { CouponsModule } from '../coupons/coupons.module.js';
     InventoryModule,
     UsersModule,
     CouponsModule,
+    ShippingModule,
   ],
   controllers: [CartController],
   providers: [CartService, CartRepository],

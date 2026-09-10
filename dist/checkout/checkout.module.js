@@ -22,6 +22,7 @@ const notifications_module_js_1 = require("../notifications/notifications.module
 const online_payment_discount_schema_js_1 = require("../payment/schemas/online-payment-discount.schema.js");
 const online_payment_discount_repository_js_1 = require("../payment/repositories/online-payment-discount.repository.js");
 const online_payment_discount_service_js_1 = require("../payment/online-payment-discount.service.js");
+const shipping_module_js_1 = require("../shipping/shipping.module.js");
 let CheckoutModule = class CheckoutModule {
 };
 exports.CheckoutModule = CheckoutModule;
@@ -38,6 +39,7 @@ exports.CheckoutModule = CheckoutModule = __decorate([
             users_module_js_1.UsersModule,
             coupons_module_js_1.CouponsModule,
             notifications_module_js_1.NotificationsModule,
+            shipping_module_js_1.ShippingModule,
         ],
         controllers: [checkout_controller_js_1.CheckoutController],
         providers: [
