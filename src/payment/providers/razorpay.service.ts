@@ -27,49 +27,38 @@ export class RazorpayService {
     const amountInPaise = Math.round(params.amount * 100);
     const currency = params.currency || 'INR';
 
-    // If keyId and keySecret are configured with real/test Razorpay keys
-    if (this.keyId && this.keySecret && !this.keyId.includes('mockkey')) {
-      try {
-        const authHeader = 'Basic ' + Buffer.from(`${this.keyId}:${this.keySecret}`).toString('base64');
-        const response = await fetch('https://api.razorpay.com/v1/orders', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': authHeader,
-          },
-          body: JSON.stringify({
-            amount: amountInPaise,
-            currency,
-            receipt: params.receipt || `rcpt_${Date.now()}`,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          return {
-            id: data.id,
-            amount: data.amount,
-            currency: data.currency,
-            receipt: data.receipt || params.receipt,
-            status: data.status || 'created',
-          };
-        } else {
-          const errorData = await response.json().catch(() => null);
-          console.warn('Razorpay API order creation warning:', errorData);
-        }
-      } catch (err) {
-        console.error('Error calling Razorpay API:', err);
-      }
+    if (!Number.isFinite(amountInPaise) || amountInPaise < 100) {
+      throw new BadRequestException('Razorpay payment amount must be at least ₹1.');
     }
 
-    // Fallback for mock/offline environments
-    const mockOrderId = `order_rzp_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}`;
+    if (this.keyId.includes('mockkey') || this.keySecret.includes('mocksecret')) {
+      throw new BadRequestException('Razorpay keys are not configured. Add valid Razorpay keys to the backend environment.');
+    }
+
+    const authHeader = 'Basic ' + Buffer.from(`${this.keyId}:${this.keySecret}`).toString('base64');
+    let response: Response;
+    try {
+      response = await fetch('https://api.razorpay.com/v1/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: authHeader },
+        body: JSON.stringify({ amount: amountInPaise, currency, receipt: params.receipt || `rcpt_${Date.now()}` }),
+      });
+    } catch {
+      throw new BadRequestException('Unable to reach Razorpay. Please check the backend internet connection and try again.');
+    }
+
+    if (!response.ok) {
+      const errorData: any = await response.json().catch(() => null);
+      throw new BadRequestException(errorData?.error?.description || 'Razorpay could not create the payment order.');
+    }
+
+    const data: any = await response.json();
     return {
-      id: mockOrderId,
-      amount: amountInPaise,
-      currency,
-      receipt: params.receipt,
-      status: 'created',
+      id: data.id,
+      amount: data.amount,
+      currency: data.currency,
+      receipt: data.receipt || params.receipt,
+      status: data.status || 'created',
     };
   }
 
@@ -87,12 +76,11 @@ export class RazorpayService {
       .update(body)
       .digest('hex');
 
-    // In mock/test environments where client signature matches calculated OR mock format, pass verification
-    if (razorpaySignature === expectedSignature || razorpaySignature.startsWith('mock_sig_') || razorpaySignature.length >= 8) {
-      return true;
-    }
-
-    return false;
+    const receivedSignature = Buffer.from(razorpaySignature);
+    const expectedSignatureBuffer = Buffer.from(expectedSignature);
+    return Boolean(razorpayOrderId && razorpayPaymentId && razorpaySignature)
+      && receivedSignature.length === expectedSignatureBuffer.length
+      && crypto.timingSafeEqual(receivedSignature, expectedSignatureBuffer);
   }
 
   async processRefund(params: { paymentId: string; amount?: number }): Promise<{
