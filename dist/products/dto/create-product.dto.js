@@ -19,6 +19,7 @@ class CreateProductDto {
     description;
     shortDescription;
     categoryId;
+    categoryIds;
     brandId;
     variants;
     material;
@@ -54,11 +55,19 @@ __decorate([
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "shortDescription", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: 'Category ID', example: '60d5ecb8b392d40015f8a001' }),
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Legacy primary category ID. Use categoryIds for multiple categories.' }),
+    (0, class_validator_1.ValidateIf)((_object, value) => value !== undefined),
     (0, class_validator_1.IsMongoId)(),
-    (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreateProductDto.prototype, "categoryId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Category and subcategory IDs. First entry is the primary category.', type: [String] }),
+    (0, class_validator_1.ValidateIf)((_object, value) => value !== undefined),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ArrayMinSize)(1),
+    (0, class_validator_1.IsMongoId)({ each: true }),
+    __metadata("design:type", Array)
+], CreateProductDto.prototype, "categoryIds", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({ description: 'Brand ID', example: '60d5ecb8b392d40015f8a002' }),
     (0, class_validator_1.IsMongoId)(),

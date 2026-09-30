@@ -26,7 +26,16 @@ let MongoSearchProvider = class MongoSearchProvider {
         const { q, categoryId, brandId, colors, sizes, minPrice, maxPrice, minDiscount, minRating, sortBy = 'relevance', page = 1, limit = 12, } = dto;
         const matchStage = { isDeleted: false, status: true };
         if (categoryId && mongoose_2.Types.ObjectId.isValid(categoryId)) {
-            matchStage.categoryId = new mongoose_2.Types.ObjectId(categoryId);
+            const id = new mongoose_2.Types.ObjectId(categoryId);
+            const descendants = await this.productModel.db.collection('categories').find({
+                $or: [{ parentId: id }, { 'ancestors._id': id }],
+                isDeleted: { $ne: true },
+            }).toArray();
+            const ids = [id, ...descendants.map((category) => category._id)];
+            matchStage.$and = [{ $or: [
+                        { categoryId: { $in: ids } },
+                        { categoryIds: { $in: ids } },
+                    ] }];
         }
         if (brandId && mongoose_2.Types.ObjectId.isValid(brandId)) {
             matchStage.brandId = new mongoose_2.Types.ObjectId(brandId);
@@ -43,7 +52,7 @@ let MongoSearchProvider = class MongoSearchProvider {
             ];
         }
         const pipeline = [{ $match: matchStage }];
-        pipeline.push({
+        pipeline.push({ $lookup: { from: 'categories', localField: 'categoryIds', foreignField: '_id', as: 'categories' } }, {
             $lookup: {
                 from: 'categories',
                 localField: 'categoryId',

@@ -7,6 +7,7 @@ export declare class Product {
     description?: string;
     shortDescription?: string;
     categoryId: Types.ObjectId;
+    categoryIds: Types.ObjectId[];
     brandId?: Types.ObjectId;
     variants: ProductVariant[];
     images: string[];
@@ -74,6 +75,15 @@ export declare const ProductSchema: MongooseSchema<Product, import("mongoose").M
         id: string;
     }>> | undefined;
     categoryId?: import("mongoose").SchemaDefinitionProperty<Types.ObjectId, Product, Document<unknown, {}, Product, {
+        id: string;
+    }, import("mongoose").DefaultSchemaOptions> & Omit<Product & {
+        _id: Types.ObjectId;
+    } & {
+        __v: number;
+    }, "id"> & import("mongoose").HydratedDocumentOverrides<{
+        id: string;
+    }>> | undefined;
+    categoryIds?: import("mongoose").SchemaDefinitionProperty<Types.ObjectId[], Product, Document<unknown, {}, Product, {
         id: string;
     }, import("mongoose").DefaultSchemaOptions> & Omit<Product & {
         _id: Types.ObjectId;

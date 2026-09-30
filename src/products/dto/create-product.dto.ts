@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
+  ArrayMinSize,
+  ValidateIf,
   IsBoolean,
   IsMongoId,
   IsNotEmpty,
@@ -30,10 +32,17 @@ export class CreateProductDto {
   @IsOptional()
   shortDescription?: string;
 
-  @ApiProperty({ description: 'Category ID', example: '60d5ecb8b392d40015f8a001' })
+  @ApiPropertyOptional({ description: 'Legacy primary category ID. Use categoryIds for multiple categories.' })
+  @ValidateIf((_object, value) => value !== undefined)
   @IsMongoId()
-  @IsNotEmpty()
-  categoryId!: string;
+  categoryId?: string;
+
+  @ApiPropertyOptional({ description: 'Category and subcategory IDs. First entry is the primary category.', type: [String] })
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsMongoId({ each: true })
+  categoryIds?: string[];
 
   @ApiPropertyOptional({ description: 'Brand ID', example: '60d5ecb8b392d40015f8a002' })
   @IsMongoId()

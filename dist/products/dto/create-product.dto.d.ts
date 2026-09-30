@@ -3,7 +3,8 @@ export declare class CreateProductDto {
     name: string;
     description?: string;
     shortDescription?: string;
-    categoryId: string;
+    categoryId?: string;
+    categoryIds?: string[];
     brandId?: string;
     variants?: CreateVariantDto[];
     material?: string;

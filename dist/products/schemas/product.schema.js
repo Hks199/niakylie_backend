@@ -19,6 +19,7 @@ let Product = class Product {
     description;
     shortDescription;
     categoryId;
+    categoryIds;
     brandId;
     variants;
     images;
@@ -61,6 +62,10 @@ __decorate([
     (0, mongoose_1.Prop)({ type: mongoose_2.Schema.Types.ObjectId, ref: 'Category', required: true, index: true }),
     __metadata("design:type", mongoose_2.Types.ObjectId)
 ], Product.prototype, "categoryId", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: [{ type: mongoose_2.Schema.Types.ObjectId, ref: 'Category' }], default: [] }),
+    __metadata("design:type", Array)
+], Product.prototype, "categoryIds", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ type: mongoose_2.Schema.Types.ObjectId, ref: 'Brand', index: true }),
     __metadata("design:type", mongoose_2.Types.ObjectId)
@@ -147,6 +152,7 @@ exports.Product = Product = __decorate([
 exports.ProductSchema = mongoose_1.SchemaFactory.createForClass(Product);
 exports.ProductSchema.index({ slug: 1 });
 exports.ProductSchema.index({ categoryId: 1, status: 1, isDeleted: 1 });
+exports.ProductSchema.index({ categoryIds: 1, status: 1, isDeleted: 1 });
 exports.ProductSchema.index({ brandId: 1, status: 1, isDeleted: 1 });
 exports.ProductSchema.index({ isFeatured: 1, status: 1 });
 exports.ProductSchema.index({ isTrending: 1, status: 1 });

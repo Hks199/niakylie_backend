@@ -31,6 +31,18 @@ export class ProductsService {
     @Optional() private readonly cacheService?: RedisCacheService,
   ) {}
 
+  private async resolveCategories(dto: { categoryId?: string; categoryIds?: string[] }) {
+    const input = dto.categoryIds !== undefined ? dto.categoryIds : [dto.categoryId];
+    if (!Array.isArray(input) || !input.length || input.some((id) => typeof id !== 'string' || !/^[a-fA-F0-9]{24}$/.test(id))) {
+      throw new BadRequestException('Select at least one valid category or subcategory');
+    }
+    const ids = [...new Set(input.map((id) => id!.toLowerCase()))].map((id) => new Types.ObjectId(id));
+    if (!(await this.productsRepository.categoriesExist(ids))) {
+      throw new BadRequestException('One or more selected categories no longer exist');
+    }
+    return { categoryId: ids[0], categoryIds: ids };
+  }
+
   async create(createDto: CreateProductDto): Promise<ProductDocument> {
     const slug = generateSlug(createDto.name);
 
@@ -56,11 +68,12 @@ export class ProductsService {
       };
     });
 
+    const categories = await this.resolveCategories(createDto);
     return this.productsRepository.create({
       ...createDto,
       slug,
       variants,
-      categoryId: new Types.ObjectId(createDto.categoryId),
+      ...categories,
       brandId: createDto.brandId ? new Types.ObjectId(createDto.brandId) : undefined,
       tags: createDto.tags ?? [],
       seoKeywords: createDto.seoKeywords ?? [],
@@ -103,7 +116,9 @@ export class ProductsService {
       updateData.slug = newSlug;
     }
 
-    if (updateDto.categoryId) updateData.categoryId = new Types.ObjectId(updateDto.categoryId);
+    if (updateDto.categoryIds !== undefined || updateDto.categoryId !== undefined) {
+      Object.assign(updateData, await this.resolveCategories(updateDto));
+    }
     if (updateDto.brandId) updateData.brandId = new Types.ObjectId(updateDto.brandId);
 
     const updated = await this.productsRepository.update(id, { $set: updateData });

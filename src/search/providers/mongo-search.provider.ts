@@ -35,7 +35,16 @@ export class MongoSearchProvider implements ISearchProvider {
     const matchStage: Record<string, any> = { isDeleted: false, status: true };
 
     if (categoryId && Types.ObjectId.isValid(categoryId)) {
-      matchStage.categoryId = new Types.ObjectId(categoryId);
+      const id = new Types.ObjectId(categoryId);
+      const descendants = await this.productModel.db.collection('categories').find({
+        $or: [{ parentId: id }, { 'ancestors._id': id }],
+        isDeleted: { $ne: true },
+      }).toArray();
+      const ids = [id, ...descendants.map((category) => category._id)];
+      matchStage.$and = [{ $or: [
+        { categoryId: { $in: ids } },
+        { categoryIds: { $in: ids } },
+      ] }];
     }
 
     if (brandId && Types.ObjectId.isValid(brandId)) {
@@ -59,6 +68,7 @@ export class MongoSearchProvider implements ISearchProvider {
 
     // Populate category & brand names for rich metadata
     pipeline.push(
+      { $lookup: { from: 'categories', localField: 'categoryIds', foreignField: '_id', as: 'categories' } },
       {
         $lookup: {
           from: 'categories',

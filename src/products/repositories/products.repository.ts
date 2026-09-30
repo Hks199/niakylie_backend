@@ -11,6 +11,13 @@ export class ProductsRepository {
     @InjectModel(Product.name) private readonly productModel: Model<ProductDocument>,
   ) {}
 
+  async categoriesExist(ids: Types.ObjectId[]): Promise<boolean> {
+    const count = await this.productModel.db.collection('categories').countDocuments({
+      _id: { $in: ids }, isDeleted: { $ne: true },
+    });
+    return count === ids.length;
+  }
+
   async create(data: Partial<Product>): Promise<ProductDocument> {
     const product = new this.productModel(data);
     return product.save();
@@ -21,6 +28,7 @@ export class ProductsRepository {
     return this.productModel
       .findOne({ _id: new Types.ObjectId(id), isDeleted: false })
       .populate('categoryId', 'name slug')
+      .populate('categoryIds', 'name slug')
       .populate('brandId', 'name slug logo')
       .exec();
   }
@@ -29,6 +37,7 @@ export class ProductsRepository {
     return this.productModel
       .findOne({ slug, isDeleted: false })
       .populate('categoryId', 'name slug')
+      .populate('categoryIds', 'name slug')
       .populate('brandId', 'name slug logo')
       .exec();
   }
@@ -201,6 +210,7 @@ export class ProductsRepository {
     if (categoryIdFilter) {
       baseMatch.$or = [
         { categoryId: categoryIdFilter },
+        { categoryIds: categoryIdFilter },
         { category: categoryIdFilter },
       ];
     }
@@ -327,6 +337,15 @@ export class ProductsRepository {
               },
             },
             { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
+            {
+              $lookup: {
+                from: 'categories',
+                localField: 'categoryIds',
+                foreignField: '_id',
+                pipeline: [{ $project: { name: 1, slug: 1 } }],
+                as: 'categories',
+              },
+            },
             {
               $lookup: {
                 from: 'brands',

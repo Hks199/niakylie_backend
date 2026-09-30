@@ -13,6 +13,7 @@ describe('ProductsService', () => {
 
   beforeEach(async () => {
     const mockProductsRepository = {
+      categoriesExist: jest.fn().mockResolvedValue(true),
       create: jest.fn(),
       findById: jest.fn(),
       findBySlug: jest.fn(),

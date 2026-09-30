@@ -11,6 +11,7 @@ export declare class ProductsService {
     private readonly s3Service;
     private readonly cacheService?;
     constructor(productsRepository: ProductsRepository, s3Service: S3Service, cacheService?: RedisCacheService | undefined);
+    private resolveCategories;
     create(createDto: CreateProductDto): Promise<ProductDocument>;
     uploadImages(productId: string, files: Express.Multer.File[], folder: 'products' | `products/${string}`): Promise<ProductDocument>;
     update(id: string, updateDto: UpdateProductDto): Promise<ProductDocument>;

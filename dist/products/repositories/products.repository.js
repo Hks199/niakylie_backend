@@ -22,6 +22,12 @@ let ProductsRepository = class ProductsRepository {
     constructor(productModel) {
         this.productModel = productModel;
     }
+    async categoriesExist(ids) {
+        const count = await this.productModel.db.collection('categories').countDocuments({
+            _id: { $in: ids }, isDeleted: { $ne: true },
+        });
+        return count === ids.length;
+    }
     async create(data) {
         const product = new this.productModel(data);
         return product.save();
@@ -32,6 +38,7 @@ let ProductsRepository = class ProductsRepository {
         return this.productModel
             .findOne({ _id: new mongoose_2.Types.ObjectId(id), isDeleted: false })
             .populate('categoryId', 'name slug')
+            .populate('categoryIds', 'name slug')
             .populate('brandId', 'name slug logo')
             .exec();
     }
@@ -39,6 +46,7 @@ let ProductsRepository = class ProductsRepository {
         return this.productModel
             .findOne({ slug, isDeleted: false })
             .populate('categoryId', 'name slug')
+            .populate('categoryIds', 'name slug')
             .populate('brandId', 'name slug logo')
             .exec();
     }
@@ -165,6 +173,7 @@ let ProductsRepository = class ProductsRepository {
         if (categoryIdFilter) {
             baseMatch.$or = [
                 { categoryId: categoryIdFilter },
+                { categoryIds: categoryIdFilter },
                 { category: categoryIdFilter },
             ];
         }
@@ -292,6 +301,15 @@ let ProductsRepository = class ProductsRepository {
                             },
                         },
                         { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
+                        {
+                            $lookup: {
+                                from: 'categories',
+                                localField: 'categoryIds',
+                                foreignField: '_id',
+                                pipeline: [{ $project: { name: 1, slug: 1 } }],
+                                as: 'categories',
+                            },
+                        },
                         {
                             $lookup: {
                                 from: 'brands',

@@ -35,6 +35,17 @@ let ProductsService = class ProductsService {
         this.s3Service = s3Service;
         this.cacheService = cacheService;
     }
+    async resolveCategories(dto) {
+        const input = dto.categoryIds !== undefined ? dto.categoryIds : [dto.categoryId];
+        if (!Array.isArray(input) || !input.length || input.some((id) => typeof id !== 'string' || !/^[a-fA-F0-9]{24}$/.test(id))) {
+            throw new common_1.BadRequestException('Select at least one valid category or subcategory');
+        }
+        const ids = [...new Set(input.map((id) => id.toLowerCase()))].map((id) => new mongoose_1.Types.ObjectId(id));
+        if (!(await this.productsRepository.categoriesExist(ids))) {
+            throw new common_1.BadRequestException('One or more selected categories no longer exist');
+        }
+        return { categoryId: ids[0], categoryIds: ids };
+    }
     async create(createDto) {
         const slug = generateSlug(createDto.name);
         const existing = await this.productsRepository.findBySlug(slug);
@@ -54,11 +65,12 @@ let ProductsService = class ProductsService {
                 images: [],
             };
         });
+        const categories = await this.resolveCategories(createDto);
         return this.productsRepository.create({
             ...createDto,
             slug,
             variants,
-            categoryId: new mongoose_1.Types.ObjectId(createDto.categoryId),
+            ...categories,
             brandId: createDto.brandId ? new mongoose_1.Types.ObjectId(createDto.brandId) : undefined,
             tags: createDto.tags ?? [],
             seoKeywords: createDto.seoKeywords ?? [],
@@ -89,8 +101,9 @@ let ProductsService = class ProductsService {
             }
             updateData.slug = newSlug;
         }
-        if (updateDto.categoryId)
-            updateData.categoryId = new mongoose_1.Types.ObjectId(updateDto.categoryId);
+        if (updateDto.categoryIds !== undefined || updateDto.categoryId !== undefined) {
+            Object.assign(updateData, await this.resolveCategories(updateDto));
+        }
         if (updateDto.brandId)
             updateData.brandId = new mongoose_1.Types.ObjectId(updateDto.brandId);
         const updated = await this.productsRepository.update(id, { $set: updateData });

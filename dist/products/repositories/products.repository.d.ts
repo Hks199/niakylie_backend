@@ -1,10 +1,11 @@
-import { Model, UpdateQuery } from 'mongoose';
+import { Model, Types, UpdateQuery } from 'mongoose';
 import { Product, ProductDocument } from '../schemas/product.schema.js';
 import { ProductVariant } from '../schemas/product-variant.schema.js';
 import { QueryProductDto } from '../dto/query-product.dto.js';
 export declare class ProductsRepository {
     private readonly productModel;
     constructor(productModel: Model<ProductDocument>);
+    categoriesExist(ids: Types.ObjectId[]): Promise<boolean>;
     create(data: Partial<Product>): Promise<ProductDocument>;
     findById(id: string): Promise<ProductDocument | null>;
     findBySlug(slug: string): Promise<ProductDocument | null>;

@@ -21,6 +21,9 @@ export class Product {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Category', required: true, index: true })
   categoryId!: Types.ObjectId;
 
+  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Category' }], default: [] })
+  categoryIds!: Types.ObjectId[];
+
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Brand', index: true })
   brandId?: Types.ObjectId;
 
@@ -87,6 +90,7 @@ export const ProductSchema = SchemaFactory.createForClass(Product);
 // Compound & text indexes
 ProductSchema.index({ slug: 1 });
 ProductSchema.index({ categoryId: 1, status: 1, isDeleted: 1 });
+ProductSchema.index({ categoryIds: 1, status: 1, isDeleted: 1 });
 ProductSchema.index({ brandId: 1, status: 1, isDeleted: 1 });
 ProductSchema.index({ isFeatured: 1, status: 1 });
 ProductSchema.index({ isTrending: 1, status: 1 });
